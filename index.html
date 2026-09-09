@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Faraz Detector AI — Detektor AI untuk Mahasiswa</title>
+<link rel="stylesheet" href="./style.css" />
+<link rel="stylesheet" href="./mobile.css" media="screen and (max-width:1100px)" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script>window.__farazTransformersUrl="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2";try{import(window.__farazTransformersUrl).then(function(m){try{m.env.allowLocalModels=false;}catch(_){}}).catch(function(){});}catch(_){}</script>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="logo"><img class="logo-mascot" src="./img/icon%20utama.png" alt="Ikon Faraz Detector AI" onerror="this.remove()"> Faraz Detector AI</div>
+    <div class="nav-links">
+      <a href="#editor">Editor</a><a href="#hasil">Hasil</a><a href="#cara">Cara kerja</a><a href="#faq">FAQ</a>
+    </div>
+    <a class="nav-cta" href="#editor">Cek tulisan</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="hero-main">
+      <div class="hero-badge">Gratis · Privat · Bahasa ID & EN</div>
+      <h1>Halo, selamat datang di Faraz Detector AI — mari kita lihat tulisanmu bersama.</h1>
+      <img class="sidekick kick-hero" src="./img/icon%20utama.png" alt="Karakter utama Faraz Detector AI" onerror="this.remove()">
+      <p class="sub">Tempel tulisanmu, lihat bagian yang perlu diperhatikan, lalu lakukan perbaikan sesuai kebutuhanmu. Sederhana, privat, dan bisa digunakan siapa saja.</p>
+      <div class="hero-cta">
+        <a class="btn-hero" href="#editor">Cek tulisan sekarang</a>
+        <a class="btn-hero ghost" href="#cara">Cara kerja</a>
+      </div>
+      <p class="trust-row"><span>✓ Gratis</span><span>✓ Tanpa daftar</span><span>✓ Privat di perangkat</span></p>
+      <div class="hero-cards">
+        <div class="hc" tabindex="0" role="button" aria-label="Langkah 1: ke editor"><b>1</b><div><strong>Tempel / upload</strong><small>Teks, PDF, atau Word</small></div></div>
+        <div class="hc" tabindex="0" role="button" aria-label="Langkah 2: ke editor"><b>2</b><div><strong>Klik deteksi</strong><small>Keluar skor + warna</small></div></div>
+        <div class="hc" tabindex="0" role="button" aria-label="Langkah 3: ke hasil"><b>3</b><div><strong>Perbaiki & export</strong><small>Unduh laporan PDF</small></div></div>
+      </div>
+    </div>
+    <div class="hero-side">
+      <div class="demo" id="demo">
+        <div class="demo-top"><img class="mascot mascot-hero" src="./img/hore.png" alt="Maskot bersorak menyambut" onerror="this.remove()"><p class="demo-kicker">Coba langsung — contoh interaktif</p></div>
+        <div class="demo-tabs" role="tablist" aria-label="Pilih contoh teks">
+          <button type="button" id="demoAi" class="demo-tab active">Contoh AI</button>
+          <button type="button" id="demoHuman" class="demo-tab">Contoh manusia</button>
+        </div>
+        <div class="demo-score"><b id="demoPct">–</b><small id="demoLbl">menghitung…</small></div>
+        <div class="demo-bar"><i id="demoFill"></i></div>
+        <p class="demo-text" id="demoText"></p>
+        <p class="demo-note">Skor dihitung langsung oleh mesin yang sama — bukan angka tempelan.</p>
+        <button type="button" id="demoOpen" class="ghost">Buka contoh ini di editor</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel" id="editor">
+      <div class="panel-head"><h2>Input naskah</h2><img class="mascot mascot-mini" src="./img/ceria%20violet.jpg" alt="Maskot ceria" onerror="this.remove()"><span id="wordCount" class="wc">0 kata</span></div>
+      <textarea id="inputText" placeholder="Contoh: Tempel bab 1 skripsimu di sini… minimal 20 kata, paling bagus 200+ kata."></textarea>
+      <div class="samples"><span class="muted">Belum ada teks? Coba:</span>
+        <button id="btnSampleID" class="ghost" type="button">Contoh ID</button>
+        <button id="btnSampleEN" class="ghost" type="button">Contoh EN</button>
+      </div>
+      <span id="refInfo" class="muted"></span>
+      <div id="fileChip" class="file-chip" hidden>
+        <span id="fileName">file</span>
+        <span id="fileMeta" class="muted"></span>
+        <button id="fileClear" class="ghost small" type="button">✕</button>
+      </div>
+      <div class="toggles">
+        <label class="tg"><input type="checkbox" id="autoRef" checked> Potong daftar pustaka otomatis</label>
+        <label class="tg"><input type="checkbox" id="useLocal" checked> Pakai model akurat (±130MB, sekali saja)</label>
+      </div>
+      <p id="status" class="status">Siap. Model dimuat saat cek pertama.</p>
+    </section>
+
+    <aside class="rail" aria-label="Aksi cepat">
+      <div class="rail-card">
+        <h3>Cek</h3>
+        <button id="btnCheck" class="primary" type="button">Cek sekarang</button>
+        <button id="btnClear" class="ghost" type="button">Reset</button>
+      </div>
+      <div class="rail-card">
+        <h3>Isi naskah</h3>
+        <label class="file" for="fileInput">Upload file</label><input type="file" id="fileInput" class="sr-only-input" accept=".txt,.md,.pdf,.docx">
+      </div>
+      <div class="rail-card">
+        <h3>Natural</h3>
+        <button id="btnHumanize" class="primary" type="button">Buatkan versi natural</button>
+        <button id="btnApplyHumanize" class="ghost" type="button" disabled>Terapkan &amp; cek ulang</button>
+        <button id="btnCopyHumanize" class="ghost" type="button" disabled>Salin</button>
+      </div>
+      <div class="rail-card">
+        <h3>Laporan</h3>
+        <button id="btnPrint" class="primary" type="button" disabled>Export PDF</button>
+        <button id="btnDownload" class="ghost" type="button" disabled>Unduh .txt</button>
+      </div>
+    </aside>
+
+    <section class="panel result" id="hasil">
+      <div class="panel-head"><h2>Hasil</h2><span class="wc">Merah = cek lagi · Hijau = aman</span></div>
+      <div id="resultEmpty" class="empty">
+        <div class="empty-face" aria-hidden="true"><img class="mascot mascot-empty" src="./img/ya%20maap.jpg" alt="" onerror="this.outerHTML='§'"></div>
+        <b>Belum ada hasil</b>
+        <p>Tekan <b>Cek sekarang</b> — kalimat yang merah perlu ditulis ulang, yang hijau sudah natural.</p>
+      </div>
+      <div id="resultBox" hidden>
+        <div class="score-hero">
+          <div class="score-main"><span>Skor AI</span><strong id="aiPct">0%</strong></div>
+          <div class="score-sub"><span id="humanPct">0%</span> manusia · <span id="mixLbl">-</span></div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat"><span>Kalimat</span><strong id="statSent">0</strong></div>
+          <div class="stat"><span>Perlu cek</span><strong id="statReview">0</strong></div>
+          <div class="stat"><span>Aman</span><strong id="statSafe">0</strong></div>
+        </div>
+        <div class="bar"><div id="barFill"></div></div>
+        <div id="verdict" class="verdict"></div>
+        <details open class="det"><summary>Warna per kalimat</summary><div id="highlight"></div><p class="legend"><mark class="human">hijau aman</mark> <mark class="mid">kuning cek</mark> <mark class="ai">merah tulis ulang</mark></p></details>
+        <details class="det"><summary>Kenapa skor ini?</summary><ul id="reasons" class="reasons"></ul></details>
+        <details class="det"><summary>Detail teknis</summary><pre id="stats"></pre></details>
+        <div class="humanize">
+          <div class="humanize-head"><h3>Versi lebih natural</h3><span class="muted">parafrase offline + cek ulang jujur</span></div>
+          <p class="muted">Ubah kalimat merah jadi gaya bahasamu sendiri, lalu cek ulang. Tidak ada skor palsu — hasil diukur ulang beneran. Tetap ikuti aturan kampus: tulis ulang dengan pemahamanmu, tambah data/opini sendiri.</p>
+          <div id="humanizeBox" hidden>
+            <textarea id="humanizeOut" rows="8" placeholder="Hasil parafrase muncul di sini…"></textarea>
+            <p id="humanizeStatus" class="status">Siap.</p>
+          </div>
+        </div>
+        <p class="warn">Catatan: ini alat bantu, bukan vonis. Bahasa formal kadang terbaca AI — tanya dosen/guru bila ragu.</p>
+      </div>
+    </section>
+  </main>
+
+  <section class="content-sec" id="jenis">
+    <p class="kicker">Buat apa dicek</p>
+    <h2>Satu alat untuk semua tugas kuliah</h2>
+    <div class="feat-grid">
+      <div class="feat"><b>Skripsi &amp; Bab</b><span>Cek per bab; daftar pustaka otomatis dikecualikan.</span></div>
+      <div class="feat"><b>Esai &amp; Tugas</b><span>Tempel tugas harian, lihat kalimat yang kaku.</span></div>
+      <div class="feat"><b>Makalah &amp; Paper</b><span>Uji tinjauan pustaka dan penjelasan akademik.</span></div>
+      <div class="feat"><b>Diskusi &amp; Refleksi</b><span>Posting forum dan refleksi singkat ikut terbaca.</span></div>
+    </div>
+  </section>
+
+  <section class="content-sec band-dark" id="cara">
+    <h2>Tiga langkah, semua di browser-mu</h2>
+    <p class="cara-sub">Satu alur sederhana untuk memahami dan memperbaiki tulisan.</p>
+    <ol class="steps-big">
+      <li><span class="step-num" aria-hidden="true">01</span><span class="step-ico" aria-hidden="true"><img src="./img/hmphh.jpg" alt="" onerror="this.parentElement.textContent='📄'"></span><b>Tempel atau upload</b>  Masukkan tulisanmu dengan cara paste langsung atau upload file `.txt`, `.md`, `.pdf`, atau `.docx`. Bagian daftar pustaka dapat dikecualikan agar referensi tidak ikut memengaruhi analisis.</li>
+      <li><span class="step-num" aria-hidden="true">02</span><span class="step-ico" aria-hidden="true"><img src="./img/tanya.jpg" alt="" onerror="this.parentElement.textContent='◉'"></span><b>Cek tulisanmu</b>  Klik <b>Cek sekarang</b> untuk melihat pola tulisan yang perlu diperhatikan. Faraz Detector AI menganalisis 10 sinyal kebahasaan dan, jika diaktifkan, dapat menggunakan model lokal sebagai analisis tambahan.</li>
+      <li><span class="step-num" aria-hidden="true">03</span><span class="step-ico" aria-hidden="true"><img src="./img/jempol%20violet.jpg" alt="" onerror="this.parentElement.textContent='✦'"></span><b>Tinjau dan perbaiki</b>  Lihat kalimat atau bagian yang perlu ditinjau, lalu perbaiki dengan tetap mempertahankan maksud dan gaya tulisanmu. Kamu bisa memperjelas kalimat, mengurangi pengulangan, menambahkan konteks atau data yang memang kamu miliki, atau menggunakan <b>Versi natural</b> sebagai bantuan. Setelah diperbaiki, lakukan <b>cek ulang</b> untuk membandingkan hasilnya dengan versi sebelumnya.</li>
+    </ol>
+  </section>
+
+  <section class="content-sec" id="sinyal">
+    <p class="kicker">Sinyal yang dibaca</p>
+    <h2>10 pola yang dinilai mesin</h2>
+    <div class="mindmap" role="list" aria-label="10 pola yang dinilai mesin">
+      <div class="mind-center"><b>10</b><span>pola dicek mesin</span></div>
+      <div class="mind-node" style="--a:-90deg" role="listitem"><div class="mind-txt"><b>Struktur kalimat berulang</b><span>Bentuk kalimat yang itu-itu saja terasa mekanis.</span></div></div>
+      <div class="mind-node" style="--a:-54deg" role="listitem"><div class="mind-txt"><b>Frasa generik</b><span>Ungkapan template yang sering dipakai AI.</span></div></div>
+      <div class="mind-node" style="--a:-18deg" role="listitem"><div class="mind-txt"><b>Nada akademik datar</b><span>Terlalu dipoles, tidak personal, tidak spesifik.</span></div></div>
+      <div class="mind-node" style="--a:18deg" role="listitem"><div class="mind-txt"><b>Variasi rendah</b><span>Ritme, panjang kalimat, dan alur paragraf seragam.</span></div></div>
+      <div class="mind-node" style="--a:54deg" role="listitem"><div class="mind-txt"><b>Transisi mekanis</b><span>Kata sambung formal yang dipakai berulang-ulang.</span></div></div>
+      <div class="mind-node" style="--a:90deg" role="listitem"><div class="mind-txt"><b>Pola panjang rapi</b><span>Hampir semua kalimat 12–28 kata.</span></div></div>
+      <div class="mind-node" style="--a:126deg" role="listitem"><div class="mind-txt"><b>Tanpa suara personal</b><span>Nol opini, pengalaman, atau sudut pandang.</span></div></div>
+      <div class="mind-node" style="--a:162deg" role="listitem"><div class="mind-txt"><b>Tanpa tanda hidup</b><span>Tidak ada tanya, seru, atau kutipan langsung.</span></div></div>
+      <div class="mind-node" style="--a:198deg" role="listitem"><div class="mind-txt"><b>Tanpa data konkret</b><span>Minim angka, nama, dan kejadian spesifik.</span></div></div>
+      <div class="mind-node" style="--a:234deg" role="listitem"><div class="mind-txt"><b>Bahasa template</b><span>Kata sifat umum tanpa contoh nyata.</span></div></div>
+    </div>
+    <p class="muted">Sinyal dibaca sebagai pola umum lintas model AI (ChatGPT, Claude, Gemini, dan sejenisnya); model lokal hanya pembanding kedua, bukan penentu tunggal.</p>
+  </section>
+
+  <section class="content-sec" id="fitur">
+    <p class="kicker">Kenapa pakai ini</p>
+    <h2>Ringan, privat, dua bahasa</h2>
+    <div class="feat-grid">
+      <div class="feat"><b>Gratis penuh</b><span>Tanpa akun, tanpa kuota.</span></div>
+      <div class="feat"><b>100% privat</b><span>Teks diproses di perangkatmu; tidak dikirim ke server mana pun.</span></div>
+      <div class="feat"><b>Indonesia &amp; English</b><span>Sinyal dan contoh disiapkan untuk kedua bahasa.</span></div>
+      <div class="feat"><b>Model lokal opsional</b><span>RoBERTa detector diunduh sekali (±130MB), boleh dimatikan.</span></div>
+    </div>
+  </section>
+
+  <section class="content-sec faq-sec" id="faq">
+    <div class="faq-head">
+      <img class="mascot mascot-faq" src="./img/ehehe.jpg" alt="Maskot ceria menjawab" onerror="this.remove()">
+      <p class="kicker">Tanya jawab jujur</p>
+      <h2>Yang perlu kamu tahu sebelum percaya skor</h2>
+      <p class="muted">Jawaban singkat tanpa basa-basi. Masih ragu? Tekan Saran / Lapor di kanan bawah.</p>
+    </div>
+    <div class="faq-list">
+    <details class="det"><summary>Apakah skornya 100% akurat?</summary><p>Tidak. Tidak ada detektor AI yang 100% akurat — jurnal acuan aplikasi ini mencatat detektor umum di bawah 80%, dan teks formal/pendek rawan salah baca. Anggap skor sebagai skrining awal, bukan vonis.</p></details>
+    <details class="det"><summary>Bisakah menggantikan Turnitin?</summary><p>Tidak. Sistem kampus punya basis data dan aturan sendiri; skor di sini hanya pola kebahasaan internal. Untuk pengajuan resmi, ikuti aturan kampus dan dosen.</p></details>
+    <details class="det"><summary>Apakah teks saya dikirim ke internet?</summary><p>Tidak. Penilaian heuristik jalan murni di browser. Yang diunduh dari internet hanya file model (±130MB, sekali, tersimpan di cache) dan pustaka baca PDF/Word bila kamu upload file itu.</p></details>
+    <details class="det"><summary>Kenapa teks pendek tidak valid?</summary><p>Butuh minimal 20 kata untuk jalan, ideal 200+. Statistik gaya bahasa (variasi, TTR, pola) tidak bermakna pada teks sejumput.</p></details>
+    <details class="det"><summary>Skor masih tinggi sesudah humanizer?</summary><p>Tambahkan pengalaman, opini, angka, dan nama konkret milikmu sendiri, variasikan panjang kalimat, lalu cek ulang. Skor baru dihitung dari teks baru.</p></details>
+    </div>
+  </section>
+
+  <section class="cta-band" id="mulai">
+    <div class="cta-text">
+      <p class="kicker light">Mulai sekarang</p>
+      <h2>Siap cek tulisanmu?</h2>
+      <p>Tempel naskah, tekan cek, perbaiki yang merah — gratis, tanpa daftar.</p>
+      <div class="hero-cta">
+        <a class="btn-hero light" href="#editor">Cek tulisan sekarang</a>
+        <a class="btn-hero line" href="#cara">Lihat cara kerja</a>
+      </div>
+    </div>
+    <div class="cta-imgs">
+      <img class="mascot mascot-cta" src="./img/yppiee%20love.jpg" alt="Maskot bahagia mengajak" onerror="this.remove()">
+      <img class="sidekick kick-cta" src="./img/ehem.jpg" alt="Maskot berpikir" onerror="this.remove()">
+    </div>
+  </section>
+
+  <div id="printArea" hidden></div>
+  <footer><div class="foot-inner"><div class="foot-brand"><img class="logo-mascot logo-mascot-foot" src="./img/icon%20utama.png" alt="Ikon Faraz Detector AI" onerror="this.remove()"><b>Faraz Detector AI</b><small>Gratis untuk pelajar &amp; mahasiswa. Teks diproses di perangkatmu dan tidak dikirim ke server.</small></div><nav class="foot-links" aria-label="Aplikasi"><b>Aplikasi</b><a href="#editor">Editor</a><a href="#hasil">Hasil</a><a href="#cara">Cara kerja</a><a href="#faq">FAQ</a></nav><nav class="foot-links" aria-label="Bantuan"><b>Bantuan</b><a href="https://wa.me/6280000000000?text=Halo%20Faraz%20Detector%20AI%2C%20saya%20punya%20saran%2Flaporan%3A%20" target="_blank" rel="noopener">Saran / Lapor</a><a href="#faq">Privacy</a><a href="#faq">FAQ</a></nav><nav class="foot-links" aria-label="Konten"><b>Konten</b><a href="#jenis">Jenis dokumen</a><a href="#fitur">Fitur</a><a href="#mulai">Mulai</a></nav></div><div class="foot-mascots"><img class="sidekick kick-foot-l" src="./img/jempol.png" alt="Maskot jempol" onerror="this.remove()"><img class="sidekick kick-foot-r" src="./img/ahay.png" alt="Maskot damai" onerror="this.remove()"></div><div class="foot-base"><small>© 2026 Faraz Detector AI · Alat bantu belajar, bukan vonis.</small><small class="foot-mini">Gratis · Privat · ID / EN</small></div></footer>
+</div>
+<div class="mobile-cta"><a href="#editor">Mulai cek tulisan ↓</a></div>
+<!-- SARAN/LAPOR: ganti 6280000000000 dengan nomor WA kamu (format: 628xx, tanpa +/spasi) -->
+<a class="fab" href="https://wa.me/6280000000000?text=Halo%20Faraz%20Detector%20AI%2C%20saya%20punya%20saran%2Flaporan%3A%20" target="_blank" rel="noopener">Saran / Lapor</a>
+<!-- JS: 5 file per lapisan (defer = jalan berurutan). -->
+<script defer src="./js/core.js"></script>
+<script defer src="./js/detector.js"></script>
+<script defer src="./js/referensi.js"></script>
+<script defer src="./js/humanizer.js"></script>
+<script defer src="./js/main.js"></script>
+</body>
+</html>
