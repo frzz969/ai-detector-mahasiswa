@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0E4A6E" />
+<meta name="description" content="Faraz Detector AI — detektor AI gratis, privat, dua bahasa untuk mahasiswa. Tempel tulisan, lihat bagian yang perlu ditinjau, perbaiki, export PDF." />
 <title>Faraz Detector AI — Detektor AI untuk Mahasiswa</title>
 <link rel="stylesheet" href="./style.css" />
 <link rel="stylesheet" href="./mobile.css" media="screen and (max-width:1100px)" />
@@ -11,12 +13,14 @@
 <script>window.__farazTransformersUrl="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2";try{import(window.__farazTransformersUrl).then(function(m){try{m.env.allowLocalModels=false;}catch(_){}}).catch(function(){});}catch(_){}</script>
 </head>
 <body>
-<nav class="nav">
+<a class="skip-link" href="#editor">Lewati ke editor</a>
+<nav class="nav" aria-label="Navigasi utama">
   <div class="nav-inner">
     <div class="logo"><img class="logo-mascot" src="./img/icon%20utama.png" alt="Ikon Faraz Detector AI" onerror="this.remove()"> Faraz Detector AI</div>
-    <div class="nav-links">
+    <div class="nav-links" id="navMenu">
       <a href="#editor">Editor</a><a href="#hasil">Hasil</a><a href="#cara">Cara kerja</a><a href="#faq">FAQ</a>
     </div>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="navMenu" aria-label="Buka menu navigasi">☰</button>
     <a class="nav-cta" href="#editor">Cek tulisan</a>
   </div>
 </nav>
@@ -24,9 +28,8 @@
 <div class="wrap">
   <header class="hero">
     <div class="hero-main">
-      <div class="hero-badge">Gratis · Privat · Bahasa ID & EN</div>
-      <h1>Halo, selamat datang di Faraz Detector AI — mari kita lihat tulisanmu bersama.</h1>
       <img class="sidekick kick-hero" src="./img/icon%20utama.png" alt="Karakter utama Faraz Detector AI" onerror="this.remove()">
+      <h1>Halo, selamat datang di Faraz Detector AI — mari kita lihat tulisanmu bersama.</h1>
       <p class="sub">Tempel tulisanmu, lihat bagian yang perlu diperhatikan, lalu lakukan perbaikan sesuai kebutuhanmu. Sederhana, privat, dan bisa digunakan siapa saja.</p>
       <div class="hero-cta">
         <a class="btn-hero" href="#editor">Cek tulisan sekarang</a>
@@ -58,7 +61,7 @@
   <main class="layout">
     <section class="panel" id="editor">
       <div class="panel-head"><h2>Input naskah</h2><img class="mascot mascot-mini" src="./img/ceria%20violet.jpg" alt="Maskot ceria" onerror="this.remove()"><span id="wordCount" class="wc">0 kata</span></div>
-      <textarea id="inputText" placeholder="Contoh: Tempel bab 1 skripsimu di sini… minimal 20 kata, paling bagus 200+ kata."></textarea>
+      <textarea id="inputText" aria-label="Tempel naskah yang akan dicek" placeholder="Contoh: Tempel bab 1 skripsimu di sini… minimal 20 kata, paling bagus 200+ kata."></textarea>
       <div class="samples"><span class="muted">Belum ada teks? Coba:</span>
         <button id="btnSampleID" class="ghost" type="button">Contoh ID</button>
         <button id="btnSampleEN" class="ghost" type="button">Contoh EN</button>
@@ -174,14 +177,25 @@
     <p class="muted">Sinyal dibaca sebagai pola umum lintas model AI (ChatGPT, Claude, Gemini, dan sejenisnya); model lokal hanya pembanding kedua, bukan penentu tunggal.</p>
   </section>
 
-  <section class="content-sec" id="fitur">
-    <p class="kicker">Kenapa pakai ini</p>
-    <h2>Ringan, privat, dua bahasa</h2>
+  <section class="content-sec fitur-sec" id="fitur">
+    <div class="fitur-head">
+      <div class="fitur-title">
+        <p class="kicker">Kenapa pakai ini</p>
+        <h2>Ringan, privat, dan dibuat<br>untuk kebutuhan tulisanmu.</h2>
+        <p class="fitur-desc">Cek tulisan langsung di browser, tanpa akun dan tanpa perlu mengirim naskah ke server.</p>
+      </div>
+      <img class="mascot-fitur" src="./img/jempol.png" alt="Maskot acungan jempol — Faraz Detector AI" onerror="this.remove()">
+    </div>
     <div class="feat-grid">
-      <div class="feat"><b>Gratis penuh</b><span>Tanpa akun, tanpa kuota.</span></div>
-      <div class="feat"><b>100% privat</b><span>Teks diproses di perangkatmu; tidak dikirim ke server mana pun.</span></div>
-      <div class="feat"><b>Indonesia &amp; English</b><span>Sinyal dan contoh disiapkan untuk kedua bahasa.</span></div>
-      <div class="feat"><b>Model lokal opsional</b><span>RoBERTa detector diunduh sekali (±130MB), boleh dimatikan.</span></div>
+      <div class="feat feat-lead"><b>100% GRATIS</b><span>Tanpa akun, tanpa kuota. Langsung pakai.</span></div>
+      <div class="feat"><b>100% PRIVAT</b><span>Teks tetap di browser, tidak ke mana-mana.</span></div>
+      <div class="feat"><b>ID + EN</b><span>Indonesia &amp; English, dua bahasa siap pakai.</span></div>
+    </div>
+    <div class="feat-full">
+      <div class="feat-full-inner">
+        <div class="feat-full-text"><b>MODEL LOKAL OPSIONAL</b><span>Jalankan model lebih akurat langsung di perangkat.</span></div>
+        <div class="feat-full-badge">±130 MB</div>
+      </div>
     </div>
   </section>
 
@@ -218,7 +232,7 @@
   </section>
 
   <div id="printArea" hidden></div>
-  <footer><div class="foot-inner"><div class="foot-brand"><img class="logo-mascot logo-mascot-foot" src="./img/icon%20utama.png" alt="Ikon Faraz Detector AI" onerror="this.remove()"><b>Faraz Detector AI</b><small>Gratis untuk pelajar &amp; mahasiswa. Teks diproses di perangkatmu dan tidak dikirim ke server.</small></div><nav class="foot-links" aria-label="Aplikasi"><b>Aplikasi</b><a href="#editor">Editor</a><a href="#hasil">Hasil</a><a href="#cara">Cara kerja</a><a href="#faq">FAQ</a></nav><nav class="foot-links" aria-label="Bantuan"><b>Bantuan</b><a href="https://wa.me/6280000000000?text=Halo%20Faraz%20Detector%20AI%2C%20saya%20punya%20saran%2Flaporan%3A%20" target="_blank" rel="noopener">Saran / Lapor</a><a href="#faq">Privacy</a><a href="#faq">FAQ</a></nav><nav class="foot-links" aria-label="Konten"><b>Konten</b><a href="#jenis">Jenis dokumen</a><a href="#fitur">Fitur</a><a href="#mulai">Mulai</a></nav></div><div class="foot-mascots"><img class="sidekick kick-foot-l" src="./img/jempol.png" alt="Maskot jempol" onerror="this.remove()"><img class="sidekick kick-foot-r" src="./img/ahay.png" alt="Maskot damai" onerror="this.remove()"></div><div class="foot-base"><small>© 2026 Faraz Detector AI · Alat bantu belajar, bukan vonis.</small><small class="foot-mini">Gratis · Privat · ID / EN</small></div></footer>
+  <footer><div class="foot-inner"><div class="foot-brand"><img class="logo-mascot logo-mascot-foot" src="./img/icon%20utama.png" alt="Ikon Faraz Detector AI" onerror="this.remove()"><b>Faraz Detector AI</b><small>Gratis untuk pelajar &amp; mahasiswa. Teks diproses di perangkatmu dan tidak dikirim ke server.</small></div><nav class="foot-links" aria-label="Aplikasi"><b>Aplikasi</b><a href="#editor">Editor</a><a href="#hasil">Hasil</a><a href="#cara">Cara kerja</a><a href="#faq">FAQ</a></nav><nav class="foot-links" aria-label="Bantuan"><b>Bantuan</b><a href="https://wa.me/6280000000000?text=Halo%20Faraz%20Detector%20AI%2C%20saya%20punya%20saran%2Flaporan%3A%20" target="_blank" rel="noopener">Saran / Lapor</a><a href="#faq">Privacy</a><a href="#faq">FAQ</a></nav><nav class="foot-links" aria-label="Konten"><b>Konten</b><a href="#jenis">Jenis dokumen</a><a href="#fitur">Fitur</a><a href="#mulai">Mulai</a></nav></div><div class="foot-mascots"><img class="sidekick kick-foot-r" src="./img/ahay.png" alt="Maskot damai" onerror="this.remove()"></div><div class="foot-base"><small>© 2026 Faraz Detector AI · Alat bantu belajar, bukan vonis.</small><small class="foot-mini">Gratis · Privat · ID / EN</small></div></footer>
 </div>
 <div class="mobile-cta"><a href="#editor">Mulai cek tulisan ↓</a></div>
 <!-- SARAN/LAPOR: ganti 6280000000000 dengan nomor WA kamu (format: 628xx, tanpa +/spasi) -->
@@ -229,5 +243,7 @@
 <script defer src="./js/referensi.js"></script>
 <script defer src="./js/humanizer.js"></script>
 <script defer src="./js/main.js"></script>
+<script>/* NAV-TOGGLE ONLY — tidak menyentuh logika deteksi */
+(function(){var b=document.querySelector(".nav-toggle"),m=document.getElementById("navMenu");if(!b||!m)return;function set(o){b.setAttribute("aria-expanded",o?"true":"false");b.setAttribute("aria-label",o?"Tutup menu navigasi":"Buka menu navigasi");m.classList.toggle("open",o);}b.addEventListener("click",function(){set(!m.classList.contains("open"))});m.addEventListener("click",function(e){if(e.target.closest("a"))set(false)});document.addEventListener("keydown",function(e){if(e.key==="Escape")set(false)});})();</script>
 </body>
 </html>
