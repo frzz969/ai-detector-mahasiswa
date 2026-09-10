@@ -25,9 +25,15 @@ function render(heu, localVal, refCut) {
   let final = heu.score;
   let method = "heuristik offline";
   if (typeof localVal === "number") {
-    final = Math.round(heu.score * 0.5 + localVal * 0.5);
-    method = `ensemble 50/50 (heuristik ${heu.score}% + model lokal ${localVal}%)`;
-    if (localParts && localParts.n < localParts.of) method += ` • model hanya baca ${localParts.n}/${localParts.of} potongan`;
+    // Model lokal dilatih pada teks EN — untuk teks ID (heu.lang==="id")
+    // bobot model dikurangi. Model yang baca parsial juga diturunkan
+    // bobotnya sebanding cakupan, dan dilaporkan jujur di method.
+    const base = heu.lang === "en" ? 0.5 : 0.65;
+    const cov = localParts && localParts.of ? localParts.n / localParts.of : 1;
+    const modW = base * (0.5 + 0.5 * cov);
+    final = Math.round(heu.score * (1 - modW) + localVal * modW);
+    method = `ensemble berbahasa-${heu.lang.toUpperCase()} (heuristik ${heu.score}% + model lokal ${localVal}%)`;
+    if (localParts && localParts.n < localParts.of) method += ` • model hanya baca ${localParts.n}/${localParts.of} potongan → bobot dikurangi`;
   } else {
     localParts = null;
   }
@@ -51,7 +57,7 @@ function render(heu, localVal, refCut) {
 
   $("mixLbl").textContent = lbl;
   $("verdict").innerHTML =
-    `${ver}<br><small>${escapeHtml(method)}${refCut ? ` • ${refCut} kata pustaka dikecualikan` : ""} • skor indikator, bukan vonis</small>`;
+    `${ver}<br><small>${escapeHtml(method)}${refCut ? ` • ${refCut} kata pustaka dikecualikan` : ""} • confidence ${heu.confidence}${heu.lang === "en" ? " • bahasa terdeteksi EN" : ""} • skor indikator, bukan vonis</small>`;
 
   // Highlight per kalimat: merah >=70, kuning >=45, hijau sisanya
   const hl = $("highlight");
@@ -81,6 +87,7 @@ function render(heu, localVal, refCut) {
   $("stats").textContent =
     `kata dinilai: ${heu.detail.totalW} | kalimat: ${heu.sents.length} | ` +
     `TTR: ${heu.detail.ttr.toFixed(3)} | burst: ${heu.detail.burst.toFixed(3)} | ` +
+    `kalimat: median ${heu.detail.sentMedian}% • sebar ±${heu.detail.sentSpread.toFixed(0)} | ` +
     `final: ${final}% (${method})`;
 
   $("resultEmpty").hidden = true;
@@ -109,7 +116,8 @@ function buildPrint() {
     `<p>Pustaka dikecualikan: ${r.refCut || 0} kata</p>` +
     `<h4>Alasan:</h4><ul>${r.heu.reasons.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>` +
     `<h4>Statistik:</h4><pre>kata: ${r.heu.detail.totalW}, kalimat: ${r.heu.sents.length}, ` +
-    `TTR: ${r.heu.detail.ttr.toFixed(3)}, burst: ${r.heu.detail.burst.toFixed(3)}</pre>` +
+    `TTR: ${r.heu.detail.ttr.toFixed(3)}, burst: ${r.heu.detail.burst.toFixed(3)}, ` +
+    `confidence: ${r.heu.confidence}</pre>` +
     `<p><i>Catatan: bukan vonis 100%. Konfirmasi ke dosen.</i></p>` +
     `<p><small>Dasar: heuristik + referensi (2 artikel + ${escapeHtml(REF_PAPER)}). Detektor umum di bawah 80% akurat; teks formal/pendek rawan salah baca.</small></p>`;
 }

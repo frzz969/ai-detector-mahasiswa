@@ -50,7 +50,7 @@ img{max-width:100%;height:auto}
 .nav-cta{background:#111;color:#fff;font-size:16px;font-weight:700;text-decoration:none;padding:12px 28px;border-radius:var(--r-pill);white-space:nowrap}
 
 /* HERO — seimbang tengah, tidak berat ke kiri */
-.hero{background:var(--dark);border-radius:var(--r-2xl);display:grid;grid-template-columns:1.05fr .95fr;gap:var(--sp-2xl);align-items:start;justify-items:stretch;padding:var(--sp-2xl);margin:var(--sp-lg) 0 16px;position:relative}
+.hero{background:var(--dark);border-radius:var(--r-2xl);display:grid;grid-template-columns:1.05fr .95fr;gap:var(--sp-2xl);align-items:start;justify-items:stretch;padding:var(--sp-2xl);margin:var(--sp-lg) auto 16px;position:relative}
 .hero-main{display:grid;grid-template-columns:1fr auto;grid-template-areas:"title mascot" "sub sub" "cta cta" "trust trust" "cards cards";column-gap:var(--sp-xl);align-items:center;padding:6px 20px 6px 0;color:var(--ink);min-width:0;width:100%}
 .hero-side{width:100%}
 .hero h1{grid-area:title;font-size:clamp(34px,3.6vw,52px);line-height:1.12;letter-spacing:-.8px;margin:0 0 16px;font-weight:800;color:var(--ink);text-wrap:balance}
@@ -88,6 +88,12 @@ img{max-width:100%;height:auto}
 .layout{background:var(--soft);border-radius:var(--r-2xl);padding:20px;display:grid;grid-template-columns:minmax(0,1fr) 320px;grid-template-areas:"editor rail" "hasil rail";gap:16px;align-items:start}
 #editor{grid-area:editor;min-width:0}#hasil{grid-area:hasil;min-width:0}
 .rail{grid-area:rail;display:grid;gap:16px;align-content:start;position:sticky;top:84px;min-width:0}
+/* Desktop, viewport pendek (720/768/800/864px): batasi tinggi rail agar tombol
+   Laporan (Export PDF / Unduh .txt) tidak tersembunyi di bawah lipatan saat
+   sticky; rail scroll internal bila perlu. Tidak menyentuh area ≤1100px (mobile). */
+@media(min-width:1101px) and (max-height:980px){
+  .rail{max-height:calc(100vh - 108px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#B9D4E8 transparent}
+}
 .rail-card,.panel{background:#fff;border:1px solid var(--line);border-radius:var(--r-xl);padding:20px;min-width:0}
 .rail-card h3{margin:0 0 4px;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut)}
 .rail-card button,.rail-card .file{width:100%;justify-content:center;margin-top:12px;text-align:center}
@@ -265,9 +271,9 @@ nav,.hero,.panel#editor,footer,.mobile-cta,.rail,.content-sec,.fab,.cta-band{dis
 .faq-head .mascot-faq{grid-row:1/4;margin:0;width:150px;max-width:30vw}
 .faq-head .kicker{margin:0 0 8px}
 .faq-head h2{margin:0 0 6px}
-.foot-mascots{display:flex;justify-content:space-between;align-items:flex-end;padding:0 var(--sp-4xl);margin-top:-24px;pointer-events:none}
+.foot-mascots{display:block;padding:0;margin:0;pointer-events:none}
 .foot-mascots .sidekick{position:static;width:clamp(120px,15vw,160px);aspect-ratio:1/1;object-fit:cover;background:#fff;border-radius:50%;padding:4px}
-.foot-mascots .kick-foot-r{transform:rotate(-6deg) translateY(-8px);margin-right:8px;background:transparent;border-radius:0;padding:0;aspect-ratio:auto;object-fit:contain}
+.foot-mascots .kick-foot-r{position:fixed;right:10px;bottom:60px;width:clamp(200px,22vw,340px);height:auto;aspect-ratio:auto;object-fit:contain;background:transparent;border-radius:0;padding:0;margin:0;transform:rotate(-4deg);z-index:39;pointer-events:none;filter:drop-shadow(0 12px 24px rgba(11,46,75,.35))}
 /* Aturan #mulai + faq mobile pindah ke mobile.css */
 .mascot-hero{position:static;width:84px;height:84px;object-fit:contain;margin:0;flex:0 0 auto}
 .kick-hero{position:static;grid-area:mascot;justify-self:end;align-self:center;width:clamp(140px,16vw,190px);max-height:280px;object-fit:contain;transform:rotate(2deg);background:transparent;padding:0;border:none;border-radius:0;overflow:visible;filter:drop-shadow(0 8px 18px rgba(11,46,75,.25))}
