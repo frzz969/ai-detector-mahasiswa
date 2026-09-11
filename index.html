@@ -28,18 +28,17 @@
 <div class="wrap">
   <header class="hero">
     <div class="hero-main">
-      <img class="sidekick kick-hero" src="./img/icon%20utama.png" alt="Karakter utama Faraz Detector AI" onerror="this.remove()">
-      <h1>Halo, selamat datang di Faraz Detector AI — mari kita lihat tulisanmu bersama.</h1>
-      <p class="sub">Tempel tulisanmu, lihat bagian yang perlu diperhatikan, lalu lakukan perbaikan sesuai kebutuhanmu. Sederhana, privat, dan bisa digunakan siapa saja.</p>
-      <div class="hero-cta">
-        <a class="btn-hero" href="#editor">Cek tulisan sekarang</a>
-        <a class="btn-hero ghost" href="#cara">Cara kerja</a>
+      <div class="hero-character">
+        <img class="sidekick kick-hero" src="./img/icon%20heading.png" alt="Karakter utama Faraz Detector AI" onerror="this.remove()">
       </div>
-      <p class="trust-row"><span>✓ Gratis</span><span>✓ Tanpa daftar</span><span>✓ Privat di perangkat</span></p>
-      <div class="hero-cards">
-        <div class="hc" tabindex="0" role="button" aria-label="Langkah 1: ke editor"><b>1</b><div><strong>Tempel / upload</strong><small>Teks, PDF, atau Word</small></div></div>
-        <div class="hc" tabindex="0" role="button" aria-label="Langkah 2: ke editor"><b>2</b><div><strong>Klik deteksi</strong><small>Keluar skor + warna</small></div></div>
-        <div class="hc" tabindex="0" role="button" aria-label="Langkah 3: ke hasil"><b>3</b><div><strong>Perbaiki & export</strong><small>Unduh laporan PDF</small></div></div>
+      <div class="hero-text">
+        <h1>Youkoso, Faraz Detector AI e.<br>Hajimemashou, mari kita mulai.</h1>
+        <p class="sub">Tempel tulisanmu, lihat bagian yang perlu diperhatikan, lalu lakukan perbaikan sesuai kebutuhanmu. Sederhana, privat, dan bisa digunakan siapa saja.</p>
+        <div class="hero-cta">
+          <a class="btn-hero" href="#editor">Cek tulisan sekarang</a>
+          <a class="btn-hero ghost" href="#cara">Cara kerja</a>
+        </div>
+        <p class="trust-row"><span>✓ Gratis</span><span>✓ Tanpa daftar</span><span>✓ Privat di perangkat</span></p>
       </div>
     </div>
     <div class="hero-side">
@@ -55,6 +54,11 @@
         <p class="demo-note">Skor dihitung langsung oleh mesin yang sama — bukan angka tempelan.</p>
         <button type="button" id="demoOpen" class="ghost">Buka contoh ini di editor</button>
       </div>
+    </div>
+    <div class="hero-cards">
+      <div class="hc" tabindex="0" role="button" aria-label="Langkah 1: ke editor"><b>1</b><div><strong>Tempel / upload</strong><small>Teks, PDF, atau Word</small></div></div>
+      <div class="hc" tabindex="0" role="button" aria-label="Langkah 2: ke editor"><b>2</b><div><strong>Klik deteksi</strong><small>Keluar skor + warna</small></div></div>
+      <div class="hc" tabindex="0" role="button" aria-label="Langkah 3: ke hasil"><b>3</b><div><strong>Perbaiki & export</strong><small>Unduh laporan PDF</small></div></div>
     </div>
   </header>
 
@@ -237,11 +241,11 @@
 <!-- SARAN/LAPOR: ganti 6280000000000 dengan nomor WA kamu (format: 628xx, tanpa +/spasi) -->
 <a class="fab" href="https://wa.me/6280000000000?text=Halo%20Faraz%20Detector%20AI%2C%20saya%20punya%20saran%2Flaporan%3A%20" target="_blank" rel="noopener">Saran / Lapor</a>
 <!-- JS: 5 file per lapisan (defer = jalan berurutan). -->
-<script defer src="./js/core.js"></script>
-<script defer src="./js/detector.js"></script>
-<script defer src="./js/referensi.js"></script>
-<script defer src="./js/humanizer.js"></script>
-<script defer src="./js/main.js"></script>
+<script defer src="./core.js"></script>
+<script defer src="./detector.js"></script>
+<script defer src="./referensi.js"></script>
+<script defer src="./humanizer.js"></script>
+<script defer src="./main.js"></script>
 <script>/* NAV-TOGGLE ONLY — tidak menyentuh logika deteksi */
 (function(){var b=document.querySelector(".nav-toggle"),m=document.getElementById("navMenu");if(!b||!m)return;function set(o){b.setAttribute("aria-expanded",o?"true":"false");b.setAttribute("aria-label",o?"Tutup menu navigasi":"Buka menu navigasi");m.classList.toggle("open",o);}b.addEventListener("click",function(){set(!m.classList.contains("open"))});m.addEventListener("click",function(e){if(e.target.closest("a"))set(false)});document.addEventListener("keydown",function(e){if(e.key==="Escape")set(false)});})();</script>
 </body>

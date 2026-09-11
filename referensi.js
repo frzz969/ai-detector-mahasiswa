@@ -76,6 +76,96 @@ const REF_VOICE_EXTRA = [
   "kampanye",
 ];
 
+// ============================================================
+// POLA DETEKTOR (data-driven) — dipakai `detector.js` heuristic()
+// Satu-satunya sumber pola sinyal; detector hanya menyusun regex.
+// Provenance per grup: lihat detector-rules.md §2/§4 + referensi-*.
+// ============================================================
+
+// Kata penghubung formal (detector-rules §2 sinyal 4: pola+frekuensi,
+// BUKAN pemakaian; referensi-7 kohesi-koherensi: konjungsi = syarat kohesi;
+// referensi-5 tata bahasa akademik).
+const REF_CONNECTORS = [
+  "selain itu", "dengan demikian", "selanjutnya",
+  "furthermore", "moreover", "however", "therefore",
+];
+
+// Frasa "manfaat generik" — bahasa template khas output model:
+// "dapat meningkatkan", "memberikan manfaat", "berperan penting",
+// "diharapkan dapat", dst. (detector-rules §2 sinyal 2/9; referensi-1
+// frasa generik; referensi-2 contoh hibrida). Objeknya kabur
+// (kualitas/efektivitas/dampak) dan dipakai berpola; akademik manusia
+// menyebut objek konkret + data/sitasi (academic-context check).
+const REF_HEDGE_PATS = [
+  "memiliki peran yang penting", "memiliki peran yang signifikan",
+  "memainkan peran penting", "memainkan peran yang penting",
+  "memegang peranan penting", "berperan penting", "berperan signifikan",
+  "dapat meningkatkan", "membantu meningkatkan",
+  "meningkatkan kualitas", "meningkatkan efektivitas", "meningkatkan efisiensi", "meningkatkan produktivitas",
+  "dapat memberikan", "memberikan berbagai", "berbagai kemudahan", "berbagai manfaat", "berbagai fitur",
+  "dampak yang positif", "manfaat yang positif",
+  "diharapkan dapat", "diharapkan memberikan", "menawarkan berbagai",
+  "dirancang untuk membantu", "dapat mendukung",
+];
+
+// Penanda enumerasi kaku ("Pertama... Kedua...", "First... Finally...")
+// ID/EN (detector-rules §2 sinyal 6: pola daftar template berulang).
+const REF_ENUM_ID = ["pertama", "kedua", "ketiga", "keempat", "selanjutnya", "terakhir"];
+const REF_ENUM_EN = ["first", "second", "third", "fourth", "finally", "lastly"];
+
+// Istilah metodologi riset — academic convention, BUKAN bukti AI
+// (detector-rules §4: akademik ≠ AI; referensi-3 jurnal NLP;
+// referensi-5 tata bahasa). "bab [1-5]" sengaja fragmen regex
+// (bab 1..5) agar tetap satu entry.
+const REF_ACADEMIC_METH = [
+  "metode", "metodologi", "variabel", "responden", "sampel", "populasi",
+  "observasi", "wawancara", "kuesioner", "hipotesis", "instrumen",
+  "jurnal", "penelitian", "bab [1-5]", "skripsi", "tesis",
+];
+
+// Suara personal/opini penulis — tanda manusia (detector-rules §2 sinyal 7:
+// suara & sudut pandang; referensi-1 ciri manusia).
+const REF_PERSONAL_VOICE = [
+  "saya", "aku", "gue", "kami", "kita", "menurutku", "menurut saya",
+  "saya rasa", "sejujurnya", "terus terang", "pengalaman", "bagiku",
+  "don't", "can't", "won't", "it's", "that's", "i think", "in my opinion",
+];
+
+// Frasa generik/template berulang (detector-rules §2 sinyal 2/9;
+// referensi-1 bahasa generik; referensi-2 draf hibrida).
+const REF_FLUFFY = [
+  "sangat penting", "perlu diperhatikan", "perlu diketahui",
+  "dapat meningkatkan", "dapat membantu", "membantu meningkatkan",
+  "berbagai macam", "secara umum", "pada umumnya", "hal tersebut",
+];
+
+// Ekspresi "hidup" manusia: ajakan, perumpamaan, ekspresi
+// (detector-rules §2 sinyal 8: variasi ekspresi; referensi-2 karya
+// manusia; referensi-4 nada hidup — tanpa klaim "lolos deteksi").
+const REF_VOICE_LIVE = [
+  "coba", "rasakan", "dapatkan", "nikmati", "bayangkan",
+  "jangan lewatkan", "gratis", "garansi", "seperti", "bagai",
+  "ibarat", "laksana", "umpama", "kisah", "ceritaku", "jujur",
+];
+
+// ---- Level kalimat (skor per kalimat, validation-rules §4) ----
+// Suara personal per kalimat; kata metodologi TIDAK dihukum di level
+// kalimat (bukti riset lapangan manusia).
+const REF_SENT_PERSONAL = [
+  "saya", "gue", "aku", "dosen saya", "pengalaman", "menurutku",
+  "menurut saya", "sejujurnya", "terus terang", "bayangkan", "jujur",
+  "kisah", "don't", "can't", "won't", "i think", "in my opinion",
+];
+// Frasa template generik per kalimat.
+const REF_SENT_TEMPLATE = [
+  "sangat penting", "dapat meningkatkan", "membantu meningkatkan",
+  "secara umum", "pada umumnya", "memainkan peran penting",
+  "tidak dapat dipungkiri",
+];
+// Kata data/riset per kalimat (angka + responden/kasus/mahasiswa/persen
+// dibangun detector bersama token struktural).
+const REF_SENT_DATA = ["responden", "kasus", "mahasiswa", "persen"];
+
 // Pasangan penyederhanaan akademik — register formal dipertahankan
 // (cocok untuk skripsi; SENGAJA tanpa dapat→bisa / merupakan→adalah
 // massal agar nada akademik tidak rusak).

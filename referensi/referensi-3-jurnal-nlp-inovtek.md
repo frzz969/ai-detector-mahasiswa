@@ -126,7 +126,7 @@ linguistik.
    → pesan jujur di UI + kunci hasil basi + larangan vonis mutlak.
 5. Keterbatasan bahasa Inggris → teks Indonesia minim validasi eksternal;
    klaim aplikasi tidak boleh melebihi bukti (lihat aturan jujur di
-   js/main.js).
+   main.js).
 
 ## Referensi jurnal [1]–[20] (ringkas)
 

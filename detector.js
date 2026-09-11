@@ -65,22 +65,12 @@ function words(t) {
 }
 
 // ---------- Heuristik skor AI (offline, tanpa model) ----------
-// Frasa "manfaat generik" — bahasa template khas output model:
-// "dapat meningkatkan", "memberikan manfaat", "berperan penting",
-// "diharapkan dapat", dst. Beda dari akademik asli: objeknya kabur
-// (kualitas/efektivitas/dampak) dan dipakai berpola; akademik manusia
-// menyebut objek konkret + data/sitasi (lihat academic-context check).
-const HEDGE_PATS = [
-  "memiliki peran yang penting", "memiliki peran yang signifikan",
-  "memainkan peran penting", "memainkan peran yang penting",
-  "memegang peranan penting", "berperan penting", "berperan signifikan",
-  "dapat meningkatkan", "membantu meningkatkan",
-  "meningkatkan kualitas", "meningkatkan efektivitas", "meningkatkan efisiensi", "meningkatkan produktivitas",
-  "dapat memberikan", "memberikan berbagai", "berbagai kemudahan", "berbagai manfaat", "berbagai fitur",
-  "dampak yang positif", "manfaat yang positif",
-  "diharapkan dapat", "diharapkan memberikan", "menawarkan berbagai",
-  "dirancang untuk membantu", "dapat mendukung",
-];
+// Pola "manfaat generik", penghubung, enumerasi, istilah metodologi,
+// suara personal, frasa generik, ekspresi hidup, dan daftar level kalimat
+// SEMUA berasal dari referensi.js (REF_CONNECTORS, REF_HEDGE_PATS,
+// REF_ENUM_ID/EN, REF_ACADEMIC_METH, REF_PERSONAL_VOICE, REF_FLUFFY,
+// REF_VOICE_LIVE, REF_SENT_PERSONAL/TEMPLATE/DATA) — lihat provenance
+// per grup di referensi.js. Detector hanya menyusun regex dari data itu.
 // Multi-signal: variasi ritme (kalimat + kata + paragraf), kekayaan kata,
 // frasa generik, konektor, pola 12-28, suara personal, tanda hidup,
 // data konkret, pembuka berulang, repetisi ide, template generik,
@@ -148,24 +138,24 @@ function heuristic(text) {
   AI_PHRASES.forEach((p) => { if (low.includes(p)) hits++; });
   ACAD_NEUTRAL.forEach((p) => { if (low.includes(p)) neutralHits++; });
 
-  const conn = (low.match(/\b(selain itu|dengan demikian|selanjutnya|furthermore|moreover|however|therefore)\b/g) || []).length;
+  const conn = (low.match(new RegExp("\\b(" + REF_CONNECTORS.join("|") + ")\\b", "g")) || []).length;
   const connRate = sents.length ? conn / sents.length : 0;
 
   // Frasa "manfaat generik" (template) + pola enumerasi kaku
   // ("Pertama... Kedua...") — dihitung per kalimat, bukan per kemunculan.
   const hedgeSents = sents.filter((s) => {
     const lw = s.toLowerCase();
-    return HEDGE_PATS.some((p) => lw.includes(p));
+    return REF_HEDGE_PATS.some((p) => lw.includes(p));
   }).length;
   // Enumerasi kaku ("Pertama... Kedua...", "First, ... Finally, ...") —
   // hanya kalimat yang DIAWALI penanda daftar, supaya "first day" atau
   // "finally make sense" dalam bahasa alami tidak ikut terhitung.
-  const ENUM_START = /^(pertama|kedua|ketiga|keempat|selanjutnya|terakhir)[,\s]|^(first|second|third|fourth|finally|lastly)[,\s]/i;
+  const ENUM_START = new RegExp("^(" + REF_ENUM_ID.join("|") + ")[,\\s]|^(" + REF_ENUM_EN.join("|") + ")[,\\s]", "i");
   const enumSents = sents.filter((s) => ENUM_START.test(s.trimStart())).length;
 
   // Statistik akademik & konkret (dipakai beberapa sinyal + dampening)
   const acaCite = (text.match(/\[\d+(\s*[-–,]\s*\d+)*\]|\([^()]{0,50}?\b(19|20)\d{2}[a-z]?\)|et al\.|\bdoi\b|https?:\/\//gi) || []).length;
-  const acaMeth = (low.match(/\b(metode|metodologi|variabel|responden|sampel|populasi|observasi|wawancara|kuesioner|hipotesis|instrumen|jurnal|penelitian|bab [1-5]|skripsi|tesis)\b/gi) || []).length;
+  const acaMeth = (low.match(new RegExp("\\b(" + REF_ACADEMIC_METH.join("|") + ")\\b", "gi")) || []).length;
   const numbers = (clean.match(/\b\d+([.,]\d+)?\b/g) || []).length;
   const properNouns = new Set((clean.match(/\s[A-ZÀ-Þ][a-zà-ÿ]+/g) || []).map((s) => s.trim().toLowerCase())).size;
   const acaMarkers = acaCite + Math.min(acaMeth, 4) + (numbers + properNouns >= 4 ? 2 : 0);
@@ -232,7 +222,7 @@ function heuristic(text) {
   }
 
   // 6) Suara personal vs netral generik: opini/pengalaman = manusia
-  const personalHits = (clean.match(/\b(saya|aku|gue|kami|kita|menurutku|menurut saya|saya rasa|sejujurnya|terus terang|pengalaman|bagiku|don't|can't|won't|it's|that's|i think|in my opinion)\b/gi) || []).length;
+  const personalHits = (clean.match(new RegExp("\\b(" + REF_PERSONAL_VOICE.join("|") + ")\\b", "gi")) || []).length;
   const personalRate = sents.length ? personalHits / sents.length : 0;
   if (sents.length >= 3) {
     if (personalRate >= 0.2) { pts -= 12; reasons.push(`Ada suara personal/opini (${personalHits}x) — sudut pandang penulis terasa.`); }
@@ -285,12 +275,12 @@ function heuristic(text) {
   }
 
   // 11) Bahasa template generik vs suara khas manusia
-  const fluffy = (low.match(/\b(sangat penting|perlu diperhatikan|perlu diketahui|dapat meningkatkan|dapat membantu|membantu meningkatkan|berbagai macam|secara umum|pada umumnya|hal tersebut)\b/g) || []).length;
+  const fluffy = (low.match(new RegExp("\\b(" + REF_FLUFFY.join("|") + ")\\b", "g")) || []).length;
   const fluffyRef = REF_FLUFF_EXTRA.filter((p) => low.includes(p)).length;
   const fluffyAll = fluffy + fluffyRef;
   const fluffyRate = sents.length ? fluffyAll / sents.length : 0;
   if (fluffyRate > 0.3 && totalW > 60) { pts += 8; reasons.push(`Frasa generik cukup sering (${fluffyAll}x) — tulisan terdengar umum, perlu konteks spesifik.`); }
-  const voiceHits = (clean.match(/\b(coba|rasakan|dapatkan|nikmati|bayangkan|jangan lewatkan|gratis|garansi|seperti|bagai|ibarat|laksana|umpama|kisah|ceritaku|jujur)\b/gi) || []).length;
+  const voiceHits = (clean.match(new RegExp("\\b(" + REF_VOICE_LIVE.join("|") + ")\\b", "gi")) || []).length;
   const voiceRef = REF_VOICE_EXTRA.filter((p) => low.includes(p)).length;
   const voiceAll = voiceHits + voiceRef;
   if (voiceAll >= 3) { pts -= 8; reasons.push(`Ada variasi ekspresi (${voiceAll}x: ajakan, manfaat, perumpamaan) — gaya cukup hidup.`); }
@@ -379,12 +369,12 @@ function heuristic(text) {
     // Personal voice: opini/pengalaman penulis = tanda manusia. Kata
     // metodologi (observasi/wawancara/kkn) TIDAK dihukum di level kalimat
     // — itu justru bukti riset lapangan manusia, bukan gaya AI.
-    if (/(saya|gue|aku|dosen saya|pengalaman|menurutku|menurut saya|sejujurnya|terus terang|bayangkan|jujur|kisah|don't|can't|won't|i think|in my opinion|\?|!)/i.test(s)) sc -= 28;
-    if (/(sangat penting|dapat meningkatkan|membantu meningkatkan|secara umum|pada umumnya|memainkan peran penting|tidak dapat dipungkiri)/i.test(s)) sc += 14;
-    if (HEDGE_PATS.some((p) => lw.includes(p))) sc += 14;          // manfaat generik
+    if (new RegExp("(" + REF_SENT_PERSONAL.join("|") + "|\\?|!)", "i").test(s)) sc -= 28;
+    if (new RegExp("(" + REF_SENT_TEMPLATE.join("|") + ")", "i").test(s)) sc += 14;
+    if (REF_HEDGE_PATS.some((p) => lw.includes(p))) sc += 14;          // manfaat generik
     if (acaMarkers < 3 && ACAD_NEUTRAL.some((p) => lw.includes(p))) sc += 14; // konektor akademik tanpa substansi
     if (ENUM_START.test(s.trimStart())) sc += 10; // enumerasi kalimat
-    if (/\b\d+([.,]\d+)?\b/.test(s) && (/(19|20)\d{2}|responden|kasus|mahasiswa|persen|%|\bsampel\b/i.test(s))) sc -= 8;
+    if (/\b\d+([.,]\d+)?\b/.test(s) && (new RegExp("(19|20)\\d{2}|" + REF_SENT_DATA.join("|") + "|%|\\bsampel\\b", "i").test(s))) sc -= 8;
     const op = lw.split(/\s+/).slice(0, 3).join(" ");
     if (openerSeen[op] > 1) sc += 12;
     return Math.max(2, Math.min(98, sc));

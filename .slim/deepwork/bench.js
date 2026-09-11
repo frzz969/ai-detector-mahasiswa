@@ -26,7 +26,7 @@ const navigatorStub = {};
 
 // ---------- Load source ----------
 function loadSources() {
-  const files = ["js/core.js", "js/referensi.js", "js/detector.js", "js/humanizer.js"];
+  const files = ["core.js", "referensi.js", "detector.js", "humanizer.js"];
   const code = files
     .map((f) => fs.readFileSync(path.join(ROOT, f), "utf8"))
     .join("\n;\n");

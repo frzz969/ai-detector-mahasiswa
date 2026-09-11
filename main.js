@@ -119,7 +119,8 @@ function buildPrint() {
     `TTR: ${r.heu.detail.ttr.toFixed(3)}, burst: ${r.heu.detail.burst.toFixed(3)}, ` +
     `confidence: ${r.heu.confidence}</pre>` +
     `<p><i>Catatan: bukan vonis 100%. Konfirmasi ke dosen.</i></p>` +
-    `<p><small>Dasar: heuristik + referensi (2 artikel + ${escapeHtml(REF_PAPER)}). Detektor umum di bawah 80% akurat; teks formal/pendek rawan salah baca.</small></p>`;
+    `<p><small>Dasar: heuristik + referensi (2 artikel + ${escapeHtml(REF_PAPER)}). Detektor umum di bawah 80% akurat; teks formal/pendek rawan salah baca.</small></p>` +
+    `<p><small>Sumber aturan: ${escapeHtml(REF_RULE_DOCS.join(" • "))}</small></p>`;
 }
 
 // ---------- Tombol "Cek sekarang" + word-count ----------
@@ -365,6 +366,7 @@ $("btnDownload").onclick = () => {
     [`FARAZCHECK — LAPORAN DETEKSI AI\nTanggal: ${r.date}\nMetode: ${r.method}\n` +
      `Hasil: ${r.ai}% AI / ${r.human}% Manusia (${r.lbl})\n` +
      `Pustaka dikecualikan: ${r.refCut || 0} kata\n\nAlasan:\n- ${r.heu.reasons.join("\n- ")}\n\n` +
+     `Sumber aturan: ${REF_RULE_DOCS.join(" • ")}\n` +
      `Catatan: bukan vonis final.`],
     { type: "text/plain" }
   );

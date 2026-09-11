@@ -24,7 +24,7 @@ const documentStub = {
 const windowStub = {};
 const navigatorStub = {};
 
-const files = ["js/core.js", "js/referensi.js", "js/detector.js", "js/humanizer.js", "js/main.js"];
+const files = ["core.js", "referensi.js", "detector.js", "humanizer.js", "main.js"];
 const code = files
   .map((f) => fs.readFileSync(path.join(ROOT, f), "utf8"))
   .join("\n;\n");
