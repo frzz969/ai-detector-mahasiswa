@@ -28,7 +28,7 @@ function render(heu, localVal, refCut) {
     // Model lokal dilatih pada teks EN — untuk teks ID (heu.lang==="id")
     // bobot model dikurangi. Model yang baca parsial juga diturunkan
     // bobotnya sebanding cakupan, dan dilaporkan jujur di method.
-    const base = heu.lang === "en" ? 0.5 : 0.65;
+    const base = heu.lang === "en" ? 0.5 : 0.25; // model dilatih EN → bobot ID konservatif (§10 brief)
     const cov = localParts && localParts.of ? localParts.n / localParts.of : 1;
     const modW = base * (0.5 + 0.5 * cov);
     final = Math.round(heu.score * (1 - modW) + localVal * modW);
