@@ -124,6 +124,7 @@ function humanizeText(text, scores) {
   }
   // 2) Gabung kalimat pendek (<10 kata) ke tetangganya: ritme jadi
   // tidak seragam + mengurangi pola "80% kalimat 12-28 kata" yang terlalu rapi
+  const preMerge = sents.slice(); // baseline regresi langkah 2-3 (lihat 3b)
   const n1 = sents.length;
   const merged = [];
   for (let i = 0; i < sents.length; i++) {
@@ -159,7 +160,22 @@ function humanizeText(text, scores) {
     sents.splice(bi, 2, joined.charAt(0).toUpperCase() + joined.slice(1));
   }
 
-  return { text: sents.join(" "), changed: changed - reverted, skipped, splits, reverted, merges: Math.max(0, n1 - sents.length) };
+  // 3b) Regression doc-level untuk gabungan (root-cause Fase 3: va-ai-generic
+  // Δ+12 padahal changed=0). Langkah 2-3 mengubah JUMLAH kalimat tanpa lewat
+  // cek 1b, sehingga laju konektor per kalimat + median kalimat dapat naik
+  // dan skor dokumen ikut naik. Bila teks gabungan lebih terindikasi
+  // (>+10, ambang sama dengan 1b), batalkan gabungan — pertahankan kalimat
+  // pra-gabung (perubahan minimum; detector+preprocessing SAMA persis).
+  let mergeReverted = 0;
+  if (sents.length !== preMerge.length) {
+    try {
+      const a = heuristic(preMerge.join(" ")).score;
+      const b = heuristic(sents.join(" ")).score;
+      if (b > a + 10) { mergeReverted = Math.max(0, n1 - sents.length); sents = preMerge; }
+    } catch (e) { /* detector gagal → pertahankan gabungan, jangan tebak */ }
+  }
+
+  return { text: sents.join(" "), changed: changed - reverted, skipped, splits, reverted, merges: Math.max(0, n1 - sents.length), mergeReverted };
 }
 
 // Kembalikan state humanizer ke awal (dipakai Reset/contoh/upload agar
@@ -208,6 +224,7 @@ $("btnHumanize").onclick = async () => {
     : ``;
   if (r.changed === 0 && verdict !== "worse") {
     msg += `Tidak ada kalimat yang diubah — semuanya sudah jelas dan akademik.`;
+    if (r.mergeReverted > 0) msg += ` Penggabungan kalimat yang justru menaikkan indikasi juga dibatalkan agar struktur asli yang stabil dipertahankan.`;
   } else if (verdict === "better") {
     const bits = [];
     if (r.changed) bits.push(`${r.changed} kalimat disusun ulang`);
@@ -216,6 +233,7 @@ $("btnHumanize").onclick = async () => {
     if (r.skipped) bits.push(`${r.skipped} dibiarkan karena sudah baik`);
     msg += `Versi tulisan telah diperbaiki dan dipindai ulang (estimasi ${pre.score}% → ${post.score}% indikasi AI): ${bits.join(", ")}. `;
     if (r.reverted > 0) msg += `Beberapa bagian diperbaiki (${r.reverted} kalimat dikembalikan karena versi awal lebih sesuai), sementara bagian lain dipertahankan. `;
+    if (r.mergeReverted > 0) msg += `Penggabungan kalimat yang menaikkan indikasi dibatalkan (${r.mergeReverted}x). `;
     msg += `Fakta/angka/istilah dipertahankan, tanpa data baru.`;
   } else if (verdict === "worse") {
     msg += `Versi perbaikan belum memberikan peningkatan yang cukup (estimasi ${pre.score}% → ${post.score}%), sehingga teks asli dipertahankan. Tambah data/contoh konkret milikmu, lalu coba lagi.`;

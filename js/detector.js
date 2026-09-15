@@ -64,6 +64,23 @@ function words(t) {
   return t.toLowerCase().match(/[\p{L}\p{N}']+/gu) || [];
 }
 
+// ---------- Konteks akademik LOW/MEDIUM/HIGH (Fase 2) ----------
+// detector-rules §4: sitasi/data/metodologi = academic convention, bukan
+// bukti AI. Level dihitung dari densitas sitasi, istilah teknis/metode,
+// angka+nama, section formal, dan frasa formal. Dipakai untuk dampening
+// SELEKTIF (sinyal lemah ritme/konektor) — bukti struktural kuat
+// (opener berulang/enumerasi/repetisi ide) tetap berpengaruh penuh.
+function academicContext(o) {
+  const techHits = o.acaMeth;
+  const secHits = (o.low.match(/\b(pendahuluan|metode|metodologi|hasil|pembahasan|kesimpulan|abstrak|tujuan penelitian|populasi|sampel|responden|kuesioner|observasi|wawancara|uji |analisis data)\b/gi) || []).length;
+  const formHits = (o.low.match(/\b(berdasarkan|tersebut|adapun|sebagaimana|terlampir|dengan hormat)\b/gi) || []).length;
+  const citeD = o.acaCite, numD = o.numbers + o.properNouns;
+  let level = "LOW";
+  if ((o.acaMarkers >= 5 && numD >= 4) || (citeD >= 2 && techHits >= 2) || (secHits >= 3 && numD >= 4)) level = "HIGH";
+  else if (o.acaMarkers >= 3 || secHits >= 2 || (citeD >= 1 && techHits >= 1)) level = "MEDIUM";
+  return { level, citeD, techHits, secHits, formHits, numD };
+}
+
 // ---------- Heuristik skor AI (offline, tanpa model) ----------
 // Pola "manfaat generik", penghubung, enumerasi, istilah metodologi,
 // suara personal, frasa generik, ekspresi hidup, dan daftar level kalimat
@@ -162,72 +179,73 @@ function heuristic(text) {
   const strongAcad = acaMarkers >= 5 && numbers + properNouns >= 4;
 
   const reasons = [];
-  let pts = 0;
-  // --- Akumulasi evidence (user-brief §4): penambah = AI evidence positif
-  // langsung ke pts; SEMUA pengurang natural/academic dikumpulkan di damp
-  // lalu di-CAP (DAMP_CAP) — natural evidence menjadi konteks + confidence,
-  // bukan pemotong ekstrem. Uniformitas ritme dilacak di rhythmPos: bobotnya
-  // lemah bila dijelaskan academic convention (detector-rules §4).
-  let damp = 0;
-  let rhythmPos = 0;
-  const DAMP_CAP = 14;
+  // --- Evidence groups (Fase 2, detector-rules §3-§4): tiap family
+  // diakumulasi terpisah lalu di-CAP per grup — menghilangkan
+  // double-counting (burst+ideal satu atap RHYTHM; hits+hedge+fluffy+
+  // scaffolding satu atap TEMPLATE). Offset human-like di-cap
+  // HUMAN_LIKE_MAX: mengimbangi skor, bukan proof-human. connPts dilacak
+  // terpisah agar damp akademik selektif hanya menyentuh sinyal lemah.
+  let gTemplate = 0, gRhythm = 0, gStructure = 0, gLexical = 0;
+  let hLike = 0, rhythmPos = 0, connPts = 0;
 
   // 1) Variasi panjang kalimat: pola seragam sering ditemukan pada teks generatif.
   // Bobot moderat — keseragaman saja bukti lemah (ref-1: template/repetisi
   // lebih diagnostik daripada sekadar ritme; detector-rules §3).
   if (sents.length >= 5) {
     if (burst < 0.3) {
-      pts += 14; rhythmPos += 14;
+      gRhythm += 14; rhythmPos += 14;
       // Ritme kalimat seragam TAPI variasi kata/paragraf kaya → bukan
       // otomatis mekanis (menghindari FP pada tulisan ilmiah formal).
       if (wlCV >= 0.55 || (paraCount >= 2 && paraCV >= 0.4)) {
-        damp += 6;
+        hLike += 6;
         reasons.push(`Variasi kalimat seragam (${burst.toFixed(2)}) tetapi variasi kata/paragraf cukup (kata ${wlCV.toFixed(2)}, paragraf ${paraCV.toFixed(2)}) — tidak serta-merta mekanis.`);
       } else {
         reasons.push(`Variasi kalimat cukup seragam (${burst.toFixed(2)}) — pola yang sering ditemukan pada teks generatif.`);
       }
     }
-    else if (burst < 0.45) { pts += 7; rhythmPos += 7; reasons.push(`Variasi kalimat agak seragam (${burst.toFixed(2)}).`); }
-    else                   { damp += 8;  reasons.push(`Variasi kalimat cukup alami (${burst.toFixed(2)}) — pola yang umum pada tulisan manusia.`); }
+    else if (burst < 0.45) { gRhythm += 7; rhythmPos += 7; reasons.push(`Variasi kalimat agak seragam (${burst.toFixed(2)}).`); }
+    else                   { hLike += 8;  reasons.push(`Variasi kalimat cukup alami (${burst.toFixed(2)}) — pola yang umum pada tulisan manusia.`); }
   } else if (sents.length >= 3 && burst < 0.2) {
-    pts += 8; rhythmPos += 8;
+    gRhythm += 8; rhythmPos += 8;
     reasons.push(`Ritme kalimat sangat datar (${burst.toFixed(2)}).`);
   }
 
   // 2) Kekayaan kata + frasa generik + konektor formal
   // Satu kata/frasa bukan bukti — yang dinilai gabungan frekuensi + konteks.
-  if (totalW > 80) {
-    if (ttr > 0.25 && ttr < 0.55 && hits > 0) reasons.push(`TTR ${ttr.toFixed(2)} disertai frasa generik — terdapat indikasi pola generatif.`), pts += 12;
-    if (ttr >= 0.65) reasons.push(`TTR tinggi ${ttr.toFixed(2)} — kosakata bervariasi seperti tulisan manusia.`), damp += 10;
-    if (ttr < 0.2)   reasons.push(`Pengulangan kata cukup tinggi (${ttr.toFixed(2)}).`), pts += 8;
+  if (totalW > LEX_MIN_W) {
+    if (ttr > 0.25 && ttr < 0.55 && hits > 0) reasons.push(`TTR ${ttr.toFixed(2)} disertai frasa generik — terdapat indikasi pola generatif.`), gLexical += 12;
+    if (ttr >= 0.65) reasons.push(`TTR tinggi ${ttr.toFixed(2)} — kosakata bervariasi seperti tulisan manusia.`), hLike += 10;
+    if (ttr < 0.2)   reasons.push(`Pengulangan kata cukup tinggi (${ttr.toFixed(2)}).`), gLexical += 8;
   }
 
   // Diversity n-gram: repetisi pola = mekanis (hanya teks cukup panjang;
   // pada teks pendek diversity natural tinggi sehingga tidak dihukum).
-  if (totalW > 60) {
+  if (totalW > MED_MIN_W) {
     if (bigramDiversity < 0.45 || trigramDiversity < 0.55) {
-      pts += 8;
+      gLexical += 8;
       reasons.push(`Pola kata berulang cukup tinggi (bigram ${bigramDiversity.toFixed(2)}, trigram ${trigramDiversity.toFixed(2)}) — frasa yang sama terpakai berulang.`);
     } else if (trigramDiversity > 0.75 && ttr >= 0.55) {
-      damp += 6;
+      hLike += 6;
       reasons.push(`Pola kata bervariasi (trigram ${trigramDiversity.toFixed(2)}) — pilihan kata tidak monoton.`);
     }
   }
 
   if (hits > 0) {
-    pts += Math.min(30, hits * 10);
+    // Frasa template eksplisit = evidence STRONG berpresisi tinggi
+    // (train+val: teks manusia hits=0) — bobot per hit 12, ter-cap grup.
+    gTemplate += Math.min(30, hits * 12);
     reasons.push(`${hits} frasa template/generik ditemukan — perlu ditinjau dalam konteks kalimatnya.`);
   }
 
   if (connRate > 0.4) {
-    pts += 12;
+    gLexical += 12; connPts += 12;
     reasons.push(`Kata penghubung formal cukup sering berulang (${connRate.toFixed(2)}/kalimat) — yang dinilai polanya, bukan pemakaiannya.`);
   }
 
   // 5) Pola rapi 12–28 kata yang terlalu dominan
   const ideal = lens.filter((l) => l >= 12 && l <= 28).length;
   if (lens.length >= 5 && ideal / lens.length > 0.8) {
-    pts += 8; rhythmPos += 8;
+    gRhythm += 8; rhythmPos += 8;
     reasons.push(`80%+ kalimat 12-28 kata — ritme terlalu rapi, perlu ditinjau.`);
   }
 
@@ -240,29 +258,32 @@ function heuristic(text) {
   const personalHits = (clean.match(new RegExp("\\b(" + REF_PERSONAL_VOICE.join("|") + ")\\b", "gi")) || []).length;
   const personalRate = sents.length ? personalHits / sents.length : 0;
   if (sents.length >= 3) {
-    if (personalRate >= 0.2) { damp += 12; reasons.push(`Ada suara personal/opini (${personalHits}x) — sudut pandang penulis terasa.`); }
-    else if (personalRate === 0 && totalW > 80) {
+    if (personalRate >= 0.2) { hLike += 12; reasons.push(`Ada suara personal/opini (${personalHits}x) — sudut pandang penulis terasa.`); }
+    else if (personalRate === 0 && totalW >= IMPERS_MIN_W) {
+      // Gerbang 50 (bukan 80): train+val menunjukkan formal manusia
+      // 50-80 kata selalu bersuara personal ("kami") atau akademik
+      // bermarker — absennya suara + bukti template = generik.
       if (acaMarkers >= 3 && !hasTemplateEv) {
         reasons.push(`Nada impersonal pada teks akademik (register formal) — bukan bukti AI.`);
-      } else { pts += 8; reasons.push(`Belum ada sudut pandang personal — tulisan terdengar generik.`); }
+      } else { gLexical += 8; reasons.push(`Belum ada sudut pandang personal — tulisan terdengar generik.`); }
     }
   }
 
   // 7) Tanda tulisan "hidup": tanya, seru, kutipan langsung
   const lively = (clean.match(/[?!…]|"[^"]+"|“[^”]+”/g) || []).length;
-  if (lively >= 2) { damp += 8; reasons.push(`${lively}x tanda tanya/seru/kutipan — tulisan terasa hidup.`); }
+  if (lively >= 2) { hLike += 8; reasons.push(`${lively}x tanda tanya/seru/kutipan — tulisan terasa hidup.`); }
 
   // 8) Data konkret (angka/nama) menguatkan konteks spesifik
-  if (numbers + properNouns >= 4) { damp += 6; reasons.push(`Ada detail konkret (${numbers} angka, ${properNouns} nama) — konteksnya spesifik.`); }
+  if (numbers + properNouns >= 4) { hLike += 6; reasons.push(`Ada detail konkret (${numbers} angka, ${properNouns} nama) — konteksnya spesifik.`); }
 
   // 8b) Struktur paragraf: banyak + bervariasi = manusia; satu blok datar
   // panjang tanpa paragraf = struktur generatif (lihat riset 2025).
   if (sents.length >= 4) {
     if (paraCount >= 2 && paraCV >= 0.35) {
-      damp += 4;
+      hLike += 4;
       reasons.push(`Paragraf terstruktur dan bervariasi (${paraCount} paragraf) — seperti tulisan manusia.`);
     } else if (paraCount === 1 && totalW > 120) {
-      pts += 5;
+      gStructure += 5;
       reasons.push(`Seluruh teks satu paragraf panjang — strukturnya datar, perhatikan organisasi tulisan.`);
     }
   }
@@ -273,8 +294,8 @@ function heuristic(text) {
   openers.forEach((o) => { openerSeen[o] = (openerSeen[o] || 0) + 1; });
   if (sents.length >= 6) {
     const openRatio = new Set(openers).size / sents.length;
-    if (openRatio < 0.6)       { pts += 10; reasons.push(`Pembuka kalimat banyak berulang — struktur terasa monoton.`); }
-    else if (openRatio > 0.85) { damp += 6;  reasons.push(`Pembuka kalimat bervariasi — struktur cukup alami.`); }
+    if (openRatio < 0.6)       { gStructure += 10; reasons.push(`Pembuka kalimat banyak berulang — struktur terasa monoton.`); }
+    else if (openRatio > 0.85) { hLike += 6;  reasons.push(`Pembuka kalimat bervariasi — struktur cukup alami.`); }
   }
 
   // 10) Repetisi gagasan (ide yang sama di kalimat berbeda) — sarankan gabung.
@@ -290,7 +311,7 @@ function heuristic(text) {
         if (inter / (a.size + b.size - inter) > 0.55) { pairs++; break; }
       }
     }
-    if (pairs >= 2) { pts += 8; reasons.push(`${pairs} pasang kalimat menyampaikan ide yang mirip — pertimbangkan digabung agar tidak repetitif.`); }
+    if (pairs >= 2) { gStructure += 8; reasons.push(`${pairs} pasang kalimat menyampaikan ide yang mirip — pertimbangkan digabung agar tidak repetitif.`); }
   }
 
   // 11) Bahasa template generik vs suara khas manusia
@@ -298,49 +319,60 @@ function heuristic(text) {
   const fluffyRef = REF_FLUFF_EXTRA.filter((p) => low.includes(p)).length;
   const fluffyAll = fluffy + fluffyRef;
   const fluffyRate = sents.length ? fluffyAll / sents.length : 0;
-  if (fluffyRate > 0.3 && totalW > 60) { pts += 8; reasons.push(`Frasa generik cukup sering (${fluffyAll}x) — tulisan terdengar umum, perlu konteks spesifik.`); }
+  if (fluffyRate > 0.3 && totalW > MED_MIN_W) { gTemplate += 8; reasons.push(`Frasa generik cukup sering (${fluffyAll}x) — tulisan terdengar umum, perlu konteks spesifik.`); }
   const voiceHits = (clean.match(new RegExp("\\b(" + REF_VOICE_LIVE.join("|") + ")\\b", "gi")) || []).length;
   const voiceRef = REF_VOICE_EXTRA.filter((p) => low.includes(p)).length;
   const voiceAll = voiceHits + voiceRef;
-  if (voiceAll >= 3) { damp += 8; reasons.push(`Ada variasi ekspresi (${voiceAll}x: ajakan, manfaat, perumpamaan) — gaya cukup hidup.`); }
+  if (voiceAll >= 3) { hLike += 8; reasons.push(`Ada variasi ekspresi (${voiceAll}x: ajakan, manfaat, perumpamaan) — gaya cukup hidup.`); }
 
   // 12) Frasa manfaat generik (template AI). Ini bedanya dengan akademik
   // asli: objeknya kabur ("kualitas", "efektivitas", "dampak positif")
   // dan dipakai berpola — bukan pernyataan spesifik berbasis data.
-  if (hedgeSents >= 1 && totalW >= 40) {
-    pts += Math.min(18, hedgeSents * 6);
+  if (hedgeSents >= 1 && totalW >= HEDGE_MIN_W) {
+    gTemplate += Math.min(18, hedgeSents * 6);
     reasons.push(`${hedgeSents} kalimat memakai frasa manfaat generik ("dapat meningkatkan", "memberikan manfaat", "berperan penting") — ciri bahasa template hasil model.`);
   }
 
   // 13) Enumerasi kaku ("Pertama... Kedua...") — struktur daftar template.
   if (enumSents >= 2) {
-    pts += 10;
+    gStructure += 10;
     reasons.push(`${enumSents} kalimat memakai pola enumerasi ("Pertama... Kedua...") — struktur daftar khas template.`);
   }
 
-  // Academic context: sitasi/data/metodologi = academic convention, bukan
-  // bukti AI (detector-rules §4). Formalitas menjelaskan KESERAGAMAN ritme,
-  // bukan frasa template: bila tanpa bukti template, bobot uniformitas
-  // (rhythmPos) didiskon 50%. Konteks akademik menjadi catatan confidence,
-  // bukan pengurang besar (user-brief §4).
-  if (totalW >= 80 && acaMarkers >= 3) {
-    damp += 8;
-    reasons.push(`Konteks akademik terdeteksi (sitasi/data/metodologi) — formalitas di sini kemungkinan academic convention; confidence disesuaikan.`);
+  // Academic context (Fase 2, detector-rules §4): level LOW/MEDIUM/HIGH
+  // dari academicContext() → dampening SELEKTIF pada sinyal LEMAH
+  // (uniformitas ritme, konektor formal) yang dijelaskan konvensi formal.
+  // Bukti struktural kuat (template hits, enumerasi, repetisi) TIDAK
+  // didiskon — formalitas menjelaskan keseragaman, bukan frasa template.
+  const acad = academicContext({ low, acaCite, acaMeth, numbers, properNouns, acaMarkers });
+  const acadCap = acad.level === "HIGH" ? ACAD_DAMP_HIGH : acad.level === "MEDIUM" ? ACAD_DAMP_MED : ACAD_DAMP_LOW;
+  let acadDamp = 0;
+  // Fase 3 cleanup (Gate 2 nit residu double-damp): diskon ritme 50% di
+  // atas SUDAH final untuk porsi ritme — weakPool di bawah hanya menampung
+  // sinyal lemah lain (konektor) bila ritme sudah didiskon, supaya porsi
+  // yang sama tidak didiskon dua kali. RHYTHM_MAX tetap efektif via cap
+  // rC di bawah (burst 14 + ideal 8 = 22 > 20 → cap mengikat).
+  let rhythmDiscounted = false;
+  if (totalW >= MIN_RELIABLE_W && acad.level !== "LOW") {
+    reasons.push(`Konteks akademik ${acad.level} terdeteksi (sitasi/data/metodologi) — formalitas di sini kemungkinan academic convention; confidence disesuaikan.`);
     if (!hasTemplateEv && rhythmPos > 0) {
       const disc = Math.round(rhythmPos * 0.5);
-      pts -= disc;
+      gRhythm -= disc;
       rhythmPos = 0;
+      rhythmDiscounted = true;
       reasons.push(`Keseragaman ritme pada teks akademik tanpa bukti template — dijelaskan konvensi formal, bobot uniformitas dikurangi.`);
     }
-    if (hits === 0 && connRate <= 0.4 && acaMarkers >= 5) {
-      damp += 8;
+    const weakPool = (rhythmDiscounted ? 0 : Math.max(0, gRhythm)) + Math.min(connPts, 12);
+    acadDamp = Math.min(acadCap, weakPool);
+    if (hits === 0 && connRate <= 0.4 && acad.level === "HIGH") {
+      acadDamp = Math.min(acadCap, acadDamp + 4);
       reasons.push(`Pola yang ada hanya formalitas umum tulisan akademik — indikasi tetap rendah.`);
     }
   }
   // Bukti riset lengkap (metodologi + data + sitasi) = indikasi kuat tulisan
   // manusia formal; frasa akademik netral di sini ikut ditegaskan bukan AI.
-  if (totalW >= 80 && strongAcad) {
-    damp += 6;
+  if (totalW >= MIN_RELIABLE_W && strongAcad) {
+    hLike += 4;
     reasons.push(`Bukti riset lengkap (metodologi, data, sitasi) — gaya formal ini lazim pada tulisan akademik manusia.`);
   }
   if (neutralHits > 0 && acaMeth > 0) {
@@ -351,41 +383,58 @@ function heuristic(text) {
   // beda dengan "sekali-sekali di tulisan akademik asli" — yang asli
   // disertai isi (data, metode, sitasi) sehingga lewat cabang netral.
   if (neutralHits >= 2 && acaMarkers < 3) {
-    pts += Math.min(18, (neutralHits - 1) * 9);
+    gTemplate += Math.min(18, (neutralHits - 1) * 9);
     reasons.push(`Frasa akademik dipakai berulang (${neutralHits}x) tanpa dukungan data/metodologi/sitasi — scaffolding khas teks generatif.`);
   }
 
-  // Contextual confidence: satu-dua sinyal saja tidak cukup untuk indikasi kuat
+  // Contextual signal count (detector-rules §3: satu sinyal bukan bukti).
+  // Gerbang diselaraskan dengan gerbang scoring di atas (hedge >= 1,
+  // TTR > LEX_MIN_W, n-gram/fluffy > MED_MIN_W) — inkonsistensi hedge>=2
+  // vs >=1 pada versi lama diperbaiki: satu kalimat template tetap dihitung
+  // sebagai satu sinyal.
   const posSig = (sents.length >= 5 && burst < 0.45 ? 1 : 0)
-    + (totalW > 80 && ttr > 0.25 && ttr < 0.55 && hits > 0 ? 1 : 0)
-    + (totalW > 80 && ttr < 0.2 ? 1 : 0)
+    + (totalW > LEX_MIN_W && ttr > 0.25 && ttr < 0.55 && hits > 0 ? 1 : 0)
+    + (totalW > LEX_MIN_W && ttr < 0.2 ? 1 : 0)
     + (hits > 0 ? 1 : 0)
     + (connRate > 0.4 ? 1 : 0)
     + (lens.length >= 5 && ideal / lens.length > 0.8 ? 1 : 0)
-    + (sents.length >= 3 && personalRate === 0 && totalW > 80 ? 1 : 0)
-    + (totalW > 60 && (bigramDiversity < 0.45 || trigramDiversity < 0.55) ? 1 : 0)
+    + (sents.length >= 3 && personalRate === 0 && totalW >= IMPERS_MIN_W ? 1 : 0)
+    + (totalW > MED_MIN_W && (bigramDiversity < 0.45 || trigramDiversity < 0.55) ? 1 : 0)
     + (sents.length >= 6 && (new Set(openers).size / sents.length) < 0.6 ? 1 : 0)
-    + (fluffyRate > 0.3 && totalW > 60 ? 1 : 0)
-    + (hedgeSents >= 2 ? 1 : 0)
+    + (fluffyRate > 0.3 && totalW > MED_MIN_W ? 1 : 0)
+    + (hedgeSents >= 1 && totalW >= HEDGE_MIN_W ? 1 : 0)
     + (enumSents >= 2 || (neutralHits >= 2 && acaMarkers < 3) ? 1 : 0);
-  if (totalW >= 80 && posSig <= 1) {
-    damp += 10;
+  const singleSignal = totalW >= MIN_RELIABLE_W && posSig <= 1;
+  if (singleSignal) {
     reasons.push(`Hanya satu pola terdeteksi — belum cukup untuk indikasi kuat (perlu multiple signals + konteks).`);
   }
 
-  if (totalW < 80) {
-    reasons.push(`Teks <80 kata — statistik gaya bahasa belum bermakna, tambah ke 200+ kata.`);
-    damp += 6;
+  if (totalW < MIN_RELIABLE_W) {
+    reasons.push(`Teks <${MIN_RELIABLE_W} kata — statistik gaya bahasa belum bermakna, tambah ke 200+ kata.`);
   }
 
-  // Natural evidence di-cap: konteks + confidence, bukan pemotong ekstrem.
-  pts -= Math.min(damp, DAMP_CAP);
-  pts = Math.max(15, Math.min(98, pts + 22)); // +22 = prior netral, bukan bukti
+  // Evidence-based adjustment (Fase 2): skor = anchor netral + evidence
+  // berbobot per grup (ter-cap) − offset human-like (ter-cap) − damp
+  // akademik selektif. Tanpa prior tetap: teks tanpa evidence jatuh dekat
+  // floor; clamp anti-nol [SCORE_FLOOR, SCORE_CEIL] dipertahankan.
+  const tC = Math.min(gTemplate, TEMPLATE_MAX);
+  const rC = Math.max(0, Math.min(gRhythm, RHYTHM_MAX));
+  const sC = Math.min(gStructure, STRUCTURE_MAX);
+  const lC = Math.min(gLexical, LEXICAL_MAX);
+  const hC = Math.min(hLike, HUMAN_LIKE_MAX);
+  let pts = SCORE_ANCHOR + tC + rC + sC + lC - hC - Math.min(acadDamp, acadCap);
+  pts = Math.max(SCORE_FLOOR, Math.min(SCORE_CEIL, pts));
   // Teks pendek tidak boleh ber-confidence tinggi — bukti frasa tetap
   // terbaca, tapi jangan memaksakan kesimpulan dari beberapa kalimat.
-  if ((totalW < 50 || sents.length < 3) && totalW > 0) {
-    pts = Math.min(pts, 45);
+  // Ini proteksi ketidakpastian, bukan vonis manusia (detector-rules §4).
+  if ((totalW < SHORT_W || sents.length < SHORT_SENTS) && totalW > 0) {
+    pts = Math.min(pts, SHORT_TEXT_CAP);
     reasons.push(`Teks terlalu singkat untuk analisis pola yang meyakinkan.`);
+  }
+  // Single-signal hard-cap (detector-rules §3): satu-dua pola saja tidak
+  // boleh menjadi vonis kuat — cap skor ekstrem + confidence rendah.
+  if (singleSignal) {
+    pts = Math.min(pts, SINGLE_SIGNAL_CAP);
   }
 
   // --- Skor tiap kalimat (INDEPENDEN dari skor dokumen): anchor netral 30.
@@ -436,17 +485,24 @@ function heuristic(text) {
   // ciri teks campuran (hybrid human+AI).
   const aiLikeProp = sentScores.length ? sentScores.filter((s) => s >= 50).length / sentScores.length : 0;
   const sentComponent = sentScores.length ? sentMedian * 0.35 + aiLikeProp * 100 * 0.65 : 30;
-  const blendW = sentScores.length ? Math.max(0, Math.min(0.6, (sentSpread - 8) / 24)) : 0;
+  const blendW = sentScores.length ? Math.max(0, Math.min(BLEND_MAX_W, (sentSpread - BLEND_SPREAD_LO) / BLEND_SPREAD_RANGE)) : 0;
 
   const finalPts = Math.max(2, Math.min(98, Math.round(pts * (1 - blendW) + sentComponent * blendW)));
 
   // --- Confidence (jangan palsu): panjang teks, jumlah kalimat, sebaran
   // skor kalimat (sinyal berbeda-beda = ragu), zona abu-abu, cakupan model.
+  // Konsistensi (sentSpread) adalah CONFIDENCE MODIFIER eksplisit, bukan
+  // evidence: sebaran lebar antar kalimat menurunkan confidence tanpa
+  // menambah/mengurangi poin (detector-rules §3: satu sinyal bukan bukti).
+  // Agregasi blendW di atas hanya bobot fusi kalimat-dokumen, bukan vonis.
   // Satu-dua pola saja (detector-rules §4) atau tanpa bukti AI → confidence
-  // rendah: skor tanpa evidence bukan vonis (user-brief §5/§13).
+  // rendah: skor tanpa evidence bukan vonis.
   let confidence = computeConfidence(totalW, sents.length, sentSpread, finalPts, null);
-  if (totalW >= 80 && posSig <= 1) confidence = "rendah";
-  if (totalW >= 80 && posSig === 0) {
+  if (sentSpread > 18 && sents.length > 1) {
+    reasons.push(`Sebaran skor antar kalimat cukup lebar (±${sentSpread.toFixed(0)}) — konsistensi dipakai sebagai penyesuai confidence (bukan bukti), sehingga confidence diturunkan.`);
+  }
+  if (singleSignal) confidence = "rendah";
+  if (totalW >= MIN_RELIABLE_W && posSig === 0) {
     reasons.push(`Tidak ditemukan pola AI yang jelas — skor hanya mencerminkan minimnya evidence, bukan bukti kepengarangan.`);
   }
 
@@ -457,6 +513,13 @@ function heuristic(text) {
       totalW, ttr, burst, hits, neutralHits,
       bigramDiversity, trigramDiversity, paraCount, paraCV, wlCV,
       lang, fwRate, sentSpread, sentMedian, aiLikeProp, acaMarkers,
+      acadLevel: acad.level, posSig,
+      // Calibration layer (Fase 3): raw = skor evidence dokumen
+      // pasca-cap pra-fusi kalimat; calibrated = skor tampil (pasca-fusi).
+      // Display memakai calibrated; raw hanya untuk audit perbandingan.
+      rawScore: Math.round(pts), calibratedScore: Math.round(finalPts),
+      groups: { template: tC, rhythm: rC, structure: sC, lexical: lC, humanLike: hC, acadDamp: Math.min(acadDamp, acadCap) },
+      classification: finalPts >= THR_STRONG_DOC ? "terindikasi" : finalPts >= THR_MID_DOC ? "perlu ditinjau" : "cenderung natural",
     },
     confidence, lang,
   };

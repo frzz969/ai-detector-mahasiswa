@@ -242,7 +242,7 @@ footer{margin-top:var(--sp-xl);background:#0E4A6E;color:#D6E9F7;border-radius:va
 .foot-links a{color:#D6E9F7;text-decoration:none;font-size:16px;padding:6px 0;width:fit-content}
 .foot-base{border-top:1px solid rgba(255,255,255,.25);padding:16px var(--sp-2xl);font-size:15px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .mobile-cta{display:none}
-/* ===== MASKOT (gambar di folder img/, sembunyi otomatis bila belum ada) ===== */
+/* ===== MASKOT (gambar di folder img/mascot/ + img/icons/, sembunyi otomatis bila belum ada) ===== */
 .mascot{pointer-events:none;user-select:none;mix-blend-mode:multiply}
 .mascot-hero{display:block;width:110px;max-width:40vw;margin:0 auto 10px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.15))}
 .mascot-mini{width:44px;height:44px;object-fit:contain}

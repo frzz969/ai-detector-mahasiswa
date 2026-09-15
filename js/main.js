@@ -26,14 +26,24 @@ function render(heu, localVal, refCut) {
   let method = "heuristik offline";
   if (typeof localVal === "number") {
     // Model lokal dilatih pada teks EN — untuk teks ID (heu.lang==="id")
-    // bobot model dikurangi. Model yang baca parsial juga diturunkan
-    // bobotnya sebanding cakupan, dan dilaporkan jujur di method.
+    // bobot model dikurangi. Bobot bahasa existing dipertahankan
+    // (EN 0.5, ID 0.25); Fase 3 menambah floor-0: cakupan rendah (<50%
+    // potongan terbaca) atau tak diketahui → kontribusi model 0, hanya
+    // heuristik yang dipakai, dilaporkan jujur di method.
     const base = heu.lang === "en" ? 0.5 : 0.25; // model dilatih EN → bobot ID konservatif (§10 brief)
-    const cov = localParts && localParts.of ? localParts.n / localParts.of : 1;
-    const modW = base * (0.5 + 0.5 * cov);
-    final = Math.round(heu.score * (1 - modW) + localVal * modW);
-    method = `ensemble berbahasa-${heu.lang.toUpperCase()} (heuristik ${heu.score}% + model lokal ${localVal}%)`;
-    if (localParts && localParts.n < localParts.of) method += ` • model hanya baca ${localParts.n}/${localParts.of} potongan → bobot dikurangi`;
+    const covKnown = !!(localParts && localParts.of);
+    const cov = covKnown ? localParts.n / localParts.of : 0;
+    let modW = 0;
+    if (covKnown && localParts.n > 0 && cov >= 0.5) {
+      modW = base * (0.5 + 0.5 * cov);
+    }
+    if (modW > 0) {
+      final = Math.round(heu.score * (1 - modW) + localVal * modW);
+      method = `ensemble berbahasa-${heu.lang.toUpperCase()} (heuristik ${heu.score}% + model lokal ${localVal}%)`;
+      if (localParts && localParts.n < localParts.of) method += ` • model hanya baca ${localParts.n}/${localParts.of} potongan → bobot dikurangi`;
+    } else {
+      method = `heuristik offline (model lokal cakupan ${covKnown ? localParts.n + "/" + localParts.of : "tak diketahui"} → kontribusi 0)`;
+    }
   } else {
     localParts = null;
   }
@@ -49,15 +59,17 @@ function render(heu, localVal, refCut) {
   $("statReview").textContent = String(rev);
   $("statSafe").textContent = String(heu.sents.length - rev);
 
+  // Ambang pakai CERMIN core.js (THR_*_DOC) — angka sama dengan sebelumnya
+  // (75/50/30), tidak ada tuning ambang di sini; ubah ambang hanya di core.js.
   let lbl, ver;
-  if (ai >= 75)      { lbl = "Indikasi AI kuat";  ver = `<b>${ai}% — terdapat indikasi pola generatif.</b> Tinjau bagian merah: variasikan struktur + tambah data/opini.`; }
-  else if (ai >= 50) { lbl = "Campuran";          ver = `<b>${ai}% — campuran, perlu ditinjau.</b> Tulis ulang bagian merah/kuning dengan bahasamu.`; }
-  else if (ai >= 30) { lbl = "Indikasi ringan";   ver = `<b>${ai}% — sedikit pola seragam.</b> Cenderung natural; cek bagian kuning bila perlu.`; }
-  else               { lbl = "Cenderung natural"; ver = `<b>${ai}% — tidak banyak pola generatif.</b> Sudah baik, tidak semua perlu diubah.`; }
+  if (ai >= THR_STRONG_DOC)      { lbl = "Indikasi AI kuat";  ver = `<b>Skor indikasi ${ai}/100 — terdapat indikasi pola generatif.</b> Tinjau bagian merah: variasikan struktur + tambah data/opini.`; }
+  else if (ai >= THR_MID_DOC) { lbl = "Campuran";          ver = `<b>Skor indikasi ${ai}/100 — campuran, perlu ditinjau.</b> Tulis ulang bagian merah/kuning dengan bahasamu.`; }
+  else if (ai >= THR_HUMAN_DOC) { lbl = "Indikasi ringan";   ver = `<b>Skor indikasi ${ai}/100 — sedikit pola seragam.</b> Cenderung natural; cek bagian kuning bila perlu.`; }
+  else               { lbl = "Cenderung natural"; ver = `<b>Skor indikasi ${ai}/100 — tidak banyak pola generatif.</b> Sudah baik, tidak semua perlu diubah.`; }
 
   $("mixLbl").textContent = lbl;
   $("verdict").innerHTML =
-    `${ver}<br><small>${escapeHtml(method)}${refCut ? ` • ${refCut} kata pustaka dikecualikan` : ""} • confidence ${heu.confidence}${heu.lang === "en" ? " • bahasa terdeteksi EN" : ""} • skor indikator, bukan vonis</small>`;
+    `${ver}<br><small>${escapeHtml(method)}${refCut ? ` • ${refCut} kata pustaka dikecualikan` : ""} • confidence ${heu.confidence}${heu.lang === "en" ? " • bahasa terdeteksi EN" : ""} • skor indikasi /100, bukan probabilitas; skor Human (100 − skor AI) hanya komplemen tampilan</small>`;
 
   // Highlight per kalimat: merah >=70, kuning >=45, hijau sisanya
   const hl = $("highlight");
@@ -88,7 +100,7 @@ function render(heu, localVal, refCut) {
     `kata dinilai: ${heu.detail.totalW} | kalimat: ${heu.sents.length} | ` +
     `TTR: ${heu.detail.ttr.toFixed(3)} | burst: ${heu.detail.burst.toFixed(3)} | ` +
     `kalimat: median ${heu.detail.sentMedian}% • sebar ±${heu.detail.sentSpread.toFixed(0)} | ` +
-    `final: ${final}% (${method})`;
+    `skor indikasi: ${final}/100 (mentah ${heu.detail.rawScore !== undefined ? heu.detail.rawScore : heu.score}; bukan probabilitas) • confidence ${heu.confidence} (${method})`;
 
   $("resultEmpty").hidden = true;
   $("resultBox").hidden = false;
@@ -98,6 +110,7 @@ function render(heu, localVal, refCut) {
 
   lastResult = {
     ai, human, lbl, method,
+    raw: heu.detail.rawScore !== undefined ? heu.detail.rawScore : heu.score,
     date: new Date().toLocaleString("id-ID"),
     heu, localVal, refCut,
   };
@@ -112,13 +125,13 @@ function buildPrint() {
   $("printArea").innerHTML =
     `<h2>FarazCheck — Laporan Deteksi AI</h2>` +
     `<p>Tanggal: ${escapeHtml(r.date)} • Metode: ${escapeHtml(r.method)}</p>` +
-    `<h3>Hasil: ${r.ai}% AI / ${r.human}% Manusia — ${escapeHtml(r.lbl)}</h3>` +
+    `<h3>Hasil: Skor indikasi AI ${r.ai}/100 / Human ${r.human}/100 (komplemen tampilan, bukan probabilitas) — ${escapeHtml(r.lbl)}</h3>` +
     `<p>Pustaka dikecualikan: ${r.refCut || 0} kata</p>` +
     `<h4>Alasan:</h4><ul>${r.heu.reasons.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>` +
     `<h4>Statistik:</h4><pre>kata: ${r.heu.detail.totalW}, kalimat: ${r.heu.sents.length}, ` +
     `TTR: ${r.heu.detail.ttr.toFixed(3)}, burst: ${r.heu.detail.burst.toFixed(3)}, ` +
-    `confidence: ${r.heu.confidence}</pre>` +
-    `<p><i>Catatan: bukan vonis 100%. Konfirmasi ke dosen.</i></p>` +
+    `skor mentah: ${r.raw !== undefined ? r.raw : r.ai}, confidence: ${r.heu.confidence}</pre>` +
+    `<p><i>Catatan: skor indikasi, bukan probabilitas dan bukan vonis. Konfirmasi ke dosen.</i></p>` +
     `<p><small>Dasar: heuristik + referensi (2 artikel + ${escapeHtml(REF_PAPER)}). Detektor umum di bawah 80% akurat; teks formal/pendek rawan salah baca.</small></p>` +
     `<p><small>Sumber aturan: ${escapeHtml(REF_RULE_DOCS.join(" • "))}</small></p>`;
 }
@@ -364,7 +377,8 @@ $("btnDownload").onclick = () => {
   const r = lastResult;
   const blob = new Blob(
     [`FARAZCHECK — LAPORAN DETEKSI AI\nTanggal: ${r.date}\nMetode: ${r.method}\n` +
-     `Hasil: ${r.ai}% AI / ${r.human}% Manusia (${r.lbl})\n` +
+     `Hasil: Skor indikasi AI ${r.ai}/100 / Human ${r.human}/100 (${r.lbl}) — bukan probabilitas\n` +
+     `Skor mentah: ${r.raw !== undefined ? r.raw : r.ai} • confidence: ${r.heu.confidence}\n` +
      `Pustaka dikecualikan: ${r.refCut || 0} kata\n\nAlasan:\n- ${r.heu.reasons.join("\n- ")}\n\n` +
      `Sumber aturan: ${REF_RULE_DOCS.join(" • ")}\n` +
      `Catatan: bukan vonis final.`],
@@ -390,8 +404,9 @@ function runDemo(kind) {
   demoKind = kind;
   const heu = heuristic(kind === "ai" ? DEMO_AI : DEMO_HUMAN);
   $("demoPct").textContent = heu.score + "%";
-  const lbl = heu.score >= 75 ? "indikasi kuat" : heu.score >= 50 ? "campuran"
-    : heu.score >= 30 ? "indikasi ringan" : "cenderung natural";
+  // Ambang cermin core.js (THR_*_DOC) — sama dengan render, tanpa tuning.
+  const lbl = heu.score >= THR_STRONG_DOC ? "indikasi kuat" : heu.score >= THR_MID_DOC ? "campuran"
+    : heu.score >= THR_HUMAN_DOC ? "indikasi ringan" : "cenderung natural";
   $("demoLbl").textContent = "indikasi AI · " + lbl;
   $("demoFill").style.width = heu.score + "%";
   const box = $("demoText");

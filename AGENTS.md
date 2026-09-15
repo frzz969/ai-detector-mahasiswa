@@ -17,23 +17,23 @@ agar bisa diaudit balik. Dilarang asal angka, asal klaim, asal rewrite.
 
 ## 1. Peta kode (jangan tebak lokasi)
 
-- `core.js` — DOM refs, state, `AI_PHRASES`, konstanta batas.
-- `detector.js` — `heuristic()` (10 sinyal + academic dampening +
+- `js/core.js` — DOM refs, state, `AI_PHRASES`, konstanta batas.
+- `js/detector.js` — `heuristic()` (10 sinyal + academic dampening +
   single-signal cap + short-text cap), `splitReferences()`,
   `cleanAcademic()`, model lokal opsional.
-- `referensi.js` — data referensi + `REF_HUMANIZE_EXTRA` (formal) +
+- `js/referensi.js` — data referensi + `REF_HUMANIZE_EXTRA` (formal) +
   `REF_RULE_DOCS` (provenance dokumen aturan).
-- `humanizer.js` — `humanizeSentence()` (aturan formal + skip
+- `js/humanizer.js` — `humanizeSentence()` (aturan formal + skip
   kemunculan tunggal), `humanizeText()` (skip kalimat baik skor<45,
   regresi per kalimat → revert bila +10), handler tombol + verdict
   BETTER/EQUIVALENT/WORSE + restore asli.
-- `main.js` — `render()` (bahasa indikasi), `doCheck()` (status
+- `js/main.js` — `render()` (bahasa indikasi), `doCheck()` (status
   bertahap + rescan), stale-guard export, demo hero.
 - `index.html` — struktur + SEMUA ID fungsional (jangan rename/hapus).
 - `style.css` — DESKTOP saja (biru langit + putih, full-width).
   `mobile.css` — HP/tablet ≤1100px (dimuat via media query).
   Edit salah satu, jangan sentuh yang lain. JANGAN ubah layout/
-  visual kecuali user eksplisit minta; tugas mesin = `*.js` root.
+  visual kecuali user eksplisit minta; tugas mesin = `js/*.js`.
 
 ## 2. Batasan keras
 
@@ -52,8 +52,8 @@ agar bisa diaudit balik. Dilarang asal angka, asal klaim, asal rewrite.
 ## 3. Verifikasi tiap ubah `*.js` (root)
 
 1. `node --check` semua file yang diubah.
-2. Uji fungsional: `node` harness temp (`faraztest.js`) yang me-load
-   `core → referensi → detector → humanizer → main` dengan stub DOM,
+2. Uji fungsional: `node` harness (`tests/faraztest.js`) yang me-load
+   `js/core → js/referensi → js/detector → js/humanizer → js/main` dengan stub DOM,
    lalu cek: demo AI terindikasi, demo human rendah, teks pendek
    di-cap, formal akademik tidak overflag, humanize tidak regresi.
 3. `grep` klaim terlarang (`100% AI|pasti AI|dijamin|bebas AI|khas AI`)

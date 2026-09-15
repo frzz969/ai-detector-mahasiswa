@@ -6,7 +6,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const ROOT = path.resolve(__dirname, "../.."); // ai-detector-mahasiswa
+const ROOT = path.resolve(__dirname, "../../.."); // ai-detector-mahasiswa
 
 // ---------- DOM stub (enough to load js files without crashing) ----------
 function makeEl() {
@@ -26,7 +26,7 @@ const navigatorStub = {};
 
 // ---------- Load source ----------
 function loadSources() {
-  const files = ["core.js", "referensi.js", "detector.js", "humanizer.js"];
+  const files = ["js/core.js", "js/referensi.js", "js/detector.js", "js/humanizer.js"];
   const code = files
     .map((f) => fs.readFileSync(path.join(ROOT, f), "utf8"))
     .join("\n;\n");

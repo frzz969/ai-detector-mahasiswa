@@ -243,3 +243,44 @@ pre{font-size:12px;padding:12px;max-width:100%;white-space:pre-wrap;overflow-wra
 .hero-text .hero-cta{min-width:0}
 .hero .hero-text .hero-cta .btn-hero{width:100%}
 }
+
+/* FIX: .cta-band#mulai berantakan di HP kecil (360-480px).
+   Diagnosis (desktop di style.css vs mobile saat ini):
+   1) #mulai desktop 2 kolom (1.05fr/.95fr, gap 32px, padding 40px 32px).
+      Mobile hanya ubah ke 1fr + text-center tanpa rapatkan gap/padding,
+      tanpa min-width:0 dan overflow guard -> konten sempit, grid blowout.
+   2) .cta-imgs tetap flex-row tanpa wrap/max-width. Gambar clamp min
+      130px x2 + gap 20px = ~280px, mepet dengan konten ~300px di 360px
+      bila kedua gambar tampil -> overflow. Tanpa margin bawah, gambar
+      (order:-1) menempel ke teks.
+   3) .hero-cta di dalam #mulai ikut gaya hero: baris 601-860px masih
+      flex-row berdampingan, dua tombol panjang tidak muat 360px ->
+      wrap canggung / kepotong. <600px sudah column tapi tanpa
+      width:100%/gap/max-width eksplisit per tombol.
+   Perbaikan di bawah hanya <=860/600/380px: stack vertikal + center,
+   gambar responsif, tombol full-width, anti overflow-x. Desktop
+   (>1100px), ID/class, dan file lain tidak disentuh. */
+@media(max-width:860px){
+#mulai{gap:20px;align-items:center;justify-items:center;max-width:100%;overflow-x:clip}
+.cta-text{min-width:0;max-width:100%;width:100%}
+#mulai .cta-text p{margin-left:auto;margin-right:auto}
+.cta-imgs{order:-1;width:100%;max-width:100%;min-width:0;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:16px;margin:0 auto}
+.cta-imgs img{max-width:100%;height:auto;flex:0 1 auto;min-width:0}
+.cta-imgs .mascot-cta,.cta-imgs .kick-cta{width:132px;max-width:38vw}
+#mulai .hero-cta{width:100%;max-width:100%;min-width:0;flex-wrap:wrap;justify-content:center}
+}
+@media(max-width:600px){
+.cta-band{max-width:100%;overflow-x:clip;padding:24px 16px}
+.cta-band h2{overflow-wrap:anywhere}
+.cta-band p{max-width:100%}
+#mulai .hero-cta{flex-direction:column;align-items:stretch;gap:12px}
+#mulai .hero-cta .btn-hero{width:100%;max-width:100%;min-width:0;white-space:normal;text-align:center;overflow-wrap:anywhere}
+.cta-imgs{gap:12px}
+.cta-imgs .mascot-cta,.cta-imgs .kick-cta{width:120px;max-width:40vw}
+}
+@media(max-width:380px){
+#mulai{gap:16px}
+.cta-band{padding:20px 14px}
+.cta-imgs .mascot-cta,.cta-imgs .kick-cta{width:104px;max-width:42vw}
+#mulai .hero-cta .btn-hero{font-size:15px;padding:12px 16px}
+}
