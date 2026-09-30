@@ -101,6 +101,15 @@ img{max-width:100%;height:auto}
 .rail-card,.panel{background:#fff;border:1px solid var(--line);border-radius:var(--r-xl);padding:20px;min-width:0}
 .rail-card h3{margin:0 0 4px;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut)}
 .rail-card button,.rail-card .file{width:100%;justify-content:center;margin-top:12px;text-align:center}
+/* Ringkasan card only (btnSummarize/btnExplain/aiToolsOut): rapatkan jarak atas-bawah
+   tanpa ubah layout global. Selector :has() agar tidak perlu ubah index.html/js. */
+.rail-card:has(#btnSummarize) h3{margin-bottom:2px}
+.rail-card:has(#btnSummarize) p.muted{margin:4px 0;line-height:1.5}
+.rail-card:has(#btnSummarize) p.muted small{line-height:1.4}
+.rail-card:has(#btnSummarize) #btnSummarize,.rail-card:has(#btnSummarize) #btnExplain{margin-top:8px;background:#111;border-color:#111;color:#fff}
+.rail-card:has(#btnSummarize) #btnSummarize:hover:not(:disabled),.rail-card:has(#btnSummarize) #btnExplain:hover:not(:disabled){background:#2a2a2a;border-color:#2a2a2a;color:#fff}
+.rail-card:has(#btnSummarize) #btnSummarize:disabled,.rail-card:has(#btnSummarize) #btnExplain:disabled{background:#EDEDED;border-color:#D5D5D5;color:#8A8A8A;opacity:.85;cursor:not-allowed}
+.rail-card:has(#btnSummarize) #aiToolsOut{margin:6px 0 0}
 #hasil,#editor,#humanizeBox,#cara,#fitur,#faq,#jenis,#sinyal,#mulai{scroll-margin-top:84px}
 .panel-head{display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:16px}
 .panel-head h2{font-size:22px;margin:0}

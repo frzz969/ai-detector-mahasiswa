@@ -11,12 +11,18 @@
 
 // Tandai hasil sebagai basi (untuk teks lama). Aman dipanggil kapan
 // saja: diam bila belum ada hasil yang tampil.
+// Ringkasan/penjelasan (aiToolsOut) mandiri dari hasil cek: dibiarkan
+// tampil + diberi penanda basi (pola yang sama seperti humanizer),
+// bukan dihapus/disembunyikan.
 function markStale() {
-  // Hybrid: pemeriksaan AI yang sedang berjalan ikut ditandai batal, dan
-  // ringkasan/penjelasan untuk teks lama disembunyikan (jangan tampil basi).
+  // Hybrid: pemeriksaan AI yang sedang berjalan ikut ditandai batal.
   aiPending = false;
   const ao = $("aiToolsOut");
-  if (ao) { ao.hidden = true; ao.textContent = ""; }
+  if (ao && ao.textContent.trim() && !ao.hidden && !ao.dataset.stale) {
+    ao.dataset.stale = "1";
+    ao.title = "Hasil untuk teks LAMA — tempel/upload baru lalu klik Summarize/Explain lagi untuk versi baru.";
+    ao.textContent = "[Untuk teks lama] " + ao.textContent;
+  }
   try { const b = document.getElementById("sentExplain"); if (b) b.textContent = ""; } catch (_) {}
   if (!lastResult || $("resultBox").hidden) return;
   resultStale = true;
@@ -398,27 +404,52 @@ async function doCheck() {
 }
 
 function updateWC() {
-  const t = inputText.value.trim();
-  wcEl.textContent = t
-    ? `${countWords(t)} kata • ${splitSentences(cleanAcademic(t)).length} kalimat`
-    : "0 kata";
-  refreshRail();
+  try {
+    const t = (inputText && inputText.value || "").trim();
+    let label = "0 kata";
+    if (t) {
+      let n = 0, s = 0;
+      try { n = (typeof countWords === "function" ? countWords(t) : t.split(/\s+/).filter(Boolean).length); }
+      catch (_) { n = t.split(/\s+/).filter(Boolean).length; }
+      try { s = splitSentences(cleanAcademic(t)).length; }
+      catch (_) { s = 0; } // detector belum muat / teks aneh → tetap tampil kata
+      label = s ? `${n} kata • ${s} kalimat` : `${n} kata`;
+    }
+    if (wcEl) wcEl.textContent = label;
+  } catch (_) { /* jangan biarkan label mematikan init */ }
+  try { refreshRail(); } catch (_) {}
 }
+
+// Gating tombol ringan vs gating kualitas (validation-rules §2):
+// tombol Summarize/Explain dibuka untuk teks bermakna (>=5 kata) agar
+// user tidak mengira rusak; validasi kualitas 20 kata (MIN_WORDS) tetap
+// di onclick handler dengan pesan jujur "tempel minimal 20 kata dulu".
+const MIN_TOOLS_WORDS = 5;
 
 // Tombol rel kanan aktif hanya saat relevan: export butuh hasil,
 // terapkan/salin butuh keluaran humanizer. Dipanggil tiap ada
 // perubahan (updateWC, render, clear, humanize).
 function refreshRail() {
-  const canExport = !!lastResult && !resultStale;
-  $("btnPrint").disabled = !canExport;
-  $("btnDownload").disabled = !canExport;
-  const out = ($("humanizeOut") && $("humanizeOut").value) || "";
-  $("btnApplyHumanize").disabled = countWords(out) < MIN_WORDS;
-  $("btnCopyHumanize").disabled = !out.trim();
-  // Alat ringkas/jelaskan butuh teks yang cukup untuk dinilai jujur.
-  const hasText = countWords((inputText.value || "").trim()) >= MIN_WORDS;
-  if ($("btnSummarize")) $("btnSummarize").disabled = !hasText;
-  if ($("btnExplain")) $("btnExplain").disabled = !hasText;
+  try {
+    const canExport = !!lastResult && !resultStale;
+    if ($("btnPrint")) $("btnPrint").disabled = !canExport;
+    if ($("btnDownload")) $("btnDownload").disabled = !canExport;
+    let out = "";
+    try { out = ($("humanizeOut") && $("humanizeOut").value) || ""; } catch (_) { out = ""; }
+    let outW = 0;
+    try { outW = (typeof countWords === "function" ? countWords(out) : 0); } catch (_) { outW = 0; }
+    if ($("btnApplyHumanize")) $("btnApplyHumanize").disabled = outW < MIN_WORDS;
+    if ($("btnCopyHumanize")) $("btnCopyHumanize").disabled = !String(out || "").trim();
+    // Alat ringkas/jelaskan: gate ringan (teks bermakna), bukan MIN_WORDS.
+    let w = 0;
+    try {
+      const v = (typeof inputText !== "undefined" && inputText && inputText.value) || "";
+      w = (typeof countWords === "function" ? countWords(String(v).trim()) : String(v).trim().split(/\s+/).filter(Boolean).length);
+    } catch (_) { w = 0; }
+    const hasText = w >= MIN_TOOLS_WORDS;
+    if ($("btnSummarize")) $("btnSummarize").disabled = !hasText;
+    if ($("btnExplain")) $("btnExplain").disabled = !hasText;
+  } catch (_) { /* refresh tidak boleh melempar — init harus tetap jalan */ }
 }
 
 // ---------- Upload txt/md/pdf/docx ----------
@@ -495,7 +526,7 @@ fileInput.addEventListener("change", async (e) => {
     updateWC();
     markStale();
     showFileChip(f.name, f.size, n);
-    statusEl.textContent = `${f.name} dimuat (${n} kata). Klik "Cek sekarang".`;
+    statusEl.textContent = `${f.name} dimuat (${n} kata). Bisa langsung Cek / Summarize / Explain.`;
 
     inputText.scrollIntoView({ behavior: "smooth", block: "center" });
     const btn = $("btnCheck");
@@ -541,6 +572,7 @@ $("btnClear").onclick = () => {
 
 $("fileClear").onclick = () => {
   hideFileChip();
+  try { refreshRail(); } catch (_) {}
   statusEl.textContent = "File dilepas — teks di textarea tetap ada, bisa langsung dicek.";
 };
 
@@ -559,6 +591,8 @@ function showAiTools(text) {
   const out = $("aiToolsOut");
   if (!out) return;
   out.hidden = false;
+  try { delete out.dataset.stale; } catch (_) { try { out.removeAttribute("data-stale"); } catch (_) {} }
+  out.title = "";
   out.textContent = text;
   refreshRail();
 }
@@ -669,8 +703,20 @@ $("btnDownload").onclick = () => {
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 };
 
-// Init: tampilkan "0 kata" saat halaman dibuka
-updateWC();
+// Init: tampilkan "0 kata" saat halaman dibuka.
+// Dipanggil langsung (skrip defer = DOM sudah siap) + ulang saat
+// DOMContentLoaded/load agar buka via file:// maupun server tetap jalan
+// walau satu skrip/CDN lain gagal lebih dulu. Idempoten & anti-lempar.
+function initRail() {
+  try { updateWC(); } catch (_) { try { refreshRail(); } catch (_) {} }
+}
+try { initRail(); } catch (_) {}
+try {
+  if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
+    document.addEventListener("DOMContentLoaded", initRail);
+    window.addEventListener("load", initRail);
+  }
+} catch (_) {}
 
 // ---------- Demo interaktif hero (contoh beneran, skor beneran) ----------
 // Tab menjalankan heuristic() asli ke teks contoh; bukan angka tempelan.
