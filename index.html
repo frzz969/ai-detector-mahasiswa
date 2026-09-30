@@ -67,8 +67,8 @@
       <div class="panel-head"><h2>Input naskah</h2><img class="mascot mascot-mini" src="./img/mascot/ceria%20violet.jpg" alt="Maskot ceria" onerror="this.remove()"><span id="wordCount" class="wc">0 kata</span></div>
       <textarea id="inputText" aria-label="Tempel naskah yang akan dicek" placeholder="Contoh: Tempel bab 1 skripsimu di sini… minimal 20 kata, paling bagus 200+ kata."></textarea>
       <div class="samples"><span class="muted">Belum ada teks? Coba:</span>
-        <button id="btnSampleID" class="ghost" type="button">Contoh ID</button>
-        <button id="btnSampleEN" class="ghost" type="button">Contoh EN</button>
+        <button id="btnSampleID" class="ghost small" type="button">Contoh ID</button>
+        <button id="btnSampleEN" class="ghost small" type="button">Contoh EN</button>
       </div>
       <span id="refInfo" class="muted"></span>
       <div id="fileChip" class="file-chip" hidden>
@@ -97,7 +97,9 @@
         <h3>Natural</h3>
         <button id="btnHumanize" class="primary" type="button">Buatkan versi natural</button>
         <button id="btnApplyHumanize" class="ghost" type="button" disabled>Terapkan &amp; cek ulang</button>
-        <button id="btnCopyHumanize" class="ghost" type="button" disabled>Salin</button>
+        <button id="btnSummarize" class="ghost" type="button" disabled title="Ringkas tulisan ini menjadi poin utama" aria-label="Summarize — ringkas tulisan">Summarize</button>
+        <button id="btnExplain" class="ghost" type="button" disabled title="Jabarkan isi teks ini (ide pokok, istilah, alur)" aria-label="Explain — jabarkan isi teks">Explain</button>
+        <p id="aiToolsOut" class="muted" hidden></p>
       </div>
       <div class="rail-card">
         <h3>Laporan</h3>
@@ -107,7 +109,7 @@
     </aside>
 
     <section class="panel result" id="hasil">
-      <div class="panel-head"><h2>Hasil</h2><span class="wc">Merah = cek lagi · Hijau = aman</span></div>
+      <div class="panel-head"><h2>Hasil</h2><button id="btnCopyHumanize" class="ghost" type="button" disabled title="Salin hasil natural" aria-label="Copy — salin hasil">Copy</button></div>
       <div id="resultEmpty" class="empty">
         <div class="empty-face" aria-hidden="true"><img class="mascot mascot-empty" src="./img/mascot/ya%20maap.jpg" alt="" onerror="this.outerHTML='§'"></div>
         <b>Belum ada hasil</b>
@@ -117,6 +119,7 @@
         <div class="score-hero">
           <div class="score-main"><span>Skor AI</span><strong id="aiPct">0%</strong></div>
           <div class="score-sub"><span id="humanPct">0%</span> manusia · <span id="mixLbl">-</span></div>
+          <span class="wc">Merah = cek lagi · Hijau = aman</span>
         </div>
         <div class="stat-grid">
           <div class="stat"><span>Kalimat</span><strong id="statSent">0</strong></div>
@@ -240,11 +243,18 @@
 <div class="mobile-cta"><a href="#editor">Mulai cek tulisan ↓</a></div>
 <!-- SARAN/LAPOR: ganti 6280000000000 dengan nomor WA kamu (format: 628xx, tanpa +/spasi) -->
 <a class="fab" href="https://wa.me/6280000000000?text=Halo%20Faraz%20Detector%20AI%2C%20saya%20punya%20saran%2Flaporan%3A%20" target="_blank" rel="noopener">Saran / Lapor</a>
-<!-- JS: 5 file per lapisan (defer = jalan berurutan). -->
+<!-- JS: inti + hybrid js/ai/* (defer = jalan berurutan). -->
 <script defer src="./js/core.js"></script>
 <script defer src="./js/detector.js"></script>
 <script defer src="./js/referensi.js"></script>
 <script defer src="./js/humanizer.js"></script>
+<script defer src="./js/ai/preprocess.js"></script>
+<script defer src="./js/ai/client.js"></script>
+<script defer src="./js/ai/combine.js"></script>
+<script defer src="./js/ai/validate.js"></script>
+<script defer src="./js/ai/status.js"></script>
+<script defer src="./js/ai/summarizer.js"></script>
+<script defer src="./js/ai/explainer.js"></script>
 <script defer src="./js/main.js"></script>
 <script>/* NAV-TOGGLE ONLY — tidak menyentuh logika deteksi */
 (function(){var b=document.querySelector(".nav-toggle"),m=document.getElementById("navMenu");if(!b||!m)return;function set(o){b.setAttribute("aria-expanded",o?"true":"false");b.setAttribute("aria-label",o?"Tutup menu navigasi":"Buka menu navigasi");m.classList.toggle("open",o);}b.addEventListener("click",function(){set(!m.classList.contains("open"))});m.addEventListener("click",function(e){if(e.target.closest("a"))set(false)});document.addEventListener("keydown",function(e){if(e.key==="Escape")set(false)});})();</script>

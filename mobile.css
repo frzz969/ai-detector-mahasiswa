@@ -207,6 +207,11 @@ pre{font-size:12px;padding:12px;max-width:100%;white-space:pre-wrap;overflow-wra
 .demo-tabs{grid-template-columns:1fr 1fr}
 }
 
+/* HERO-CTA hero atas: berdampingan di semua lebar (601px+ dan <=600px mungil); #mulai tetap menumpuk. */
+@media(max-width:860px) and (min-width:601px){
+.hero-text .hero-cta{flex-direction:row;flex-wrap:wrap;align-items:center}
+.hero-text .hero-cta .btn-hero{width:auto;flex:0 1 auto;min-width:0}
+}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.mobile-cta a,.fab{transition:none}}
 
 /* FIX: .hero-cta hero ("Cek tulisan sekarang" + "Cara kerja") tembus ke
@@ -238,10 +243,10 @@ pre{font-size:12px;padding:12px;max-width:100%;white-space:pre-wrap;overflow-wra
 .hero-text .hero-cta{grid-column:1/-1;grid-row:3;grid-area:auto;position:relative;z-index:5}
 .hero-text .trust-row{grid-column:1/-1;grid-row:4}
 }
-/* <=600px (cek 390px): tombol full-width menumpuk rapi, tidak terpotong. */
+/* <=600px (cek 360-390px): hero atas berdampingan mungil, #mulai tetap menumpuk. */
 @media(max-width:600px){
-.hero-text .hero-cta{min-width:0}
-.hero .hero-text .hero-cta .btn-hero{width:100%}
+.hero-text .hero-cta{min-width:0;max-width:100%;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:stretch}
+.hero .hero-text .hero-cta .btn-hero{width:auto;flex:1 1 0;min-width:0;max-width:100%;padding:12px 14px;font-size:14px;white-space:normal;text-align:center;overflow-wrap:anywhere}
 }
 
 /* FIX: .cta-band#mulai berantakan di HP kecil (360-480px).

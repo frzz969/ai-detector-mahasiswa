@@ -24,11 +24,17 @@ let checking = false;
 let pipeLoader = null;
 let resultStale = false;
 let localParts = null;
+let aiPending = false;
+let aiResult = null;
+let aiError = null;
 // resultStale=true artinya teks berubah sesudah hasil keluar —
 // hasil di layar untuk teks LAMA dan dilarang di-export.
 // localParts mencatat {n, of} potongan model (lapor jujur bila parsial).
+// aiPending=true selama /api/analyze berjalan; aiResult = {score,
+// confidence, ...} bila sukses; aiError = {reason} bila gagal (taksonomi
+// FarazAIClient) — digabung via FarazCombine, fallback lokal bila gagal.
 
-// ---- Konstanta: frasa khas AI ----
+// ---- Konstanta: frasa generik keluaran model ----
 // Detector-rules §3: frasa seperti "penelitian ini bertujuan", "oleh karena
 // itu", "selain itu" adalah bahasa akademik NORMAL, BUKAN bukti AI. Frasa
 // itu dipindah ke ACAD_NEUTRAL agar tidak menaikkan skor AI (menghilangkan

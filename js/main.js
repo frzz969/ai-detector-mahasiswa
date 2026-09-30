@@ -12,11 +12,119 @@
 // Tandai hasil sebagai basi (untuk teks lama). Aman dipanggil kapan
 // saja: diam bila belum ada hasil yang tampil.
 function markStale() {
+  // Hybrid: pemeriksaan AI yang sedang berjalan ikut ditandai batal, dan
+  // ringkasan/penjelasan untuk teks lama disembunyikan (jangan tampil basi).
+  aiPending = false;
+  const ao = $("aiToolsOut");
+  if (ao) { ao.hidden = true; ao.textContent = ""; }
+  try { const b = document.getElementById("sentExplain"); if (b) b.textContent = ""; } catch (_) {}
   if (!lastResult || $("resultBox").hidden) return;
   resultStale = true;
   $("resultBox").classList.add("stale");
   statusEl.textContent = "Teks berubah — hasil di bawah untuk teks LAMA. Klik “Cek sekarang” lagi.";
   refreshRail();
+}
+
+// ---------- Penjelasan per kalimat (highlight explainable) ----------
+// detector-rules §2-§3 + validation-rules §5: tiap mark di #highlight dapat
+// diklik/difokus keyboard untuk menampilkan alasan kalimat itu (nomor +
+// skor + pemicu utama + 1 saran formal singkat) di bawah highlight.
+// Murni MEMBACA sinyal yang sama dengan skor kalimat di detector.js
+// heuristic() (~lines 443-462: AI_PHRASES, pola 12-28, REF_SENT_PERSONAL /
+// TEMPLATE / DATA, REF_HEDGE_PATS, ACAD_NEUTRAL, ENUM_START, opener
+// berulang, data konkret) — TANPA mengubah logika/skor, tanpa popup,
+// tanpa section/halaman/card baru, bahasa indikasi saja.
+function sentTriggers(heu, i) {
+  const s = (heu && heu.sents && heu.sents[i]) || "";
+  const lw = s.toLowerCase();
+  const ups = [], downs = [];
+  let v = null;
+  try { v = (typeof AI_PHRASES !== "undefined" ? AI_PHRASES : []).find((p) => lw.includes(String(p).toLowerCase())); } catch (_) { v = null; }
+  if (v) ups.push(`frasa generik \u201C${v}\u201D`);
+  try {
+    const arr = (typeof REF_SENT_TEMPLATE !== "undefined" ? REF_SENT_TEMPLATE : []);
+    const t = arr.find((p) => lw.includes(String(p).toLowerCase()));
+    if (t && (!v || String(t).toLowerCase() !== String(v).toLowerCase())) ups.push(`pola template \u201C${t}\u201D`);
+  } catch (_) {}
+  try {
+    const arr = (typeof REF_HEDGE_PATS !== "undefined" ? REF_HEDGE_PATS : []);
+    const h = arr.find((p) => lw.includes(String(p).toLowerCase()));
+    if (h) ups.push(`frasa manfaat generik \u201C${h}\u201D`);
+  } catch (_) {}
+  try {
+    const acaM = heu && heu.detail && typeof heu.detail.acaMarkers === "number" ? heu.detail.acaMarkers : 3;
+    const arr = (typeof ACAD_NEUTRAL !== "undefined" ? ACAD_NEUTRAL : []);
+    const a = arr.find((p) => lw.includes(String(p).toLowerCase()));
+    if (a && acaM < 3) ups.push(`frasa akademik \u201C${a}\u201D tanpa dukungan data/metodologi/sitasi di sekitarnya`);
+  } catch (_) {}
+  try {
+    const idArr = (typeof REF_ENUM_ID !== "undefined" ? REF_ENUM_ID : ["pertama", "kedua", "ketiga"]);
+    const enArr = (typeof REF_ENUM_EN !== "undefined" ? REF_ENUM_EN : ["first", "second"]);
+    const re = new RegExp("^(" + idArr.join("|") + ")[,\\s]|^(" + enArr.join("|") + ")[,\\s]", "i");
+    if (re.test(s.trimStart())) ups.push("pola enumerasi di awal kalimat");
+  } catch (_) {}
+  try {
+    const ops = (heu.sents || []).map((x) => String(x || "").toLowerCase().split(/\s+/).slice(0, 3).join(" "));
+    const op = lw.split(/\s+/).slice(0, 3).join(" ");
+    if (op && ops.filter((o) => o === op).length > 1) ups.push("pembuka kalimat yang berulang dengan kalimat lain");
+  } catch (_) {}
+  const wl = (typeof countWords === "function" ? countWords(s) : s.split(/\s+/).filter(Boolean).length);
+  if (wl >= 12 && wl <= 28) ups.push("panjang 12\u201328 kata yang polanya rapi");
+  try {
+    const arr = (typeof REF_SENT_PERSONAL !== "undefined" ? REF_SENT_PERSONAL : []);
+    if (arr.length && new RegExp("(" + arr.join("|") + "|\\?|!)", "i").test(s)) downs.push("memuat sudut pandang/tanda penulis");
+  } catch (_) {}
+  try {
+    const arr = (typeof REF_SENT_DATA !== "undefined" ? REF_SENT_DATA : []);
+    if (/\b\d+([.,]\d+)?\b/.test(s) && new RegExp("(19|20)\\d{2}|" + arr.join("|") + "|%|\\bsampel\\b", "i").test(s)) downs.push("memuat detail konkret (angka/nama)");
+  } catch (_) {}
+  if (/[?!]|"[^"]+"|“[^”]+”/.test(s)) downs.push("memuat tanda tanya/seru/kutipan langsung");
+  if (wl < 6 || wl > 42) downs.push("panjang di luar pola rapi");
+  return { ups, downs };
+}
+
+// Susun teks alasan 1 kalimat: nomor + skor + pemicu utama + 1 saran
+// formal singkat (humanizer-rules §2: formal, tanpa slang; fakta/angka/
+// sitasi tidak diubah — saran hanya variasi/rincian bila tersedia).
+function sentExplainText(heu, i) {
+  const n = (heu && heu.sents ? heu.sents.length : 0);
+  const sc = Math.round((heu && heu.sentScores && heu.sentScores[i]) || 0);
+  const zona = sc >= 70 ? "terindikasi perlu ditulis ulang" : sc >= 45 ? "perlu ditinjau" : "cenderung natural";
+  const t = sentTriggers(heu, i);
+  const head = `Kalimat ${i + 1}/${n} — skor indikasi ${sc}/100 (${zona}; bukan probabilitas).`;
+  if (sc >= 45) {
+    const utama = t.ups.length ? t.ups.slice(0, 2).join("; ") : "pola panjang yang rapi di antara kalimat sekitarnya";
+    let saran;
+    if (/frasa generik|pola template|manfaat generik|frasa akademik/.test(utama)) saran = "Saran: ganti bagian generik dengan rincian spesifik (data, contoh, atau konteks) bila tersedia.";
+    else if (/enumerasi|pembuka/.test(utama)) saran = "Saran: variasikan pembuka dan panjang kalimat di sekitarnya.";
+    else saran = "Saran: variasikan panjang kalimat dan tambah konteks spesifik bila tersedia.";
+    return `${head} Pemicu utama: ${utama}. ${saran}`;
+  }
+  const aman = t.downs.length ? t.downs.slice(0, 2).join("; ") : "tidak banyak pola generatif";
+  return `${head} Kalimat ini aman karena ${aman} — pertahankan. Saran: pertahankan; tidak perlu diubah.`;
+}
+
+// Tampilkan alasan kalimat ke-<i> pada <p id="sentExplain"> tepat di bawah
+// #highlight (di dalam <details> yang sama — bukan section/card baru),
+// lalu dekatkan ke pandangan tanpa popup library.
+function showSentExplain(heu, i) {
+  const hl = $("highlight");
+  if (!hl) return;
+  let box = null;
+  try { box = document.getElementById("sentExplain"); } catch (_) { box = null; }
+  if (!box) {
+    try {
+      box = document.createElement("p");
+      box.id = "sentExplain";
+      box.className = "muted";
+      box.setAttribute("aria-live", "polite");
+      if (typeof hl.after === "function") hl.after(box);
+      else if (hl.parentNode) hl.parentNode.appendChild(box);
+      else return;
+    } catch (_) { return; }
+  }
+  box.textContent = sentExplainText(heu, i);
+  try { box.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (_) {}
 }
 
 // ---------- Render hasil ----------
@@ -47,6 +155,9 @@ function render(heu, localVal, refCut) {
   } else {
     localParts = null;
   }
+  // Hybrid (validation-rules §1, detector-rules §3-§4): catatan gabungan
+  // heuristik+AI dari doCheck (FarazCombine) dicantumkan jujur di method.
+  if (heu.combineNote) method += ` • ${heu.combineNote}`;
 
   const ai = final, human = 100 - ai;
   $("aiPct").textContent = ai + "%";
@@ -71,17 +182,40 @@ function render(heu, localVal, refCut) {
   $("verdict").innerHTML =
     `${ver}<br><small>${escapeHtml(method)}${refCut ? ` • ${refCut} kata pustaka dikecualikan` : ""} • confidence ${heu.confidence}${heu.lang === "en" ? " • bahasa terdeteksi EN" : ""} • skor indikasi /100, bukan probabilitas; skor Human (100 − skor AI) hanya komplemen tampilan</small>`;
 
-  // Highlight per kalimat: merah >=70, kuning >=45, hijau sisanya
+  // Highlight per kalimat: merah >=70, kuning >=45, hijau sisanya.
+  // Explainable: tiap mark dapat diklik + fokus keyboard (tabindex/role/
+  // title) → alasan kalimat tampil di bawah highlight (showSentExplain).
   const hl = $("highlight");
   hl.innerHTML = "";
   heu.sents.forEach((s, i) => {
     const sc = heu.sentScores[i] || 0;
     const m = document.createElement("mark");
     m.className = sc >= 70 ? "ai" : sc >= 45 ? "mid" : "human";
-    m.title = `AI ${Math.round(sc)}%`;
+    m.title = "Klik untuk lihat alasan";
     m.textContent = s + " ";
+    m.setAttribute("tabindex", "0");
+    m.setAttribute("role", "button");
+    m.setAttribute("aria-label", `Kalimat ${i + 1}, skor indikasi ${Math.round(sc)} dari 100. Aktifkan untuk lihat alasan.`);
+    m.addEventListener("click", () => showSentExplain(heu, i));
+    m.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); showSentExplain(heu, i); }
+    });
     hl.appendChild(m);
   });
+  // Petunjuk + wadah alasan (paragraf di <details> yang sama, bukan
+  // section/card baru). Direset tiap render agar tidak basi.
+  try {
+    let box = document.getElementById("sentExplain");
+    if (!box) {
+      box = document.createElement("p");
+      box.id = "sentExplain";
+      box.className = "muted";
+      box.setAttribute("aria-live", "polite");
+      if (typeof hl.after === "function") hl.after(box);
+      else if (hl.parentNode) hl.parentNode.appendChild(box);
+    }
+    if (box) box.textContent = "Klik salah satu kalimat berwarna di atas untuk melihat alasan (nomor kalimat, skor, pemicu, dan saran).";
+  } catch (_) {}
 
   const rs = $("reasons");
   rs.innerHTML = "";
@@ -137,7 +271,10 @@ function buildPrint() {
 }
 
 // ---------- Tombol "Cek sekarang" + word-count ----------
-// Alur: validasi → potong pustaka → heuristik → model → render.
+// Alur hybrid (validation-rules §1): VALIDATE → PREPROCESS (FarazPre) →
+// heuristik lokal → model lokal (opsional) → AI /api/analyze (gagal →
+// fallback lokal jujur) → COMBINE (FarazCombine) → gerbang regresi
+// (FarazValidate) → render. render() satu-satunya penulis skor.
 async function doCheck() {
   if (checking) return;
   const raw = inputText.value.trim();
@@ -150,9 +287,28 @@ async function doCheck() {
 
   checking = true;
   $("btnCheck").disabled = true;
+  // Status jujur per tahap (FarazStatus); fallback bila modul belum muat.
+  const setStage = (s) => {
+    try {
+      if (typeof FarazStatus !== "undefined" && FarazStatus && typeof FarazStatus.setText === "function") FarazStatus.setText(statusEl, s);
+      else statusEl.textContent = s;
+    } catch (_) { /* status gagal → lanjut analisis, jangan tebak */ }
+  };
   try {
+    // 0) Preprocess dulu: hash/v + canonicalText untuk korelasi AI.
+    // Heuristik tetap menerima `main` bersitasi (detector-rules §4:
+    // sitasi dibutuhkan academic-context; canonicalText yang sudah
+    // dibersihkan akan menonaktifkan sinyal sitasi bila dipakai ke heuristic).
+    setStage("preparing");
+    await new Promise((r) => setTimeout(r, 60));
+    let pre = null;
+    try {
+      if (typeof FarazPre !== "undefined" && FarazPre && typeof FarazPre.preprocess === "function") pre = FarazPre.preprocess(raw);
+    } catch (e) { console.warn(e); pre = null; }
+
+    const useRef = $("autoRef").checked;
     let main = raw, cut = 0;
-    if ($("autoRef").checked) {
+    if (useRef) {
       const s = splitReferences(raw);
       main = s.main; cut = s.cut;
       refInfo.textContent = cut ? `${cut} kata daftar pustaka otomatis dikecualikan.` : "";
@@ -160,26 +316,83 @@ async function doCheck() {
       refInfo.textContent = "";
     }
 
-    statusEl.textContent = "Memindai teks...";
+    // 1) Jalur lokal: heuristik (10 sinyal) + model lokal opsional.
+    setStage("local");
     await new Promise((r) => setTimeout(r, 60));
-
     const heu = heuristic(main);
-    statusEl.textContent = "Menganalisis 10 pola tulisan...";
-    await new Promise((r) => setTimeout(r, 60));
     let lv = null;
     if ($("useLocal").checked) {
       try { lv = await localScore(main); } catch (e) { console.warn(e); lv = null; }
     }
 
-    statusEl.textContent = "Meninjau konteks tulisan...";
+    // 2) Jalur AI: kirim canonicalText + echo hash/v; gagal → lokal saja.
+    setStage("ai");
+    aiPending = true; aiResult = null; aiError = null;
+    let aiRes = { ai: null, reason: "unavailable" };
+    try {
+      if (pre && typeof FarazAIClient !== "undefined" && FarazAIClient && typeof FarazAIClient.analyze === "function") {
+        const aiText = useRef ? pre.canonicalText : raw;
+        const aiHash = useRef ? pre.hash : (FarazPre && typeof FarazPre.hashText === "function" ? FarazPre.hashText(raw) : "");
+        aiRes = await FarazAIClient.analyze({ canonicalText: aiText, hash: aiHash, v: pre.v, lang: pre.lang });
+      }
+    } catch (e) { console.warn(e); aiRes = { ai: null, reason: "unavailable" }; }
+    aiPending = false;
+    if (aiRes && aiRes.ai) aiResult = aiRes.ai;
+    else aiError = { reason: (aiRes && aiRes.reason) || "unavailable" };
+
+    // 3) Gabung evidence-based (bukan average buta).
+    setStage("combining");
     await new Promise((r) => setTimeout(r, 60));
+    let combined = null;
+    try {
+      if (typeof FarazCombine !== "undefined" && FarazCombine && typeof FarazCombine.combine === "function") {
+        combined = FarazCombine.combine(heu, aiResult, aiError);
+      }
+    } catch (e) { console.warn(e); combined = null; }
+
+    // 4) Gerbang regresi sebelum render: gabungan tidak boleh mengangkat
+    // skor >+10 di atas bukti lokal (cap supremacy menahan +5; ini jaring
+    // pengaman bila logika gabung berubah). Gagal → pakai lokal + catat.
+    setStage("validating");
+    await new Promise((r) => setTimeout(r, 60));
+    let useCombined = !!(combined && typeof combined.final === "number");
+    if (useCombined) {
+      try {
+        if (typeof FarazValidate !== "undefined" && FarazValidate && FarazValidate.checks && typeof FarazValidate.checks.regression === "function") {
+          const gate = FarazValidate.checks.regression(main, main, { origScore: heu.score, revScore: combined.final });
+          if (gate) {
+            useCombined = false;
+            aiError = { reason: "ditolak gerbang regresi" };
+          }
+        }
+      } catch (e) { console.warn(e); }
+    }
+    if (useCombined) {
+      heu.score = combined.final;
+      heu.confidence = combined.confidence;
+      heu.combineNote = combined.method;
+    } else if (aiError) {
+      heu.combineNote = `AI ${aiError.reason} — dipakai hasil lokal; skor indikasi, bukan vonis`;
+    }
+
     render(heu, lv, cut);
-    statusEl.textContent = "Hasil siap ditampilkan " + (lv !== null ? "(model lokal + heuristik)" : "(heuristik saja)") + ". Skor indikator, bukan vonis.";
+    // Status akhir menyebut jalur yang benar-benar dipakai (tanpa klaim).
+    const parts = ["heuristik"];
+    if (lv !== null) parts.push("model lokal");
+    if (aiResult) parts.push("AI");
+    let done = `Hasil siap ditampilkan (${parts.join(" + ")}). Skor indikasi, bukan vonis.`;
+    if (aiError) {
+      try {
+        if (typeof FarazStatus !== "undefined" && FarazStatus && typeof FarazStatus.aiFailMessage === "function") done += ` ${FarazStatus.aiFailMessage(aiError.reason)}`;
+      } catch (_) { /* abaikan, pesan dasar sudah tampil */ }
+    }
+    statusEl.textContent = done;
     // Tiap klik Cek selalu antar ke verdict (tengah layar) agar bagian
     // hasil yang sesuai langsung terlihat tanpa scroll manual.
     $("verdict").scrollIntoView({ behavior: "smooth", block: "center" });
   } finally {
     checking = false;
+    aiPending = false;
     $("btnCheck").disabled = false;
   }
 }
@@ -202,6 +415,10 @@ function refreshRail() {
   const out = ($("humanizeOut") && $("humanizeOut").value) || "";
   $("btnApplyHumanize").disabled = countWords(out) < MIN_WORDS;
   $("btnCopyHumanize").disabled = !out.trim();
+  // Alat ringkas/jelaskan butuh teks yang cukup untuk dinilai jujur.
+  const hasText = countWords((inputText.value || "").trim()) >= MIN_WORDS;
+  if ($("btnSummarize")) $("btnSummarize").disabled = !hasText;
+  if ($("btnExplain")) $("btnExplain").disabled = !hasText;
 }
 
 // ---------- Upload txt/md/pdf/docx ----------
@@ -309,8 +526,11 @@ $("btnClear").onclick = () => {
   hideFileChip();
   updateWC();
   refInfo.textContent = "";
+  aiResult = null; aiError = null; aiPending = false;
+  if ($("aiToolsOut")) { $("aiToolsOut").hidden = true; $("aiToolsOut").textContent = ""; }
   lastResult = null; // hasil lama dibuang: tidak boleh di-export lagi
   resultStale = false;
+  try { const b = document.getElementById("sentExplain"); if (b) b.textContent = ""; } catch (_) {}
   $("resultBox").classList.remove("stale");
   $("resultBox").hidden = true;
   $("resultEmpty").hidden = false;
@@ -322,6 +542,64 @@ $("btnClear").onclick = () => {
 $("fileClear").onclick = () => {
   hideFileChip();
   statusEl.textContent = "File dilepas — teks di textarea tetap ada, bisa langsung dicek.";
+};
+
+// ---------- Ringkas + Jelaskan struktur (lokal, tanpa AI key) ----------
+// Ekstraktif/deskriptif saja: kalimat asli verbatim + statistik teramati.
+// Tanpa karang fakta (humanizer-rules §4); gagal → pesan jujur di kotak.
+function currentMainText() {
+  const raw = inputText.value.trim();
+  if ($("autoRef").checked) {
+    try { return splitReferences(raw).main; } catch (e) { return raw; }
+  }
+  return raw;
+}
+
+function showAiTools(text) {
+  const out = $("aiToolsOut");
+  if (!out) return;
+  out.hidden = false;
+  out.textContent = text;
+  refreshRail();
+}
+
+if ($("btnSummarize")) $("btnSummarize").onclick = () => {
+  const t = currentMainText();
+  if (countWords(t) < MIN_WORDS) {
+    showAiTools(`Teks terlalu pendek — tempel minimal ${MIN_WORDS} kata dulu.`);
+    return;
+  }
+  if (typeof FarazSummarize === "undefined" || !FarazSummarize || typeof FarazSummarize.summarize !== "function") {
+    showAiTools("Perangkum belum termuat — muat ulang halaman, lalu coba lagi.");
+    return;
+  }
+  let r = null;
+  try { r = FarazSummarize.summarize(t); } catch (e) { console.warn(e); }
+  if (!r || !r.sentences || !r.sentences.length) {
+    showAiTools("Ringkasan belum dapat dibuat dari teks ini.");
+    return;
+  }
+  showAiTools(`Ringkasan ekstraktif (${r.sentences.length} kalimat asli, tanpa ubah fakta): ` +
+    r.sentences.map((s, i) => `${i + 1}) ${s}`).join(" "));
+};
+
+if ($("btnExplain")) $("btnExplain").onclick = () => {
+  const t = currentMainText();
+  if (countWords(t) < MIN_WORDS) {
+    showAiTools(`Teks terlalu pendek — tempel minimal ${MIN_WORDS} kata dulu.`);
+    return;
+  }
+  if (typeof FarazExplain === "undefined" || !FarazExplain || typeof FarazExplain.explain !== "function") {
+    showAiTools("Penjelas struktur belum termuat — muat ulang halaman, lalu coba lagi.");
+    return;
+  }
+  let r = null;
+  try { r = FarazExplain.explain(t); } catch (e) { console.warn(e); }
+  if (!r || !r.text) {
+    showAiTools("Struktur belum dapat dijelaskan dari teks ini.");
+    return;
+  }
+  showAiTools(`Penjabaran teks: Berikut penjabaran isi teksmu: ${r.text}`);
 };
 
 $("btnSampleID").onclick = () => {
