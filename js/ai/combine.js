@@ -87,14 +87,15 @@
 
     // AI tidak tersedia → heuristik saja, dilaporkan jujur.
     // Mixed tetap confidence maks sedang meski jalur AI mati.
+    // method = audit ringkas (angka untuk <details>); confidence tampil
+    // SEKALI di verdict via return terpisah (anti duplikasi).
     if (!ai || typeof ai.score !== "number" || !isFinite(ai.score)) {
       var why = (aiErr && aiErr.reason) ? String(aiErr.reason) : "tidak tersedia";
       var soloConf = (isMixed && lConf === "tinggi") ? "sedang" : lConf;
       return {
         final: clampScore(localCapped),
         confidence: soloConf,
-        method: "heuristik offline " + lScore + "/100 (AI " + why +
-          "; skor indikasi, bukan vonis; confidence " + soloConf + ")"
+        method: "heuristik offline " + lScore + "/100 (AI " + why + ")"
       };
     }
 
@@ -143,17 +144,16 @@
     }
     var confidence = rankConf(baseRank);
 
-    var verdict = final >= 75 ? "terindikasi pola generatif"
-      : final >= 50 ? "campuran, perlu ditinjau"
-      : "cenderung natural";
+    // method = audit teknis untuk <details> (angka bobot/cakupan/
+    // selisih/cap tetap ada di sana). Label kategori + confidence tampil
+    // di verdict via return terpisah — tidak diduplikasi di method.
     var method = "gabungan heuristik " + lScore + "/100 + AI " + aScore + "/100" +
       " (bobot AI " + wAi.toFixed(2) + ": conf " + aConf + " × cakupan " +
       coverage.toFixed(2) + " × bahasa " + langFactor.toFixed(1) +
       "; selisih " + Math.round(gap) + (disagree ? " → tidak sepakat, perlu ditinjau" : "") +
       (isMixed ? "; bahasa campuran (" + textLang + ")" : "") +
       (isFinite(capInfo.cap) ? "; cap lokal " + capInfo.cap + " (" + capInfo.kind + ") + angkat maks " + MAX_LIFT : "") +
-      mixedNote +
-      ") — " + verdict + "; skor indikasi, bukan vonis; confidence " + confidence;
+      mixedNote + ")";
 
     return { final: final, confidence: confidence, method: method };
   }

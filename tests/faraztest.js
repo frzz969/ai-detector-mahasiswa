@@ -47,7 +47,7 @@ function loadSources() {
   const factory = new Function(
     "document", "window", "navigator",
     code + "\n;return {heuristic, splitReferences, cleanAcademic, splitSentences," +
-    " words, countWords, humanizeText, humanizeSentence, render, doCheck, markStale, ID_FW, EN_FW};"
+    " words, countWords, humanizeText, humanizeSentence, stripMarkdown, render, doCheck, markStale, ID_FW, EN_FW};"
   );
   return factory(documentStub, {}, {});
 }
@@ -240,6 +240,46 @@ if (s6pre && s6cmb) {
 }
 
 if (!bootOK) failures.push("boot main.js");
+
+// ---- Smoke S7: strip markdown + verdict bersih (detector-rules §1, validation-rules §5) ----
+const s7assert = (name, cond, info) => {
+  console.log(`S7 ${name}: ${cond ? "OK" : "GAGAL"}${info ? " (" + info + ")" : ""}`);
+  if (!cond) failures.push(`S7 ${name}`);
+};
+// (a) helper hanya buang penanda, isi dipertahankan
+const MD_UNIT_IN = "**tebal** dan *miring*\n# Judul\n- item\n> kutip\n[link](https://x.id)";
+s7assert("strip-unit", typeof api.stripMarkdown === "function" &&
+  api.stripMarkdown(MD_UNIT_IN) === "tebal dan miring\nJudul\nitem\nkutip\nlink",
+  JSON.stringify(String(api.stripMarkdown ? api.stripMarkdown(MD_UNIT_IN) : "n/a")));
+// (b) tempelan markdown tidak menaikkan skor dibanding teks polos yang sama
+const MD_PLAIN = "Berdasarkan hasil observasi di kelas, sebagian mahasiswa terlihat lebih fokus ketika materi disampaikan dengan contoh konkret dari pengalaman sehari-hari. " +
+  "Kami mewawancarai sepuluh guru dan mencatat jawaban mereka selama dua minggu berturut-turut. " +
+  "Menurut pengalaman kami, anak-anak yang berdiskusi kelompok terlihat lebih berani menyampaikan pendapat di depan kelas. " +
+  "Data kehadiran yang kami kumpulkan menunjukkan rata-rata kehadiran mencapai delapan puluh persen selama satu semester. " +
+  "Wah, hasilnya sungguh menggembirakan bagi kami semua! " +
+  "Kami bertanya kepada siswa, apakah mereka senang belajar kelompok setiap harinya? " +
+  "Ternyata sebagian besar menjawab dengan antusias dan penuh semangat.";
+const MD_NOISY = "# Catatan Lapangan\n\n**Hasil pengamatan** minggu ini:\n\n- " +
+  MD_PLAIN.split(". ").slice(0, 3).join(".\n- ") + ".\n\n> *Catatan*: hasil ini **menggembirakan**.\n\n" +
+  "Rincian lanjutan [dokumen](https://example.com/paper):\n\n" +
+  MD_PLAIN.split(". ").slice(3).join(". ") + ".";
+const mdBase = api.heuristic(MD_PLAIN);
+const mdNoisy = api.heuristic(MD_NOISY);
+s7assert("markdown-noscore", mdNoisy.score <= mdBase.score + 5,
+  `polos=${mdBase.score} markdown=${mdNoisy.score}`);
+// (c) verdict bersih: tanpa angka bobot internal, confidence tepat sekali
+try {
+  const vHeu = api.heuristic(MD_PLAIN);
+  vHeu.combineNote = "gabungan heuristik 23/100 + AI 92/100 (bobot AI 0.11: conf tinggi × cakupan 0.50 × bahasa 0.5; selisih 69 → tidak sepakat, perlu ditinjau)";
+  vHeu.confidence = "sedang";
+  api.render(vHeu, null, 0);
+  const vHtml = (elCache.verdict && elCache.verdict.innerHTML) || "";
+  s7assert("verdict-bersih", !/bobot|selisih|cakupan|×/.test(vHtml), vHtml.slice(0, 140));
+  const confN = (vHtml.match(/confidence/gi) || []).length;
+  const skorN = (vHtml.match(/skor indikasi/gi) || []).length;
+  s7assert("verdict-sekali", confN === 1 && skorN === 1 && /Skor indikasi \d+\/100/.test(vHtml),
+    `confidence×${confN} skor-indikasi×${skorN}`);
+} catch (e) { s7assert("verdict-render", false, String((e && e.message) || e)); }
 
 // ================= METRICS =================
 const m = binaryMetrics(rows);

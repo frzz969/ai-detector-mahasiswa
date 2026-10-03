@@ -185,8 +185,19 @@ function render(heu, localVal, refCut) {
   else               { lbl = "Cenderung natural"; ver = `<b>Skor indikasi ${ai}/100 — tidak banyak pola generatif.</b> Sudah baik, tidak semua perlu diubah.`; }
 
   $("mixLbl").textContent = lbl;
+  // Verdict bersih user-facing (validation-rules §5, detector-rules §6):
+  // skor + kategori + confidence SEKALI + SATU kalimat status AI sederhana.
+  // Seluruh rincian metode (skor heuristik vs AI, bobot, cakupan, faktor
+  // bahasa, selisih) PINDAH ke <details> audit "Kenapa skor ini?" di bawah
+  // (satu <li> tambahan, default collapsed). Status jujur per tahap
+  // doCheck() tidak diubah.
+  let aiLine = "Pemeriksaan AI tidak tersedia — dipakai hasil lokal.";
+  try {
+    if (heu.combineNote && /gabungan/i.test(heu.combineNote)) aiLine = "Hasil gabungan heuristik dan AI.";
+    else if (typeof localVal === "number") aiLine = "Pemeriksaan AI tidak tersedia — dipakai hasil lokal + model lokal.";
+  } catch (_) {}
   $("verdict").innerHTML =
-    `${ver}<br><small>${escapeHtml(method)}${refCut ? ` • ${refCut} kata pustaka dikecualikan` : ""} • confidence ${heu.confidence}${heu.lang === "en" ? " • bahasa terdeteksi EN" : ""} • skor indikasi /100, bukan probabilitas; skor Human (100 − skor AI) hanya komplemen tampilan</small>`;
+    `${ver}<br><small>confidence ${escapeHtml(heu.confidence)} • ${escapeHtml(aiLine)}</small>`;
 
   // Highlight per kalimat: merah >=70, kuning >=45, hijau sisanya.
   // Explainable: tiap mark dapat diklik + fokus keyboard (tabindex/role/
@@ -235,12 +246,24 @@ function render(heu, localVal, refCut) {
     li.textContent = `${refCut} kata daftar pustaka dikecualikan dari skor (mengurangi false-positive).`;
     rs.appendChild(li);
   }
+  // Audit metode: rincian internal (bobot/cakupan/selisih) tampil di sini
+  // — di dalam <details> "Kenapa skor ini?" yang default collapsed — agar
+  // tetap ada untuk audit tanpa mengotori verdict.
+  try {
+    if (method) {
+      const mli = document.createElement("li");
+      mli.textContent = `Rincian metode (audit): ${method}${refCut ? ` • ${refCut} kata pustaka dikecualikan` : ""}${heu.lang === "en" ? " • bahasa terdeteksi EN" : ""}`;
+      rs.appendChild(mli);
+    }
+  } catch (_) {}
 
+  // Detail teknis ringkas (audit, collapsed): angka statistik saja — tanpa
+  // method, tanpa confidence ganda, tanpa pengulangan "skor indikasi".
   $("stats").textContent =
     `kata dinilai: ${heu.detail.totalW} | kalimat: ${heu.sents.length} | ` +
     `TTR: ${heu.detail.ttr.toFixed(3)} | burst: ${heu.detail.burst.toFixed(3)} | ` +
     `kalimat: median ${heu.detail.sentMedian}% • sebar ±${heu.detail.sentSpread.toFixed(0)} | ` +
-    `skor indikasi: ${final}/100 (mentah ${heu.detail.rawScore !== undefined ? heu.detail.rawScore : heu.score}; bukan probabilitas) • confidence ${heu.confidence} (${method})`;
+    `skor mentah: ${heu.detail.rawScore !== undefined ? heu.detail.rawScore : heu.score} (audit; tampil ${final}/100)`;
 
   $("resultEmpty").hidden = true;
   $("resultBox").hidden = false;
@@ -604,6 +627,9 @@ function showAiTools(text) {
   out.hidden = false;
   try { delete out.dataset.stale; } catch (_) { try { out.removeAttribute("data-stale"); } catch (_) {} }
   out.title = "";
+  // Keluaran fitur tampil teks polos: penanda markdown tempelan dibuang,
+  // isi/fakta/angka/sitasi dipertahankan (humanizer-rules §4).
+  try { if (typeof stripMarkdown === "function") text = stripMarkdown(String(text)); } catch (_) {}
   out.textContent = text;
   refreshRail();
 }

@@ -79,6 +79,9 @@ function humanizeSentence(s, skip) {
 }
 
 function humanizeText(text, scores) {
+  // Tempelan AI berformat markdown dibersihkan dulu (helper detector.js) —
+  // penanda format bukan gaya penulis; isi/fakta/angka/sitasi dipertahankan.
+  try { if (typeof stripMarkdown === "function") text = stripMarkdown(String(text)); } catch (_) {}
   // 0) Lindungi kemunculan tunggal: aturan penghapus ("") dan aturan
   // bertanda "freq" dilewati bila frasanya cuma muncul <=1x di naskah
   // — jangan paksa hilangkan penghubung yang memang dibutuhkan, dan
@@ -230,6 +233,8 @@ $("btnHumanize").onclick = async () => {
       const hr = await FarazAIClient.humanize(main, { v: 1 });
       if (hr && hr.text && hr.text.trim() && hr.text.trim() !== main) {
         apiCandidate = hr.text.trim();
+        // Kandidat AI dirapikan ke teks polos (buang penanda markdown saja).
+        try { if (typeof stripMarkdown === "function") apiCandidate = stripMarkdown(apiCandidate).trim(); } catch (_) {}
         apiConf = hr.confidence || "rendah";
       } else if (!(hr && hr.text && hr.text.trim())) {
         apiTried = true; apiReason = (hr && hr.reason) || "unavailable";

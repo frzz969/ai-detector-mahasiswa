@@ -13,6 +13,10 @@
   var MIN_KEEP = 2;
 
   function getSents(text) {
+    // Tempelan AI berformat markdown dibersihkan dulu (satu helper
+    // stripMarkdown dari detector.js) — kalimat ekstraktif verbatim yang
+    // dipilih tampil teks polos; fakta/angka/sitasi dipertahankan.
+    try { if (typeof stripMarkdown === "function") text = stripMarkdown(String(text)); } catch (_) {}
     if (typeof splitSentences === "function") {
       try {
         var s = splitSentences(text);

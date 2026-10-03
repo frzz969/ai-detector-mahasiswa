@@ -46,6 +46,9 @@
   // explain(text) → { bullets[], text, method }. Deskriptif, bukan vonis.
   function explain(text) {
     var t = String(text == null ? "" : text);
+    // Penanda markdown tempelan dibuang (helper detector.js) — statistik
+    // teramati dihitung dari isi polos; fakta/angka/sitasi dipertahankan.
+    try { if (typeof stripMarkdown === "function") t = stripMarkdown(t); } catch (_) {}
     var paras = t.split(/\n\s*\n/).map(function (p) { return p.trim(); }).filter(Boolean);
     var sents = getSents(t);
     var words = (t.trim().match(/[\p{L}\p{N}']+/gu) || []).length;

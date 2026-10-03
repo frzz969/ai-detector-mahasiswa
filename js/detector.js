@@ -41,13 +41,51 @@ function splitReferences(t) {
   return { main, refs, cut: countWords(refs) };
 }
 
+// Buang penanda format markdown tempelan AI (GPT/Gemini: **tebal**,
+// *miring*, # heading, - list, > kutip, ```blok```, `code`, [link](url))
+// agar tidak dihitung jadi sinyal gaya. detector-rules §1 (bersihkan tanpa
+// buang info) + humanizer-rules §4 (isi/fakta/angka/sitasi dipertahankan,
+// hanya penanda format yang dibuang). SATU tempat untuk semua jalur:
+// cleanAcademic() (skor heuristik + canonicalText preprocess) dan langsung
+// oleh summarizer/explainer/humanizer (output teks polos). Tanpa klaim,
+// tanpa ubah angka/sitasi.
+function stripMarkdown(t) {
+  let s = String(t == null ? "" : t);
+  if (!s) return s;
+  s = s.replace(/```(\w*\n)?([\s\S]*?)```/g, "$2"); // pagar blok → isi
+  s = s.replace(/`([^`\n]*)`/g, "$1");               // code inline → isi
+  s = s.replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1");     // gambar → alt
+  s = s.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");      // link → teks
+  s = s.replace(/^#{1,6}\s+/gm, "");                 // heading
+  s = s.replace(/^(?:\s*>)+\s?/gm, "");               // kutip
+  s = s.replace(/^\s*[-*+]\s+(?=\S)/gm, "");         // bullet
+  s = s.replace(/^\s*\d+[.)]\s+(?=\S)/gm, "");        // list bernomor
+  s = s.replace(/^\s*(?:---|\*\*\*|___)\s*$/gm, " "); // garis horizontal
+  s = s.replace(/\*\*([^*]+)\*\*/g, "$1");           // bold **
+  s = s.replace(/__([^_]+)__/g, "$1");               // bold __
+  s = s.replace(/~~([^~]+)~~/g, "$1");               // coret
+  s = s.replace(/(^|\W)\*([^*\n]+?)\*(?=\W|$)/g, "$1$2"); // miring *
+  s = s.replace(/(^|\W)_([^_\n]+)_(\W|$)/g, "$1$2$3");    // miring _
+  s = s.replace(/\s*\|\s*/g, " ");                   // sisa tabel
+  s = s.replace(/[ \t]{2,}/g, " ");
+  s = s.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n");
+  return s;
+}
+
 // Buang sitasi/URL/DOI agar tidak mengacaukan statistik kata.
 // PRD §15.2/§15.3 (detector-rules §4: sitasi/istilah teknis bukan bukti AI):
 // code (fence/backtick/indent), URL, DOI, email, dan pengenal teknis
 // (foo(), a.b.c) tidak membawa gaya bahasa — dimask agar tidak ikut hitung
 // TTR/n-gram dan tidak jadi sinyal gaya AI maupun penentu bahasa utama.
+// Penanda markdown non-code dibuang via stripMarkdown (di atas) SESUDAH
+// mask code, supaya isi blok code tetap tidak ikut hitung seperti semula.
 function cleanAcademic(t) {
-  return t
+  let s = String(t);
+  s = s.replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`\n]*`/g, " ")
+    .replace(/^[ \t]{4,}\S.*$/gm, " ");
+  try { if (typeof stripMarkdown === "function") s = stripMarkdown(s); } catch (_) {}
+  return s
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/`[^`\n]*`/g, " ")
     .replace(/^[ \t]{4,}\S.*$/gm, " ")
