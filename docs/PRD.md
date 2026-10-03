@@ -1,6 +1,6 @@
 # PRD — Faraz Detector AI (AI Detector Mahasiswa)
 
-**Versi:** 1.2 — 30 Sep 2026 (F-19/F-20 dipisah + F-21 hybrid; §12 tanpa item selesai + catatan hybrid; tambah §13 status deploy; api/* belum deploy)
+**Versi:** 1.3 — 01 Okt 2026 (tambah §15 kontrak & aturan: API, bahasa, mixed, reproducibility, state, concurrency, privasi hybrid, interpretasi, test matrix; revisi klaim privat §1)
 **Status:** Draft untuk implementasi
 **Bahasa:** Indonesia
 **Sumber acuan kode:** `js/core.js`, `js/detector.js`, `js/referensi.js`, `js/humanizer.js`, `js/ai/preprocess.js`, `js/ai/client.js`, `js/ai/combine.js`, `js/ai/validate.js`, `js/ai/status.js`, `js/ai/summarizer.js`, `js/ai/explainer.js`, `js/main.js`, `index.html`, `api/config.js`, `api/analyze.js`, `api/humanize.js`, `api/summarize.js`, `api/explain.js`, `.env.example`, `style.css`, `mobile.css`
@@ -13,7 +13,7 @@
 Faraz Detector AI adalah aplikasi web statis, gratis, tanpa daftar, untuk membantu mahasiswa mengecek indikasi teks AI pada naskah akademik (skripsi, esai, makalah, diskusi) dalam Bahasa Indonesia dan Inggris.
 
 Value proposition:
-- Privat: analisis berjalan lokal di browser (heuristik `js/detector.js` + model lokal opsional), tanpa upload ke server.
+- Privat-first: analisis heuristik dan model lokal berjalan di browser tanpa mengirim naskah ke server. Pada mode hybrid, teks dapat dikirim ke `/api/analyze` hanya ketika endpoint AI tersedia dan jalur AI digunakan.
 - Hybrid bila tersedia: `js/main.js` `doCheck()` menggabung bukti lokal + AI `/api/analyze` secara evidence-based (`js/ai/combine.js`) dengan gerbang regresi (`js/ai/validate.js`); AI gagal/tidak tersedia → hasil lokal + pesan jujur (`js/ai/status.js`, graceful degradation).
 - Actionable: skor + highlight per kalimat yang bisa diklik untuk penjelasan (merah/kuning/hijau) + alasan + statistik.
 - Jujur: bahasa hanya "terindikasi / perlu ditinjau / confidence rendah-sedang-tinggi", humanizer formal→formal dengan regresi per kalimat dan verdict BETTER/EQUIVALENT/WORSE; Summarize ekstraktif (kalimat asli verbatim) dan Explain deskriptif struktur — keduanya bukan vonis.
@@ -161,6 +161,71 @@ Burst ritme, TTR, n-gram diversity, frasa generik, konektor, pola 12–28 kata, 
 4. Export basi terblokir sampai rescan.
 5. CTA `#mulai` tanpa horizontal scroll di 360/390/430px.
 6. Setiap analisis menyebut aturan yang dipakai (audit balik ke `referensi/*`).
+
+## 15. Kontrak & Aturan Tambahan (v1.3, tanpa ubah logika kode)
+
+### 15.1 API Contract Ringkas
+- Request `/api/analyze`: `canonicalText`, `hash`, `version`, `language`, `options`.
+- Response wajib: `hash`, `version`, `ai`, `language`, `confidence`, `coverage`, `reasons`, `status`.
+- Client wajib menolak response bila `hash` atau `version` tidak sama dengan request aktif.
+- Response malformed, timeout, HTTP error, atau hash/version mismatch → AI dianggap tidak tersedia dan hasil lokal dipertahankan.
+- API tidak boleh mengembalikan secret/key ke client.
+
+### 15.2 Deteksi Bahasa
+- Bahasa ditentukan sebelum proses hybrid.
+- Minimal mendukung `id`, `en`, dan `unknown`.
+- Jika confidence bahasa rendah atau campuran ID/EN signifikan → gunakan `unknown/mixed`.
+- Model EN tidak boleh diberi bobot penuh untuk teks ID.
+- Bahasa yang terdeteksi dan confidence-nya dicatat dalam hasil analisis.
+
+### 15.3 Teks Campuran
+- Istilah teknis, nama metode, nama software, dan istilah akademik berbahasa asing tidak dianggap sebagai pergantian bahasa utama.
+- Code, URL, DOI, nama produk, nama organisasi, dan sitasi tidak digunakan sebagai sinyal gaya AI.
+- Jika proporsi dua bahasa cukup tinggi, hasil diberi status mixed dan confidence dapat diturunkan.
+
+### 15.4 Reproducibility
+- Setiap hasil menyimpan `detectorVersion`, `ruleVersion`, `modelVersion` bila model lokal digunakan, `language`, dan timestamp.
+- Export hanya menggunakan metadata dari analisis terakhir yang menghasilkan teks tersebut.
+- Perubahan rule/model tidak boleh mengubah hasil yang sudah diekspor secara retroaktif.
+
+### 15.5 State Hasil
+- `EMPTY`: belum ada teks.
+- `CHECKING`: analisis sedang berjalan.
+- `FRESH`: hasil sesuai dengan teks editor terakhir.
+- `STALE`: teks berubah setelah analisis terakhir.
+- `FAILED`: analisis gagal total.
+- `HUMANIZED`: tersedia keluaran humanizer yang belum diterapkan.
+- Perubahan teks selalu menghapus/menandai hasil yang bergantung pada teks tersebut sebagai stale.
+- Hasil stale tidak boleh digunakan untuk Export, Summarize, Explain, atau Apply Humanize tanpa validasi ulang bila fitur tersebut bergantung pada teks terbaru.
+
+### 15.6 Concurrency & Cancellation
+- Setiap analisis memiliki `requestId`.
+- Hanya hasil dari request aktif yang boleh memanggil `render()`.
+- Response dari request lama wajib diabaikan.
+- Analisis baru membatalkan atau menginvalidasi analisis sebelumnya.
+- Response AI yang datang terlambat tidak boleh menimpa hasil terbaru.
+
+### 15.7 Privasi & Data (hybrid)
+- Mode lokal tidak mengirim isi naskah ke server.
+- Mode hybrid mengirim teks yang diperlukan ke `/api/analyze` ketika endpoint tersedia dan fitur AI aktif.
+- Server tidak boleh menyimpan naskah atau API key dalam response/log aplikasi.
+- UI wajib memberi tahu ketika teks diproses melalui endpoint eksternal.
+- API key hanya berada di environment server dan tidak pernah dikirim ke browser.
+
+### 15.8 Interpretasi Skor
+- Skor merupakan skor indikasi internal aplikasi, bukan probabilitas bahwa teks dibuat AI.
+- Skor tidak boleh diterjemahkan menjadi persentase kepastian kepengarangan.
+- Perubahan skor antar-versi detector tidak dianggap sebagai bukti perubahan kepengarangan.
+- Hasil harus selalu diposisikan sebagai sinyal untuk ditinjau manusia.
+
+### 15.9 Test Matrix Minimum
+- ID akademik formal, EN akademik formal, ID informal, EN informal, ID/EN mixed.
+- Teks <20 kata, 20–49 kata, 50–79 kata, 80+ kata; 1 kalimat, 2–3 kalimat.
+- 30k karakter, >30k karakter; PDF teks, PDF scan, DOCX, DOC lama.
+- Referensi panjang; URL/DOI/sitasi; model lokal tersedia/gagal.
+- API timeout, 401/403, 429, 5xx, malformed response, hash mismatch.
+- Request lama datang setelah request baru; teks berubah setelah check.
+- Humanize WORSE/EQUIVALENT/BETTER; export stale.
 
 ---
 

@@ -25,22 +25,56 @@
     return ("0000000" + (h >>> 0).toString(16)).slice(-8);
   }
 
-  // Deteksi bahasa ringan: pakai set global ID_FW/EN_FW bila ada
-  // (core.js), else fallback daftar kecil. Output "id"|"en".
-  function detectLang(tokens) {
+  // Deteksi bahasa ringan: LOGIKA SAMA dengan detectLanguageInfo() di
+  // detector.js (PRD §15.2/§15.3) — fwRate yang sama, ambang yang sama
+  // (unknown bila FW<4/fwRate<0.02; mixed bila proporsi minor>=0.30),
+  // eksklusi yang sama (produk/org multi-kata kapital + akronim).
+  // Output "id"|"en"|"mixed"|"unknown". JANGAN ubah ambang di satu sisi saja.
+  function collectLangExclusions(cleaned) {
+    var excl = {};
+    var multi = String(cleaned).match(/\b[A-ZÀ-Þ][a-zà-ÿ]+(?:\s+[A-ZÀ-Þ][a-zà-ÿ]+)+/g) || [];
+    for (var k = 0; k < multi.length; k++) {
+      var parts = multi[k].toLowerCase().split(/[^a-zà-ÿ]+/);
+      for (var j = 0; j < parts.length; j++) { if (parts[j]) excl[parts[j]] = 1; }
+    }
+    var acr = String(cleaned).match(/\b[A-ZÀ-Þ]{2,}\b/g) || [];
+    for (var a = 0; a < acr.length; a++) excl[acr[a].toLowerCase()] = 1;
+    return excl;
+  }
+
+  function detectLangInfo(cleaned, tokens) {
     var hasIdFw = typeof ID_FW !== "undefined" && ID_FW && typeof ID_FW.has === "function";
     var hasEnFw = typeof EN_FW !== "undefined" && EN_FW && typeof EN_FW.has === "function";
-    var fwId = 0, fwEn = 0;
     var FALLBACK_ID = { yang: 1, dan: 1, dengan: 1, untuk: 1, pada: 1, ini: 1, itu: 1, adalah: 1, dalam: 1, oleh: 1, sebagai: 1, tidak: 1, dari: 1 };
     var FALLBACK_EN = { the: 1, and: 1, of: 1, to: 1, in: 1, is: 1, are: 1, that: 1, this: 1, with: 1, for: 1, as: 1, by: 1 };
+    var excl = collectLangExclusions(cleaned);
+    var fwId = 0, fwEn = 0;
     for (var i = 0; i < tokens.length; i++) {
       var t = tokens[i];
+      if (excl[t]) continue;
       if (hasIdFw) { if (ID_FW.has(t)) fwId++; }
       else if (FALLBACK_ID[t]) fwId++;
       if (hasEnFw) { if (EN_FW.has(t)) fwEn++; }
       else if (FALLBACK_EN[t]) fwEn++;
     }
-    return (fwEn > fwId && fwEn > 0) ? "en" : "id";
+    var totalW = tokens.length;
+    var fwTotal = fwId + fwEn;
+    var fwRate = totalW ? Math.max(fwId, fwEn) / totalW : 0;
+    var idProp = fwTotal ? fwId / fwTotal : 0;
+    var enProp = fwTotal ? fwEn / fwTotal : 0;
+    var majority = fwEn > fwId ? "en" : "id";
+    var language = majority, mixed = false;
+    if (fwTotal < 4 || fwRate < 0.02) language = "unknown";
+    else if (Math.min(idProp, enProp) >= 0.30) { language = "mixed"; mixed = true; }
+    var languageConfidence = Math.round(Math.min(1, fwRate / 0.2) * 100) / 100;
+    if (language === "unknown") languageConfidence = Math.min(languageConfidence, 0.3);
+    if (mixed) languageConfidence = Math.min(languageConfidence, 0.6);
+    return { language: language, majority: majority, mixed: mixed, fwRate: fwRate, languageConfidence: languageConfidence };
+  }
+
+  // Kompatibilitas: kembalikan string bahasa saja.
+  function detectLang(tokens, cleaned) {
+    return detectLangInfo(cleaned || "", tokens).language;
   }
 
   function tokenizeLower(t) {
@@ -94,7 +128,9 @@
       wordCount = (cleaned.trim().match(/[\p{L}\p{N}']+/gu) || []).length;
     }
 
-    var lang = detectLang(tokenizeLower(cleaned));
+    var langInfo = detectLangInfo(cleaned, tokenizeLower(cleaned));
+    var lang = (langInfo.language === "id" || langInfo.language === "en")
+      ? langInfo.language : langInfo.majority;
     var hash = hashText(canonicalText);
 
     return {
@@ -103,6 +139,9 @@
       canonicalText: canonicalText,
       sents: sents,
       lang: lang,
+      language: langInfo.language,
+      languageConfidence: langInfo.languageConfidence,
+      mixed: langInfo.mixed,
       words: wordCount,
       refCut: cut,
       refText: refs
@@ -112,6 +151,8 @@
   global.FarazPre = {
     preprocess: preprocess,
     hashText: hashText,
+    detectLang: detectLang,
+    detectLangInfo: detectLangInfo,
     PREPROCESS_V: PREPROCESS_V
   };
 })(typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : this);

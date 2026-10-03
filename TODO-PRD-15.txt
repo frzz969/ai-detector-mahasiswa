@@ -1,0 +1,22 @@
+PENGINGAT — PRD v1.3 §15 (belum diimplementasi, jangan lupa)
+
+Status: dokumen sudah masuk docs/PRD.md §15, kode BELUM diubah.
+Logika saat ini tetap versi lama (aman buat deploy).
+
+Yang perlu dikerjakan nanti (urusan prioritas):
+
+WAJIB:
+1. [ ] API Contract — client tolak response bila hash/version beda dari request aktif.
+2. [ ] State hasil — EMPTY / CHECKING / FRESH / STALE / FAILED / HUMANIZED (sekarang masih boolean resultStale).
+3. [ ] Concurrency — tiap analisis punya requestId, response lama wajib diabaikan, hanya request aktif boleh render().
+4. [ ] Privasi hybrid — bedakan Local vs Hybrid di UI, jangan klaim "privat tanpa upload" untuk semua mode.
+5. [ ] Bahasa ID/EN — dukung id / en / unknown-mixed, catat bahasa + confidence di hasil.
+
+BAGUS:
+6. [ ] Reproducibility — simpan detectorVersion, ruleVersion, modelVersion, language, timestamp di hasil/export.
+7. [ ] Mixed-language — istilah teknis/code/URL/DOI/sitasi bukan sinyal AI; proporsi campur tinggi → status mixed + confidence turun.
+8. [ ] Interpretasi skor — tegaskan skor = indikasi internal, bukan probabilitas kepengarangan.
+9. [ ] Test matrix — tambah kasus: mixed, teks pendek, PDF scan, DOC lama, API 401/429/5xx/timeout/malformed/hash-mismatch, race request, export stale, humanize WORSE/EQUIVALENT/BETTER.
+
+File acuan: docs/PRD.md §15.1 – §15.9
+Kode terkait: js/main.js (doCheck/render/markStale/refreshRail), js/ai/client.js, js/ai/combine.js, tests/faraztest.js

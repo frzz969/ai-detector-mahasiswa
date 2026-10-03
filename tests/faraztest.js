@@ -47,7 +47,7 @@ function loadSources() {
   const factory = new Function(
     "document", "window", "navigator",
     code + "\n;return {heuristic, splitReferences, cleanAcademic, splitSentences," +
-    " words, countWords, humanizeText, humanizeSentence, render, doCheck, markStale};"
+    " words, countWords, humanizeText, humanizeSentence, render, doCheck, markStale, ID_FW, EN_FW};"
   );
   return factory(documentStub, {}, {});
 }
@@ -166,6 +166,78 @@ rows.forEach((r) => r.reasons.forEach((t) => { if (FORBIDDEN.test(t)) forbidHits
 console.log(`S5 forbidden-claims pada reasons: ${forbidHits.length === 0 ? "BERSIH" : "DITEMUKAN " + forbidHits.length}`);
 forbidHits.forEach((h) => console.log("   ! " + h));
 if (forbidHits.length) failures.push("S5 forbidden-claims");
+
+// ---- Smoke S6: matrix mixed-language (PRD §15.2/§15.3 + sebagian §15.9) ----
+// Threshold 50/75/30 TIDAK diubah. GAGAL bila ada assert tidak lolos.
+const MX_MIXED = "Penelitian ini bertujuan untuk menganalisis pengaruh media sosial terhadap prestasi belajar siswa di sekolah menengah atas. " +
+  "Data yang dikumpulkan berasal dari kuesioner yang disebarkan kepada responden dengan metode yang sistematis dan terstruktur. " +
+  "Hasil yang diperoleh menunjukkan bahwa penggunaan yang berlebihan dapat menurunkan konsentrasi belajar para siswa. " +
+  "The results of this study show that the use of social media has a significant effect on students and their academic performance in the classroom. " +
+  "The data were collected from a survey that was distributed to the participants in several schools across the region. " +
+  "The analysis indicates that the relationship between the variables is strong and consistent over time. " +
+  "Oleh karena itu, guru dan orang tua perlu bekerja sama dengan baik untuk membimbing para siswa dalam menggunakan teknologi secara bijak. " +
+  "Selain itu, sekolah dapat membuat aturan yang jelas agar proses belajar tetap efektif dan kondusif bagi semua pihak yang terlibat di dalamnya.";
+const MX_BASE = "Saya dan tim kami melakukan observasi langsung di tiga sekolah dasar pada bulan Maret hingga Mei tahun lalu. " +
+  "Kami mewawancarai dua belas guru dan mencatat jawaban mereka dengan teliti setiap harinya. " +
+  "Menurut pengalaman kami, anak-anak yang sarapan sebelum berangkat terlihat lebih fokus saat mengerjakan soal matematika di kelas. " +
+  "Data kehadiran yang kami kumpulkan menunjukkan rata-rata kehadiran mencapai sembilan puluh persen selama satu semester penuh. " +
+  "Wah, hasilnya sungguh menggembirakan bagi kami semua! " +
+  "Kami bertanya kepada siswa, apakah mereka senang belajar kelompok? " +
+  "Ternyata sebagian besar menjawab dengan antusias dan penuh semangat setiap harinya.";
+const MX_NOISE_ADD = "Implementasi memakai `model.fit(X, y)` dengan pustaka TensorFlow dan PyTorch pada Microsoft Visual Studio Code, " +
+  "lihat https://example.org/paper serta DOI:10.1234/abcd.5678 dan rujukan (Santoso, 2020) [12].";
+const MX_UNKNOWN = "TensorFlow PyTorch API QoS TF-IDF Naive Bayes RPC gRPC JSON XML HTTP TCP UDP Kubernetes Docker GitHub README CHANGELOG " +
+  "dataset preprocessing backpropagation hyperparameter throughput latency bandwidth endpoint microservice middleware OAuth SSO LDAP CRUD REST GraphQL " +
+  "YAML CSV Parquet Spark Hadoop Kafka Redis MongoDB PostgreSQL compiler linker debugger breakpoint refactor commit push merge rebase stash branch tag " +
+  "release deploy rollback monitor alert dashboard metric log trace pipeline artifact registry container pod node cluster shard replica index query schema " +
+  "migration seed fixture mock stub benchmark profiling cache queue stack heap thread process socket port proxy gateway load balancer DNS CDN TLS SSL SSH " +
+  "ad hoc et cetera inter alia per se de facto de jure status quo v2.4 foo() bar.baz contact@mail.example.org";
+const s6assert = (name, cond, info) => {
+  console.log(`S6 ${name}: ${cond ? "OK" : "GAGAL"}${info ? " (" + info + ")" : ""}`);
+  if (!cond) failures.push(`S6 ${name}`);
+};
+// (a) campur ID/EN signifikan → mixed + confidence maks sedang
+const mxHeu = api.heuristic(MX_MIXED);
+s6assert("mixed-detect", mxHeu.detail.language === "mixed" && mxHeu.mixed === true,
+  `language=${mxHeu.detail.language} mixed=${mxHeu.mixed} idProp=${Number(mxHeu.detail.idProp).toFixed(2)} enProp=${Number(mxHeu.detail.enProp).toFixed(2)} words=${mxHeu.detail.totalW}`);
+s6assert("mixed-confcap", mxHeu.confidence === "sedang" || mxHeu.confidence === "rendah",
+  `confidence=${mxHeu.confidence}`);
+// (b) istilah teknis/code/URL/DOI/sitasi tidak menaikkan skor
+const baseHeu = api.heuristic(MX_BASE);
+const noisyHeu = api.heuristic(MX_BASE + " " + MX_NOISE_ADD);
+s6assert("noise-noscore", noisyHeu.score <= baseHeu.score + 5,
+  `base=${baseHeu.score} noisy=${noisyHeu.score}`);
+s6assert("noise-id-stable", noisyHeu.detail.language === baseHeu.detail.language,
+  `base=${baseHeu.detail.language} noisy=${noisyHeu.detail.language}`);
+// (c) derau non-bahasa saja → unknown
+const unkHeu = api.heuristic(MX_UNKNOWN);
+s6assert("unknown-detect", unkHeu.detail.language === "unknown",
+  `language=${unkHeu.detail.language} fwTotal=${unkHeu.detail.fwTotal} words=${unkHeu.detail.totalW}`);
+// (d) paritas preprocess + combine mixed (modul js/ai/* asli)
+let s6pre = null, s6cmb = null;
+try {
+  (0, eval)(fs.readFileSync(path.join(ROOT, "js/ai/preprocess.js"), "utf8") + "\n;" +
+    fs.readFileSync(path.join(ROOT, "js/ai/combine.js"), "utf8"));
+  s6pre = globalThis.FarazPre; s6cmb = globalThis.FarazCombine;
+  s6assert("ai-modules-load", !!(s6pre && s6cmb), "");
+} catch (e) { s6assert("ai-modules-load", false, String(e && e.message || e)); }
+if (s6pre && s6cmb) {
+  if (api.ID_FW && api.EN_FW) { globalThis.ID_FW = api.ID_FW; globalThis.EN_FW = api.EN_FW; }
+  const pMix = s6pre.preprocess(MX_MIXED);
+  s6assert("preprocess-parity", pMix.language === mxHeu.detail.language && pMix.mixed === mxHeu.mixed,
+    `pre=${pMix.language}/${pMix.mixed} heu=${mxHeu.detail.language}/${mxHeu.mixed}`);
+  const pBase = s6pre.preprocess(MX_BASE);
+  s6assert("preprocess-id", pBase.language === "id" && pBase.mixed === false, `pre=${pBase.language}`);
+  const cMix = s6cmb.combine(
+    { score: mxHeu.score, confidence: "tinggi", lang: mxHeu.lang, mixed: mxHeu.mixed, detail: mxHeu.detail },
+    { score: 80, confidence: "tinggi", coverage: 1 }, null);
+  s6assert("combine-mixed", cMix.confidence !== "tinggi" && /bahasa 0\.5/.test(cMix.method),
+    `conf=${cMix.confidence}`);
+  const cSolo = s6cmb.combine(
+    { score: 80, confidence: "tinggi", lang: "id", mixed: true, detail: { language: "mixed", mixed: true, totalW: 120 } },
+    null, { reason: "offline" });
+  s6assert("combine-solo-cap", cSolo.confidence !== "tinggi", `conf=${cSolo.confidence}`);
+}
 
 if (!bootOK) failures.push("boot main.js");
 

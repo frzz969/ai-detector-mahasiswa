@@ -75,22 +75,26 @@
     var lScore = clampScore(num(local && local.score, 22));
     var lConf = (local && local.confidence) || "rendah";
     if (lConf !== "rendah" && lConf !== "sedang" && lConf !== "tinggi") lConf = "rendah";
-    var textLang = (local && (local.lang === "en" ? "en" : "id")) || "id";
-    if (local && local.detail && (local.detail.lang === "en" || local.detail.lang === "id")) {
-      textLang = local.detail.lang;
-    }
+    // PRD §15.2/§15.3: bahasa penuh dari heuristic (detail.language:
+    // id|en|mixed|unknown); fallback ke detail.lang / local.lang (id/en).
+    var d0 = (local && local.detail) || {};
+    var textLang = d0.language || d0.lang || (local && local.lang) || "id";
+    if (textLang !== "en" && textLang !== "id" && textLang !== "mixed" && textLang !== "unknown") textLang = "id";
+    var isMixed = textLang === "mixed" || d0.mixed === true || (local && local.mixed === true);
 
     var capInfo = localCapOf(local || {});
     var localCapped = isFinite(capInfo.cap) ? Math.min(lScore, capInfo.cap) : lScore;
 
     // AI tidak tersedia → heuristik saja, dilaporkan jujur.
+    // Mixed tetap confidence maks sedang meski jalur AI mati.
     if (!ai || typeof ai.score !== "number" || !isFinite(ai.score)) {
       var why = (aiErr && aiErr.reason) ? String(aiErr.reason) : "tidak tersedia";
+      var soloConf = (isMixed && lConf === "tinggi") ? "sedang" : lConf;
       return {
         final: clampScore(localCapped),
-        confidence: lConf,
+        confidence: soloConf,
         method: "heuristik offline " + lScore + "/100 (AI " + why +
-          "; skor indikasi, bukan vonis; confidence " + lConf + ")"
+          "; skor indikasi, bukan vonis; confidence " + soloConf + ")"
       };
     }
 
@@ -101,9 +105,11 @@
     var coverage = (typeof ai.coverage === "number" && isFinite(ai.coverage))
       ? Math.max(0, Math.min(1, ai.coverage)) : 1;
     // Model generik umumnya dilatih dominan EN → untuk teks ID bobot
-    // dikali ≤0.5 (kecuali server menyatakan cocok ID).
+    // dikali ≤0.5 (kecuali server menyatakan cocok ID). PRD §15.3: teks
+    // mixed/unknown diperlakukan seperti ID (bobot EN penuh dilarang —
+    // kecuali server cocok: id / id-en / multilingual).
     var langFactor = 1;
-    if (textLang === "id") {
+    if (textLang === "id" || textLang === "mixed" || textLang === "unknown") {
       var aiIdOk = ai.lang === "id" || ai.modelLang === "id" || ai.modelLang === "id-en" || ai.modelLang === "multilingual";
       langFactor = aiIdOk ? 1 : 0.5;
     }
@@ -128,6 +134,13 @@
     // Teks pendek / satu sinyal → bukti tipis → confidence rendah.
     if (capInfo.kind === "short") baseRank = Math.min(baseRank, 1);
     if (disagree) baseRank = Math.min(baseRank, 2);
+    // PRD §15.3: teks mixed → confidence maksimal sedang (atribusi bahasa
+    // tidak pasti). Bahasa indikasi saja (detector-rules §6).
+    var mixedNote = "";
+    if (isMixed) {
+      baseRank = Math.min(baseRank, 2);
+      mixedNote = "; teks campuran → confidence maks sedang";
+    }
     var confidence = rankConf(baseRank);
 
     var verdict = final >= 75 ? "terindikasi pola generatif"
@@ -137,7 +150,9 @@
       " (bobot AI " + wAi.toFixed(2) + ": conf " + aConf + " × cakupan " +
       coverage.toFixed(2) + " × bahasa " + langFactor.toFixed(1) +
       "; selisih " + Math.round(gap) + (disagree ? " → tidak sepakat, perlu ditinjau" : "") +
+      (isMixed ? "; bahasa campuran (" + textLang + ")" : "") +
       (isFinite(capInfo.cap) ? "; cap lokal " + capInfo.cap + " (" + capInfo.kind + ") + angkat maks " + MAX_LIFT : "") +
+      mixedNote +
       ") — " + verdict + "; skor indikasi, bukan vonis; confidence " + confidence;
 
     return { final: final, confidence: confidence, method: method };

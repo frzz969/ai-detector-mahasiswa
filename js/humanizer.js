@@ -178,6 +178,18 @@ function humanizeText(text, scores) {
   return { text: sents.join(" "), changed: changed - reverted, skipped, splits, reverted, merges: Math.max(0, n1 - sents.length), mergeReverted };
 }
 
+// Hitung perkiraan kalimat yang berbeda antara dua teks (untuk pesan
+// status kandidat AI — estimasi, bukan skor; verdict tetap via heuristic).
+function countChangedSents(a, b) {
+  let sa = [], sb = [];
+  try { sa = splitSentences(a); } catch (_) { sa = [String(a)]; }
+  try { sb = splitSentences(b); } catch (_) { sb = [String(b)]; }
+  const n = Math.max(sa.length, sb.length);
+  let c = 0;
+  for (let i = 0; i < n; i++) { if ((sa[i] || "") !== (sb[i] || "")) c++; }
+  return c;
+}
+
 // Kembalikan state humanizer ke awal (dipakai Reset/contoh/upload agar
 // parafrase basi dari teks lama tidak bisa diterapkan ke teks baru).
 function resetHumanizer(msg) {
@@ -205,9 +217,46 @@ $("btnHumanize").onclick = async () => {
   const pre = heuristic(main);
   const rawCount = splitSentences(main).length;
   const scores = pre.sents.length === rawCount ? pre.sentScores : null;
-  const r = humanizeText(main, scores);
-  // Estimasi internal dengan detector yang sama (final tetap via cek ulang)
-  const post = heuristic(r.text);
+  // Jalur AI (enhancement, opsional): coba /api/humanize dulu dengan
+  // kontrak {v, hash SHA-256, canonicalText}. Gagal/offline/404/
+  // MALFORMED/unauthorized/rate-limited → fallback lokal di bawah +
+  // status jujur. Kandidat AI TETAP lewat verdict BETTER/WORSE +
+  // restore di bawah (humanizer-rules §1, validation-rules §4) —
+  // tanpa skor palsu, tanpa klaim absolut.
+  let apiCandidate = "", apiConf = "rendah", apiTried = false, apiReason = "";
+  try {
+    if (typeof FarazAIClient !== "undefined" && FarazAIClient && typeof FarazAIClient.humanize === "function") {
+      $("humanizeStatus").textContent = "Meminta bantuan AI...";
+      const hr = await FarazAIClient.humanize(main, { v: 1 });
+      if (hr && hr.text && hr.text.trim() && hr.text.trim() !== main) {
+        apiCandidate = hr.text.trim();
+        apiConf = hr.confidence || "rendah";
+      } else if (!(hr && hr.text && hr.text.trim())) {
+        apiTried = true; apiReason = (hr && hr.reason) || "unavailable";
+      }
+      // Kandidat identik dengan input → biarkan jalur lokal yang bekerja.
+    }
+  } catch (e) { console.warn(e); apiTried = true; apiReason = "unavailable"; }
+  $("humanizeStatus").textContent = "Menyusun perbaikan...";
+  await new Promise((r) => setTimeout(r, 60));
+  let r = null, post = null, viaAI = false;
+  if (apiCandidate) {
+    try {
+      const candPost = heuristic(apiCandidate);
+      r = {
+        text: apiCandidate,
+        changed: countChangedSents(main, apiCandidate),
+        skipped: 0, splits: 0, reverted: 0, merges: 0, mergeReverted: 0
+      };
+      post = candPost;
+      viaAI = true;
+    } catch (e) { console.warn(e); viaAI = false; }
+  }
+  if (!viaAI) {
+    r = humanizeText(main, scores);
+    // Estimasi internal dengan detector yang sama (final tetap via cek ulang)
+    post = heuristic(r.text);
+  }
   // Verdict versi: BETTER → pakai baru; WORSE/EQUIVALENT → tolak dan
   // kembalikan teks asli (kualitas > skor; jangan kejar detector).
   // Estimasi memakai detector + preprocessing yang sama persis.
@@ -227,19 +276,22 @@ $("btnHumanize").onclick = async () => {
     if (r.mergeReverted > 0) msg += ` Penggabungan kalimat yang justru menaikkan indikasi juga dibatalkan agar struktur asli yang stabil dipertahankan.`;
   } else if (verdict === "better") {
     const bits = [];
-    if (r.changed) bits.push(`${r.changed} kalimat disusun ulang`);
+    if (r.changed) bits.push(`${r.changed} kalimat disusun ulang${viaAI ? " (via AI)" : ""}`);
     if (r.splits) bits.push(`${r.splits} dipecah`);
     if (r.merges) bits.push(`${r.merges} digabung`);
     if (r.skipped) bits.push(`${r.skipped} dibiarkan karena sudah baik`);
-    msg += `Versi tulisan telah diperbaiki dan dipindai ulang (estimasi ${pre.score}% → ${post.score}% indikasi AI): ${bits.join(", ")}. `;
+    msg += `Versi tulisan telah diperbaiki${viaAI ? ` (via AI, confidence ${apiConf} — indikasi, bukan vonis)` : ""} dan dipindai ulang (estimasi ${pre.score}% → ${post.score}% indikasi AI): ${bits.join(", ") || "beberapa bagian disesuaikan"}. `;
     if (r.reverted > 0) msg += `Beberapa bagian diperbaiki (${r.reverted} kalimat dikembalikan karena versi awal lebih sesuai), sementara bagian lain dipertahankan. `;
     if (r.mergeReverted > 0) msg += `Penggabungan kalimat yang menaikkan indikasi dibatalkan (${r.mergeReverted}x). `;
-    msg += `Fakta/angka/istilah dipertahankan, tanpa data baru.`;
+    msg += viaAI
+      ? `Periksa manual sebelum dipakai: fakta/angka/sitasi/istilah harus tetap sama, tanpa data baru.`
+      : `Fakta/angka/istilah dipertahankan, tanpa data baru.`;
   } else if (verdict === "worse") {
-    msg += `Versi perbaikan belum memberikan peningkatan yang cukup (estimasi ${pre.score}% → ${post.score}%), sehingga teks asli dipertahankan. Tambah data/contoh konkret milikmu, lalu coba lagi.`;
+    msg += `Versi perbaikan${viaAI ? " (via AI)" : ""} belum memberikan peningkatan yang cukup (estimasi ${pre.score}% → ${post.score}%), sehingga teks asli dipertahankan. Tambah data/contoh konkret milikmu, lalu coba lagi.`;
   } else {
-    msg += `Perubahan tidak memberikan peningkatan yang berarti (estimasi ${pre.score}% → ${post.score}%). Versi asli tetap digunakan.`;
+    msg += `Perubahan${viaAI ? " (via AI)" : ""} tidak memberikan peningkatan yang berarti (estimasi ${pre.score}% → ${post.score}%). Versi asli tetap digunakan.`;
   }
+  if (apiTried && !viaAI) msg += ` (mode lokal — API tidak tersedia: ${apiReason}).`;
   msg += ` “Terapkan & cek ulang” untuk pemindaian final yang diukur beneran, bukan ditempel.`;
   $("humanizeStatus").textContent = msg;
   $("humanizeBox").scrollIntoView({ behavior: "smooth", block: "center" });

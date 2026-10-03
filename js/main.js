@@ -331,15 +331,26 @@ async function doCheck() {
       try { lv = await localScore(main); } catch (e) { console.warn(e); lv = null; }
     }
 
-    // 2) Jalur AI: kirim canonicalText + echo hash/v; gagal → lokal saja.
+    // 2) Jalur AI: kontrak api/analyze.js = POST { v, hash, canonicalText }
+    // dengan hash = SHA-256 hex dari canonicalText. Hash FNV lama
+    // (pre.hash, 8 char) TIDAK dikirim — server menolaknya MALFORMED.
+    // SHA-256 tak tersedia (file:// non-secure context) → API dilewati
+    // jujur (unavailable), jalur lokal di bawah tetap jalan penuh.
     setStage("ai");
     aiPending = true; aiResult = null; aiError = null;
     let aiRes = { ai: null, reason: "unavailable" };
     try {
       if (pre && typeof FarazAIClient !== "undefined" && FarazAIClient && typeof FarazAIClient.analyze === "function") {
-        const aiText = useRef ? pre.canonicalText : raw;
-        const aiHash = useRef ? pre.hash : (FarazPre && typeof FarazPre.hashText === "function" ? FarazPre.hashText(raw) : "");
-        aiRes = await FarazAIClient.analyze({ canonicalText: aiText, hash: aiHash, v: pre.v, lang: pre.lang });
+        const aiText = (useRef ? pre.canonicalText : raw) || "";
+        let aiHash = null;
+        try {
+          if (typeof FarazAIClient.sha256Hex === "function") aiHash = await FarazAIClient.sha256Hex(aiText);
+        } catch (e) { console.warn(e); aiHash = null; }
+        if (aiHash) {
+          aiRes = await FarazAIClient.analyze({ v: pre.v, hash: aiHash, canonicalText: aiText });
+        } else {
+          aiRes = { ai: null, reason: "unavailable", detail: "hash aman tak tersedia — dipakai hasil lokal." };
+        }
       }
     } catch (e) { console.warn(e); aiRes = { ai: null, reason: "unavailable" }; }
     aiPending = false;
@@ -597,12 +608,28 @@ function showAiTools(text) {
   refreshRail();
 }
 
-if ($("btnSummarize")) $("btnSummarize").onclick = () => {
+if ($("btnSummarize")) $("btnSummarize").onclick = async () => {
   const t = currentMainText();
   if (countWords(t) < MIN_WORDS) {
     showAiTools(`Teks terlalu pendek — tempel minimal ${MIN_WORDS} kata dulu.`);
     return;
   }
+  // API dulu (/api/summarize, kontrak {v, hash SHA-256, canonicalText},
+  // timeout ~15 dtk di FarazAIClient); gagal/offline/404/MALFORMED/
+  // unauthorized/rate-limited → fallback lokal di bawah + status jujur.
+  // Tanpa skor palsu, tanpa klaim absolut (validation-rules §2, §5).
+  let apiFailed = false, apiReason = "";
+  try {
+    if (typeof FarazAIClient !== "undefined" && FarazAIClient && typeof FarazAIClient.summarize === "function") {
+      showAiTools("Meminta ringkasan AI...");
+      const ar = await FarazAIClient.summarize(t, { v: 1 });
+      if (ar && ar.text && ar.text.trim()) {
+        showAiTools(`Ringkasan (via AI, confidence ${ar.confidence || "rendah"} — indikasi, bukan vonis): ${ar.text.trim()}`);
+        return;
+      }
+      apiFailed = true; apiReason = (ar && ar.reason) || "unavailable";
+    }
+  } catch (e) { console.warn(e); apiFailed = true; apiReason = "unavailable"; }
   if (typeof FarazSummarize === "undefined" || !FarazSummarize || typeof FarazSummarize.summarize !== "function") {
     showAiTools("Perangkum belum termuat — muat ulang halaman, lalu coba lagi.");
     return;
@@ -613,16 +640,30 @@ if ($("btnSummarize")) $("btnSummarize").onclick = () => {
     showAiTools("Ringkasan belum dapat dibuat dari teks ini.");
     return;
   }
+  const suffix = apiFailed ? ` (mode lokal — API tidak tersedia: ${apiReason}).` : "";
   showAiTools(`Ringkasan ekstraktif (${r.sentences.length} kalimat asli, tanpa ubah fakta): ` +
-    r.sentences.map((s, i) => `${i + 1}) ${s}`).join(" "));
+    r.sentences.map((s, i) => `${i + 1}) ${s}`).join(" ") + suffix);
 };
 
-if ($("btnExplain")) $("btnExplain").onclick = () => {
+if ($("btnExplain")) $("btnExplain").onclick = async () => {
   const t = currentMainText();
   if (countWords(t) < MIN_WORDS) {
     showAiTools(`Teks terlalu pendek — tempel minimal ${MIN_WORDS} kata dulu.`);
     return;
   }
+  // API dulu (/api/explain, pola sama dengan summarize di atas).
+  let apiFailed = false, apiReason = "";
+  try {
+    if (typeof FarazAIClient !== "undefined" && FarazAIClient && typeof FarazAIClient.explain === "function") {
+      showAiTools("Meminta penjelasan AI...");
+      const ar = await FarazAIClient.explain(t, { v: 1 });
+      if (ar && ar.text && ar.text.trim()) {
+        showAiTools(`Penjabaran teks (via AI, confidence ${ar.confidence || "rendah"} — indikasi, bukan vonis): ${ar.text.trim()}`);
+        return;
+      }
+      apiFailed = true; apiReason = (ar && ar.reason) || "unavailable";
+    }
+  } catch (e) { console.warn(e); apiFailed = true; apiReason = "unavailable"; }
   if (typeof FarazExplain === "undefined" || !FarazExplain || typeof FarazExplain.explain !== "function") {
     showAiTools("Penjelas struktur belum termuat — muat ulang halaman, lalu coba lagi.");
     return;
@@ -633,7 +674,8 @@ if ($("btnExplain")) $("btnExplain").onclick = () => {
     showAiTools("Struktur belum dapat dijelaskan dari teks ini.");
     return;
   }
-  showAiTools(`Penjabaran teks: Berikut penjabaran isi teksmu: ${r.text}`);
+  const suffix = apiFailed ? ` (mode lokal — API tidak tersedia: ${apiReason}).` : "";
+  showAiTools(`Penjabaran teks: Berikut penjabaran isi teksmu: ${r.text}` + suffix);
 };
 
 $("btnSampleID").onclick = () => {

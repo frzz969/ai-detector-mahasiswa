@@ -42,12 +42,22 @@ function splitReferences(t) {
 }
 
 // Buang sitasi/URL/DOI agar tidak mengacaukan statistik kata.
+// PRD §15.2/§15.3 (detector-rules §4: sitasi/istilah teknis bukan bukti AI):
+// code (fence/backtick/indent), URL, DOI, email, dan pengenal teknis
+// (foo(), a.b.c) tidak membawa gaya bahasa — dimask agar tidak ikut hitung
+// TTR/n-gram dan tidak jadi sinyal gaya AI maupun penentu bahasa utama.
 function cleanAcademic(t) {
   return t
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`\n]*`/g, " ")
+    .replace(/^[ \t]{4,}\S.*$/gm, " ")
     .replace(/\[\d+(\s*[-–,]\s*\d+)*\]/g, " ")
     .replace(/\([A-Z][a-z]+(?: et al\.)?,?\s?\d{4}[a-z]?\)/g, " ")
     .replace(/https?:\/\/\S+/g, " ")
-    .replace(/\bDOI:\S+/gi, " ");
+    .replace(/\bDOI:\S+/gi, " ")
+    .replace(/\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b/g, " ")
+    .replace(/\b[A-Za-z_][\w-]*(?:\.[\w-]+)+/g, " ")
+    .replace(/\b[\w.-]+\(\)/g, " ");
 }
 
 // Pecah jadi kalimat (buang yang <=3 kata).
@@ -62,6 +72,44 @@ function splitSentences(t) {
 // Token kata huruf-kecil (untuk TTR & statistik).
 function words(t) {
   return t.toLowerCase().match(/[\p{L}\p{N}']+/gu) || [];
+}
+
+// ---------- Deteksi bahasa id/en/mixed/unknown (PRD §15.2, detector-rules §4) ----------
+// Metrik tetap fwRate (function-word dominan / total kata) — tidak ada metrik baru.
+// Nama produk/organisasi (2+ kata kapital berurutan) dan akronim KAPITAL bukan
+// penentu bahasa utama → dikecualikan dari hitung FW (dan bukan sinyal AI).
+// Aturan: FW total < 4 atau fwRate < 0.02 → unknown; proporsi minor >= 0.30
+// (dua bahasa cukup tinggi) → mixed; selain itu mayoritas menang.
+function collectLangExclusions(cleaned) {
+  const excl = new Set();
+  const multi = cleaned.match(/\b[A-ZÀ-Þ][a-zà-ÿ]+(?:\s+[A-ZÀ-Þ][a-zà-ÿ]+)+/g) || [];
+  multi.forEach((m) => m.toLowerCase().split(/[^a-zà-ÿ]+/).forEach((x) => { if (x) excl.add(x); }));
+  const acr = cleaned.match(/\b[A-ZÀ-Þ]{2,}\b/g) || [];
+  acr.forEach((a) => excl.add(a.toLowerCase()));
+  return excl;
+}
+
+function detectLanguageInfo(cleaned, w) {
+  const totalW = w.length;
+  const excl = collectLangExclusions(cleaned);
+  let fwId = 0, fwEn = 0;
+  w.forEach((t) => {
+    if (excl.has(t)) return;
+    if (ID_FW.has(t)) fwId++;
+    if (EN_FW.has(t)) fwEn++;
+  });
+  const fwTotal = fwId + fwEn;
+  const fwRate = totalW ? Math.max(fwId, fwEn) / totalW : 0;
+  const idProp = fwTotal ? fwId / fwTotal : 0;
+  const enProp = fwTotal ? fwEn / fwTotal : 0;
+  const majority = fwEn > fwId ? "en" : "id";
+  let language = majority, mixed = false;
+  if (fwTotal < 4 || fwRate < 0.02) language = "unknown";
+  else if (Math.min(idProp, enProp) >= 0.30) { language = "mixed"; mixed = true; }
+  let languageConfidence = Math.round(Math.min(1, fwRate / 0.2) * 100) / 100;
+  if (language === "unknown") languageConfidence = Math.min(languageConfidence, 0.3);
+  if (mixed) languageConfidence = Math.min(languageConfidence, 0.6);
+  return { language, majority, mixed, fwId, fwEn, fwTotal, fwRate, idProp, enProp, languageConfidence };
 }
 
 // ---------- Konteks akademik LOW/MEDIUM/HIGH (Fase 2) ----------
@@ -92,9 +140,9 @@ function academicContext(o) {
 // frasa generik, konektor, pola 12-28, suara personal, tanda hidup,
 // data konkret, pembuka berulang, repetisi ide, template generik,
 // ditambah sinyal pendukung: diversity n-gram, struktur paragraf,
-// deteksi bahasa (ID/EN).
+// deteksi bahasa (ID/EN/mixed/unknown).
 // Output 15–98 + skor per kalimat (highlight) + confidence
-// (rendah/sedang/tinggi) + bahasa terdeteksi (id/en).
+// (rendah/sedang/tinggi) + bahasa terdeteksi (id/en/mixed/unknown).
 function heuristic(text) {
   const clean = cleanAcademic(text);
 
@@ -138,14 +186,13 @@ function heuristic(text) {
   const bigramDiversity = bigrams.length ? new Set(bigrams).size / bigrams.length : 1;
   const trigramDiversity = trigrams.length ? new Set(trigrams).size / trigrams.length : 1;
 
-  // --- Deteksi bahasa (function word ratio) untuk konteks + bobot model ---
-  let fwId = 0, fwEn = 0;
-  w.forEach((t) => {
-    if (ID_FW.has(t)) fwId++;
-    if (EN_FW.has(t)) fwEn++;
-  });
-  const lang = fwEn > fwId && fwEn > 0 ? "en" : "id";
-  const fwRate = totalW ? Math.max(fwId, fwEn) / totalW : 0;
+  // --- Deteksi bahasa id/en/mixed/unknown (function word ratio + eksklusi
+  // produk/org/akronim) untuk konteks + bobot model. `lang` = mayoritas id/en
+  // (kompatibel main.js); bahasa penuh ada di detail.language + top-level.
+  const langInfo = detectLanguageInfo(clean, w);
+  const lang = langInfo.majority;
+  const fwId = langInfo.fwId, fwEn = langInfo.fwEn;
+  const fwRate = langInfo.fwRate;
 
   const low = clean.toLowerCase();
   // Frasa generik (AI) vs frasa akademik netral (bukan bukti AI — lihat
@@ -502,6 +549,15 @@ function heuristic(text) {
     reasons.push(`Sebaran skor antar kalimat cukup lebar (±${sentSpread.toFixed(0)}) — konsistensi dipakai sebagai penyesuai confidence (bukan bukti), sehingga confidence diturunkan.`);
   }
   if (singleSignal) confidence = "rendah";
+  // PRD §15.3 teks campuran: bila mixed → confidence turun satu tingkat
+  // (tinggi→sedang, sedang→rendah; maks sedang). Bahasa campuran = ketidak-
+  // pastian atribusi, bukan bukti AI (detector-rules §3: satu sinyal bukan
+  // bukti; validation-rules bahasa indikasi saja).
+  if (langInfo.mixed) {
+    if (confidence === "tinggi") confidence = "sedang";
+    else if (confidence === "sedang") confidence = "rendah";
+    reasons.push(`Teks campuran dua bahasa terdeteksi (ID ${(langInfo.idProp * 100).toFixed(0)}% / EN ${(langInfo.enProp * 100).toFixed(0)}% function-word) — atribusi bahasa tidak pasti sehingga confidence diturunkan satu tingkat.`);
+  }
   if (totalW >= MIN_RELIABLE_W && posSig === 0) {
     reasons.push(`Tidak ditemukan pola AI yang jelas — skor hanya mencerminkan minimnya evidence, bukan bukti kepengarangan.`);
   }
@@ -514,6 +570,9 @@ function heuristic(text) {
       bigramDiversity, trigramDiversity, paraCount, paraCV, wlCV,
       lang, fwRate, sentSpread, sentMedian, aiLikeProp, acaMarkers,
       acadLevel: acad.level, posSig,
+      language: langInfo.language, languageConfidence: langInfo.languageConfidence,
+      mixed: langInfo.mixed, fwId, fwEn, fwTotal: langInfo.fwTotal,
+      idProp: langInfo.idProp, enProp: langInfo.enProp,
       // Calibration layer (Fase 3): raw = skor evidence dokumen
       // pasca-cap pra-fusi kalimat; calibrated = skor tampil (pasca-fusi).
       // Display memakai calibrated; raw hanya untuk audit perbandingan.
@@ -522,6 +581,8 @@ function heuristic(text) {
       classification: finalPts >= THR_STRONG_DOC ? "terindikasi" : finalPts >= THR_MID_DOC ? "perlu ditinjau" : "cenderung natural",
     },
     confidence, lang,
+    language: langInfo.language, languageConfidence: langInfo.languageConfidence,
+    mixed: langInfo.mixed,
   };
 }
 
