@@ -92,10 +92,12 @@ img{max-width:100%;height:auto}
 .layout{background:var(--soft);border-radius:var(--r-2xl);padding:20px;display:grid;grid-template-columns:minmax(0,1fr) 320px;grid-template-areas:"editor rail" "hasil rail";gap:16px;align-items:start}
 #editor{grid-area:editor;min-width:0}#hasil{grid-area:hasil;min-width:0}
 .rail{grid-area:rail;display:grid;gap:10px;align-content:start;position:sticky;top:84px;min-width:0}
-/* Desktop, viewport pendek (720/768/800/864px): batasi tinggi rail agar tombol
-   Laporan (Export PDF / Unduh .txt) tidak tersembunyi di bawah lipatan saat
-   sticky; rail scroll internal bila perlu. Tidak menyentuh area ≤1100px (mobile). */
-@media(min-width:1101px) and (max-height:980px){
+/* Desktop ≥1101px: rail nempel (sticky) + scroll mandiri di tempat.
+   Input/hasil scroll ikut halaman; rail scroll sendiri (contain = tidak merembet).
+   overflow-y:auto = scrollbar hanya muncul bila isi melebihi viewport, jadi
+   layar tinggi tidak ada double-scrollbar. Tombol Laporan tetap terjangkau
+   via scroll internal. Tidak menyentuh area ≤1100px (mobile.css). */
+@media(min-width:1101px){
   .rail{max-height:calc(100vh - 108px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#B9D4E8 transparent}
 }
 .panel{background:#fff;border:1px solid var(--line);border-radius:var(--r-xl);padding:20px;min-width:0}
