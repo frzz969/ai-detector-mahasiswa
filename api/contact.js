@@ -16,7 +16,7 @@ module.exports = function contact(req, res) {
   }
   const raw = req && req.query && req.query.text != null
     ? String(req.query.text)
-    : 'Halo Faraz Detector AI, saya punya saran/laporan: ';
+    : 'Halo Admin Faraz Detector AI! Saya menemukan kendala saat: [tulis fiturnya]. Detailnya: ';
   const url = 'https://wa.me/' + num + '?text=' + encodeURIComponent(raw).slice(0, 500);
   res.statusCode = 302;
   res.setHeader('Location', url);
