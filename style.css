@@ -309,7 +309,13 @@ nav,.mobile-cta,.fab{display:none!important}
 #printArea li{break-inside:avoid}
 #printArea p{break-inside:avoid}
 #printArea .pr-text{white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;border:1px solid #999;padding:6px 8px;font-size:9.5pt;line-height:1.4;font-family:Georgia,"Times New Roman",serif}
-#printArea .pr-src{font-size:9.5pt;line-height:1.4;color:#222;break-inside:avoid}
+#printArea .pr-src{font-size:9.5pt;line-height:1.4;color:#222}
+#printArea .pr-legend{font-size:9pt;color:#333;margin:0 0 4px}
+#printArea .pr-spot{print-color-adjust:exact;-webkit-print-color-adjust:exact;break-inside:avoid}
+#printArea .pr-spot.ai{background:#F8D7D3}
+#printArea .pr-spot.mid{background:#FBEFC3}
+#printArea .pr-refs{margin:4px 0 4px 16px;font-size:9.5pt;line-height:1.4}
+#printArea .pr-refs li{margin:1px 0}
 }
 .faq-head{display:grid;grid-template-columns:auto 1fr;gap:0 var(--sp-xl);align-items:center;text-align:left}
 .faq-head .mascot-faq{grid-row:1/4;margin:0;width:150px;max-width:30vw}

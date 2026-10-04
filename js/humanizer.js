@@ -297,14 +297,32 @@ $("btnApplyHumanize").onclick = async () => {
 
 $("btnCopyHumanize").onclick = async () => {
   const v = $("humanizeOut").value;
-  if (!v.trim()) { $("humanizeStatus").textContent = "Belum ada parafrase untuk disalin."; return; }
+  const tools = ($("aiToolsOut") && $("aiToolsOut").textContent) || "";
+  const t = v.trim() ? v : tools;
+  if (!t.trim()) { $("humanizeStatus").textContent = "Belum ada parafrase untuk disalin."; return; }
+  const label = v.trim()
+    ? "Disalin ✓ — tempel ke tugasmu, baca ulang sebelum dikumpul."
+    : "Disalin ✓ (ringkasan/penjelasan) — tempel ke tugasmu, baca ulang sebelum dikumpul.";
   try {
-    await navigator.clipboard.writeText(v);
-    $("humanizeStatus").textContent = "Disalin ✓ — tempel ke tugasmu, baca ulang sebelum dikumpul.";
+    await navigator.clipboard.writeText(t);
+    $("humanizeStatus").textContent = label;
   } catch (e) {
-    $("humanizeOut").select();
-    document.execCommand("copy");
-    $("humanizeStatus").textContent = "Disalin ✓ (fallback).";
+    if (v.trim()) {
+      $("humanizeOut").select();
+      document.execCommand("copy");
+      $("humanizeStatus").textContent = "Disalin ✓ (fallback).";
+    } else {
+      // <p> tak bisa di-select: salin via textarea sementara.
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = t;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        $("humanizeStatus").textContent = label + " (fallback).";
+      } catch (_) { $("humanizeStatus").textContent = "Gagal menyalin — salin manual dari kotak hasil."; }
+    }
   }
 };
 

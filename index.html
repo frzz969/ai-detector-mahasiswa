@@ -99,13 +99,6 @@
         <button id="btnApplyHumanize" class="ghost" type="button" disabled>Terapkan &amp; cek ulang</button>
       </div>
       <div class="rail-card">
-        <h3>Ringkasan</h3>
-        <p class="muted"><small>Tanpa perlu cek dulu — tempel/upload lalu klik</small></p>
-        <button id="btnSummarize" class="ghost" type="button" disabled title="Ringkas tulisan ini menjadi poin utama" aria-label="Summarize — ringkas tulisan">Summarize</button>
-        <button id="btnExplain" class="ghost" type="button" disabled title="Jabarkan isi teks ini (ide pokok, istilah, alur)" aria-label="Explain — jabarkan isi teks">Explain</button>
-        <p id="aiToolsOut" class="muted" hidden></p>
-      </div>
-      <div class="rail-card">
         <h3>Laporan</h3>
         <button id="btnPrint" class="primary" type="button" disabled>Export PDF</button>
         <button id="btnDownload" class="ghost" type="button" disabled>Unduh .txt</button>
@@ -114,6 +107,12 @@
 
     <section class="panel result" id="hasil">
       <div class="panel-head"><h2>Hasil</h2><button id="btnCopyHumanize" class="ghost" type="button" disabled title="Salin hasil natural" aria-label="Copy — salin hasil">Copy</button></div>
+      <div class="hasil-tools">
+        <span class="muted"><small>Tanpa perlu cek dulu — tempel/upload lalu klik</small></span>
+        <button id="btnSummarize" class="ghost" type="button" disabled title="Ringkas tulisan ini menjadi poin utama" aria-label="Summarize — ringkas tulisan">Summarize</button>
+        <button id="btnExplain" class="ghost" type="button" disabled title="Jabarkan isi teks ini (ide pokok, istilah, alur)" aria-label="Explain — jabarkan isi teks">Explain</button>
+        <p id="aiToolsOut" class="muted" hidden></p>
+      </div>
       <div id="resultEmpty" class="empty">
         <div class="empty-face" aria-hidden="true"><img class="mascot mascot-empty" src="./img/mascot/ya%20maap.jpg" alt="" onerror="this.outerHTML='§'"></div>
         <b>Belum ada hasil</b>

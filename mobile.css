@@ -79,7 +79,7 @@ html,body{overflow-x:clip;max-width:100vw}
 #mulai .hero-cta{justify-content:center}
 .cta-imgs{order:-1}
 .cta-imgs .mascot-cta,.cta-imgs .kick-cta{width:132px}
-/* FIX HP/tablet (≤860px): .samples sejajar kanan-kiri + rail 8 tombol grid 2 kolom.
+/* FIX HP/tablet (≤860px): .samples sejajar kanan-kiri + rail grid 2 kolom.
    Murni CSS reorder (display:contents/grid/order); HTML, ID, class, atribut tidak diubah. */
 .samples{display:flex;flex-wrap:wrap;align-items:center}
 .samples .muted{flex:1 1 100%;min-width:0}
@@ -88,8 +88,6 @@ aside.rail{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 aside.rail .rail-card:has(#fileInput){grid-column:1/-1;order:-1}
 aside.rail .rail-card:not(:has(#fileInput)){display:contents}
 aside.rail .rail-card:not(:has(#fileInput)) h3{display:none}
-aside.rail .rail-card:has(#btnSummarize) p.muted{display:none}
-aside.rail .rail-card:has(#btnSummarize) #aiToolsOut{grid-column:1/-1}
 aside.rail .rail-card button,aside.rail .rail-card .file,aside.rail .rail-card #btnCheck{margin-top:0;margin-bottom:0;width:100%;min-width:0;font-size:16px;padding:12px 20px;min-height:48px}
 /* POLISH MENU/ACTION (≤860px): hierarchy primary > secondary > utility.
    Warna/font-family/radius/border/logic disabled tidak diubah. */
@@ -98,17 +96,13 @@ aside.rail .rail-card:has(#fileInput){margin-bottom:2px}
 aside.rail .rail-card #btnCheck{grid-column:1/-1;order:1;min-height:54px;font-size:17px;font-weight:800;padding:12px 20px}
 aside.rail #btnApplyHumanize{order:3;font-size:14px;line-height:1.35;padding:10px 12px;min-height:48px;white-space:normal;overflow-wrap:break-word}
 aside.rail #btnHumanize{order:4;font-size:15px;line-height:1.35;padding:10px 12px;min-height:48px;white-space:normal;overflow-wrap:break-word}
-aside.rail #btnExplain{order:6;font-size:14px;line-height:1.35;padding:10px 12px;min-height:48px;white-space:normal;overflow-wrap:break-word}
-aside.rail #btnSummarize{order:7;font-size:14px;line-height:1.35;padding:10px 12px;min-height:48px;white-space:normal;overflow-wrap:break-word}
 aside.rail #btnClear{order:8;font-size:15px;line-height:1.35;padding:10px 12px;min-height:48px;white-space:normal;overflow-wrap:break-word}
 aside.rail #btnPrint{order:9;font-size:14px;line-height:1.35;padding:10px 12px;min-height:48px;white-space:normal;overflow-wrap:break-word}
 aside.rail .rail-card button:disabled{opacity:.8}
-aside.rail .rail-card:has(#btnSummarize) #btnSummarize:disabled,aside.rail .rail-card:has(#btnSummarize) #btnExplain:disabled{opacity:.8}
 /* MOCKUP MENU (≤860px): kicker label via ::before card display:contents
    (::before terpromosi jadi grid item; HTML tidak diubah). */
 aside.rail .rail-card:has(#btnCheck)::before{content:"MAIN ACTIONS";display:block;grid-column:1/-1;order:2;min-width:0;font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);margin:8px 0 0}
 aside.rail .rail-card:has(#btnHumanize)::before{content:"TOOLS / RESULT";display:block;grid-column:1/-1;order:5;min-width:0;font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);margin:8px 0 0}
-aside.rail .rail-card:has(#btnSummarize) #aiToolsOut{order:10}
 aside.rail #btnDownload{display:none}
 }
 
@@ -185,7 +179,6 @@ pre{font-size:12px;padding:12px;max-width:100%;white-space:pre-wrap;overflow-wra
 .mind-center b{font-size:28px}
 .rail{grid-template-columns:1fr 1fr;gap:10px}
 aside.rail .rail-card:has(#fileInput){grid-column:1/-1}
-aside.rail .rail-card:has(#btnSummarize) #aiToolsOut{grid-column:1/-1;min-width:0}
 aside.rail .rail-card button,aside.rail .rail-card .file,aside.rail .rail-card #btnCheck{font-size:16px;padding:12px 20px;min-height:48px}
 .content-sec{padding:24px 16px;margin-top:12px;border-radius:var(--r-xl)}
 .content-sec h2{font-size:22px;margin:0 0 12px;line-height:1.2}
@@ -243,7 +236,7 @@ aside.rail .rail-card button,aside.rail .rail-card .file,aside.rail .rail-card #
 .demo-tabs{grid-template-columns:1fr 1fr}
 /* 320px aman: rapatkan gap + padding horizontal tombol agar label panjang wrap tanpa overflow. */
 aside.rail{gap:8px}
-aside.rail #btnClear,aside.rail #btnHumanize,aside.rail #btnApplyHumanize,aside.rail #btnSummarize,aside.rail #btnExplain,aside.rail #btnPrint,aside.rail #btnDownload{padding-left:8px;padding-right:8px}
+aside.rail #btnClear,aside.rail #btnHumanize,aside.rail #btnApplyHumanize,aside.rail #btnPrint,aside.rail #btnDownload{padding-left:8px;padding-right:8px}
 }
 
 /* HERO-CTA hero atas: berdampingan di semua lebar (601px+ dan <=600px mungil); #mulai tetap menumpuk. */

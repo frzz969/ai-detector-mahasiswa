@@ -17,8 +17,21 @@ const {
 } = require('./config');
 
 const TASK_INSTRUCTION = [
-  'Tugas: ringkas naskah akademik berikut secara setia dan ringkas.',
-  'Fokus pada gagasan utama + bukti pendukung; tandai yang tidak jelas sebagai tidak jelas.',
+  'Tugas: ringkas naskah berikut secara setia dan cukup lengkap.',
+  'Prinsip: (1) hanya gunakan informasi dari teks input; (2) tanpa fakta, opini, atau contoh dari luar;',
+  '(3) makna dan maksud asli dipertahankan; (4) fakta penting, angka, nama, tanggal, istilah, dan',
+  'sebab-akibat dipertahankan bila relevan; (5) buang pengulangan, basa-basi, dan detail tak penting;',
+  '(6) jangan pangkas berlebihan — ringkasan harus cukup lengkap; (7) konteks antaride dan urutan',
+  'pembahasan dipertahankan bila penting; (8) gabungkan kalimat bermakna serupa secara efisien;',
+  '(9) gunakan bahasa Indonesia yang natural, jelas, dan mudah dibaca; (10) tingkat kepastian',
+  'pernyataan tidak diubah; (11) tanpa opini atau penilaian terhadap isi.',
+  'Kompresi SEDANG (panduan fleksibel, bukan kaku): teks pendek 20–40%, teks sedang 30–50%,',
+  'teks panjang 40–60%. Bila pemangkasan menghilangkan konteks penting, pertahankan konteks tersebut.',
+  'Contoh: input 5 kalimat tentang fotosintesis — TOLAK ringkasan terlalu padat seperti',
+  '"Fotosintesis adalah proses tumbuhan mengubah cahaya menjadi energi." karena informasi penting',
+  'hilang. TERIMA ringkasan sedang yang mempertahankan proses, tempat (kloroplas/klorofil), bahan',
+  '(CO2, air, cahaya), hasil (glukosa, oksigen), dan fungsi hasil tersebut.',
+  'Output: result = ringkasan utuh beberapa kalimat (bukan satu kalimat), dalam bahasa Indonesia natural.',
 ].join('\n');
 
 const CORE_RULES = [

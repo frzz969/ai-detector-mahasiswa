@@ -10,7 +10,8 @@
     analyze: "/api/analyze",
     summarize: "/api/summarize",
     explain: "/api/explain",
-    humanize: "/api/humanize"
+    humanize: "/api/humanize",
+    material: "/api/material"
   };
   // Alias lawas (kompat): ENDPOINT = analyze.
   var ENDPOINT = ENDPOINTS.analyze;
@@ -261,11 +262,63 @@
   function explain(canonicalText, opts) { return callStructured("explain", canonicalText, opts); }
   function humanize(canonicalText, opts) { return callStructured("humanize", canonicalText, opts); }
 
+  // Validasi /api/material: { materials[], query, warnings } (tanpa result teks).
+  // materials kosong → tetap sukses jujur (bukan karangan); gagal → reason jujur.
+  function normalizeMaterials(body) {
+    if (!isPlainObject(body) || !Array.isArray(body.materials)) return null;
+    var arr = function (x) {
+      if (!Array.isArray(x)) return [];
+      return x.filter(function (s) { return typeof s === "string"; }).slice(0, 50);
+    };
+    var items = body.materials.slice(0, 10).map(function (m) {
+      if (!isPlainObject(m)) return null;
+      if (typeof m.title !== "string" || !m.title.trim()) return null;
+      return {
+        title: String(m.title).slice(0, 300),
+        authors: Array.isArray(m.authors)
+          ? m.authors.filter(function (a) { return typeof a === "string"; }).slice(0, 5) : [],
+        year: (typeof m.year === "number" && isFinite(m.year)) ? Math.round(m.year) : null,
+        venue: typeof m.venue === "string" ? m.venue.slice(0, 200) : "",
+        doi: typeof m.doi === "string" ? m.doi.slice(0, 200) : "",
+        url: typeof m.url === "string" ? m.url.slice(0, 300) : "",
+        citations: (typeof m.citations === "number" && isFinite(m.citations)) ? Math.round(m.citations) : null,
+        tier: typeof m.tier === "string" ? m.tier.slice(0, 40) : "Umum",
+        source: typeof m.source === "string" ? m.source.slice(0, 40) : "Umum"
+      };
+    }).filter(Boolean);
+    return {
+      materials: items,
+      query: typeof body.query === "string" ? body.query.slice(0, 200) : "",
+      warnings: arr(body.warnings),
+      method: typeof body.method === "string" ? body.method.slice(0, 300) : "",
+      modelId: typeof body.modelId === "string" ? body.modelId.slice(0, 120) : "",
+      coverage: (typeof body.coverage === "number" && isFinite(body.coverage))
+        ? Math.max(0, Math.min(1, body.coverage)) : null
+    };
+  }
+
+  // Satu endpoint materi. Sukses → { materials, ... }; gagal → { materials: [], reason }.
+  async function material(canonicalText, opts) {
+    var o = opts || {};
+    var endpoint = (typeof o.endpoint === "string" && o.endpoint) ? o.endpoint : ENDPOINTS.material;
+    if (!endpoint) return { materials: [], query: "", warnings: [], reason: "unavailable", detail: "endpoint materi tak dikenal." };
+    var contract = await buildContract(canonicalText, o.v);
+    if (!contract.ok) return { materials: [], query: "", warnings: [], reason: contract.reason, detail: contract.detail };
+    var sent = await postJson(endpoint, contract.body, o);
+    if (!sent.ok) return { materials: [], query: "", warnings: [], reason: sent.reason, detail: sent.detail };
+    var d = normalizeMaterials(sent.body);
+    if (!d) return { materials: [], query: "", warnings: [], reason: "malformed", detail: "respons tanpa daftar materials." };
+    d.reason = null;
+    d.detail = "";
+    return d;
+  }
+
   global.FarazAIClient = {
     analyze: analyze,
     summarize: summarize,
     explain: explain,
     humanize: humanize,
+    material: material,
     sha256Hex: sha256Hex,
     buildContract: buildContract,
     ENDPOINTS: ENDPOINTS,

@@ -8,7 +8,7 @@ Aturan audit wajib: `referensi/detector-rules.md`, `referensi/humanizer-rules.md
 
 ```text
 index.html          struktur + semua ID fungsional (script: js/core → js/detector → js/referensi → js/humanizer → js/ai/* → js/main)
-  # ID aktual: btnCheck (rail Cek) · btnSummarize/btnExplain (rail Natural, output #aiToolsOut)
+  # ID aktual: btnCheck (rail Cek) · btnSummarize/btnExplain + #aiToolsOut (section #hasil, .hasil-tools; rail-card "Ringkasan" dihapus)
   # btnCopyHumanize di panel-head #hasil (bukan rail) · #highlight + #sentExplain (klik per kalimat)
   # btnSampleID/btnSampleEN (ghost small) · demo demoAi/demoHuman/demoPct/demoLbl/demoFill/demoText/demoOpen
 style.css           DESKTOP saja (biru langit + putih, full-width)
@@ -17,24 +17,25 @@ js/
   core.js           DOM refs, state, AI_PHRASES, konstanta batas
   referensi.js      data referensi + REF_HUMANIZE_EXTRA + REF_RULE_DOCS
   detector.js       heuristic() + splitReferences() + cleanAcademic() + model lokal opsional
-  humanizer.js      humanizeSentence()/humanizeText() + verdict + restore
+  humanizer.js      humanizeSentence()/humanizeText() + verdict + restore + Copy fallback salin aiToolsOut
   ai/
     preprocess.js   FarazPre (hash/v + canonicalText; wrapper splitReferences/cleanAcademic/splitSentences)
     client.js       FarazAIClient (POST /api/analyze, timeout 15 dtk, echo hash/v, taksonomi reason jujur)
     combine.js      FarazCombine (evidence-based: bobot confidence×coverage×bahasa, cap supremacy +5, gap ≥30)
     validate.js     FarazValidate (10 checks murni + gerbang regresi +10)
     status.js       FarazStatus (label per tahap hybrid: preparing/local/ai/combining/validating/done)
-    summarizer.js   FarazSummarize (extractive: kalimat asli verbatim, maks 5)
-    explainer.js    FarazExplain (deskriptif struktur: paragraf/kalimat/bagian/enumerasi/penghubung/data/suara)
-  main.js           render() + doCheck() hybrid + highlight klik (sentExplain) + Summarize/Explain ke #aiToolsOut + stale-guard export + demo hero
+    summarizer.js   FarazSummarize (extractive verbatim: dedupe Jaccard >0.7, sebar lintas paragraf, keep ~1/5 min 2 maks 5)
+    explainer.js    FarazExplain (deskriptif struktur: paragraf/kalimat/bagian/enumerasi/penghubung/data/suara; urutan Explain: material → AI → lokal)
+  main.js           render() + doCheck() hybrid + highlight klik (sentExplain) + Summarize/Explain hybrid + validateAiOutput() ke #aiToolsOut (#hasil) + stale-guard export + demo hero
   # score-hero: #aiPct/#humanPct/#mixLbl + ringkas "Merah = cek lagi · Hijau = aman";
   # legenda warna di bawah #highlight: hijau aman · kuning cek · merah tulis ulang
 api/                skeleton Vercel gateway — BELUM deploy (key hanya via env, lihat `.env.example`)
   config.js         konstanta timeout/modelId/maxRetry (MAX_CHUNKS=6, ~900 char/chunk cermin localScore)
   analyze.js        POST {v,hash,canonicalText} → {score,confidence,modelId,coverage,hash,v} (Gemini primer, Groq fallback)
   humanize.js       thin proxy parafrasa formal + AI Core Rules
-  summarize.js      thin proxy ringkasan setia + AI Core Rules
+  summarize.js      thin proxy ringkasan setia (spec kompresi SEDANG + few-shot fotosintesis) + AI Core Rules
   explain.js        thin proxy penjelasan indikasi (bahasa indikasi saja) + AI Core Rules
+  material.js       fan-out 7 sumber (Wikipedia id+en, Wikidata, OpenAlex, Crossref, Semantic Scholar, PubMed, arXiv) → filter → ranking tier jurnal>wiki → validasi; maks 10; fail-soft per sumber
   .env.example      template env (tanpa secret; key hanya via env)
 img/
   icons/            logo + heading (dipakai nav/hero/footer)
@@ -71,3 +72,7 @@ referensi/          dokumen aturan + referensi-1..8 (tidak dipindah, tidak diuba
 Urutan `<script>` di `index.html` dipertahankan berurutan dengan tambahan hybrid
 (`js/core → js/detector → js/referensi → js/humanizer → js/ai/preprocess → js/ai/client → js/ai/combine → js/ai/validate → js/ai/status → js/ai/summarizer → js/ai/explainer → js/main`);
 hanya prefix path yang berubah (`./` → `./js/`), modul `js/ai/*` disisipkan sebelum `js/main.js`.
+
+## Catatan komentar
+
+Komentar `js/*.js` + `js/ai/*.js` dirapikan (garis dekorasi/narasi berlebih dihapus; identitas file, dependensi, sitasi aturan, invariant, dan kontrak tak-obvious dipertahankan) — logic tidak berubah.

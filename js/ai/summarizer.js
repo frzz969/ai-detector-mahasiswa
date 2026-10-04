@@ -43,6 +43,54 @@
     });
   }
 
+  // Jaccard kemiripan (pola validator): >0.7 = near-duplikat.
+  function jaccard(a, b) {
+    var sa = {}, sb = {};
+    a.forEach(function (x) { sa[x] = 1; });
+    b.forEach(function (x) { sb[x] = 1; });
+    var inter = 0;
+    for (var k in sa) if (sb[k]) inter++;
+    var union = Object.keys(sa).length + Object.keys(sb).length - inter;
+    return union ? inter / union : 1;
+  }
+
+  // Pecah satu paragraf jadi kalimat (fallback lokal bila splitSentences tak ada).
+  function splitPara(p) {
+    try {
+      if (typeof splitSentences === "function") {
+        var s = splitSentences(p);
+        if (s && s.length) return s;
+      }
+    } catch (_) {}
+    var norm = String(p).replace(/\s+/g, " ").trim();
+    if (!norm) return [];
+    return (norm.match(/[^.!?]+[.!?]+["”']?|\S.+$/g) || [norm])
+      .map(function (x) { return x.trim(); })
+      .filter(function (x) { return x.split(/\s+/).length > 3; });
+  }
+
+  // Paragraf asal tiap kalimat (untuk cakupan lintas bagian). Tak selaras → semua 0.
+  function paraOfSents(text, sents) {
+    var zeros = sents.map(function () { return 0; });
+    try {
+      var clean = String(text);
+      if (typeof stripMarkdown === "function") clean = stripMarkdown(clean);
+      var paras = clean.split(/\n\s*\n/).map(function (p) { return p.trim(); }).filter(Boolean);
+      if (paras.length < 2) return zeros;
+      var counts = paras.map(function (p) { return splitPara(p).length; });
+      var total = 0, ci;
+      for (ci = 0; ci < counts.length; ci++) total += counts[ci];
+      if (total !== sents.length) return zeros;
+      var out = [], pi = 0, left = counts[0];
+      sents.forEach(function () {
+        out.push(pi);
+        left--;
+        if (left <= 0 && pi < counts.length - 1) { pi++; left = counts[pi]; }
+      });
+      return out;
+    } catch (_) { return zeros; }
+  }
+
   // summarize(text, opts{max}) → kalimat ASLI verbatim dalam urutan naskah.
   function summarize(text, opts) {
     var o = opts || {};
@@ -79,13 +127,49 @@
       return { i: i, sc: sc };
     });
     scored.sort(function (a, b) { return b.sc - a.sc || a.i - b.i; });
-    var keep = Math.max(MIN_KEEP, Math.min(maxKeep, Math.ceil(sents.length / 3)));
-    var picked = scored.slice(0, keep).map(function (x) { return x.i; }).sort(function (a, b) { return a - b; });
+    // keep proporsional: ~1 per 5 kalimat (min 2, maks 5).
+    var keep = Math.max(MIN_KEEP, Math.min(maxKeep, Math.round(sents.length / 5)));
+    // Pilih greedy: dedupe near-duplikat (Jaccard >0.7 → skor lebih rendah dibuang)
+    // + cakupan lintas paragraf (maks 2 per paragraf; teks pendek/1 paragraf bebas).
+    var sets = toksPer.map(function (c) {
+      var s = {};
+      c.forEach(function (t) { s[t] = 1; });
+      return Object.keys(s);
+    });
+    var paraOf = paraOfSents(text, sents);
+    var distinctParas = {};
+    paraOf.forEach(function (p) { distinctParas[p] = 1; });
+    var useParaCap = Object.keys(distinctParas).length > 1 && sents.length > 6;
+    var picked = [], paraCount = {};
+    var isDup = function (i) {
+      for (var k = 0; k < picked.length; k++) {
+        var j = picked[k];
+        if (!sets[i].length || !sets[j].length) {
+          if (sents[i] === sents[j]) return true;
+        } else if (jaccard(sets[i], sets[j]) > 0.7) return true;
+      }
+      return false;
+    };
+    var tryPass = function (withCap) {
+      scored.forEach(function (e) {
+        if (picked.length >= keep || picked.indexOf(e.i) !== -1) return;
+        if (isDup(e.i)) return;
+        if (withCap && useParaCap) {
+          var pc = paraCount[paraOf[e.i]] || 0;
+          if (pc >= 2) return;
+        }
+        picked.push(e.i);
+        paraCount[paraOf[e.i]] = (paraCount[paraOf[e.i]] || 0) + 1;
+      });
+    };
+    tryPass(true);
+    if (picked.length < keep) tryPass(false); // longgarkan cap paragraf, dedupe tetap
+    picked.sort(function (a, b) { return a - b; });
     return {
       sentences: picked.map(function (i) { return sents[i]; }),
       picked: picked,
       method: "ringkasan ekstraktif: " + picked.length + " dari " + sents.length +
-        " kalimat asli dipilih (skor frekuensi+posisi+data), ditampilkan verbatim — tanpa ubah fakta, tanpa simpulan baru."
+        " kalimat asli dipilih (skor frekuensi+posisi+data, dedupe kemiripan, sebar lintas paragraf), ditampilkan verbatim — tanpa ubah fakta, tanpa simpulan baru."
     };
   }
 

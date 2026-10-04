@@ -254,14 +254,42 @@ function buildPrint() {
   const d = (r.heu && r.heu.detail) || {};
   const fullText = ($("inputText") && typeof $("inputText").value === "string") ? $("inputText").value : "";
   const cleanTitle = fullText.replace(/\s+/g, " ").trim().slice(0, 60) || "(tidak tersedia)";
-  const paras = fullText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean).length
-    || (typeof d.paraCount === "number" ? d.paraCount : 1);
-  const fmt = (v, dig) => (typeof v === "number" && isFinite(v) ? v.toFixed(dig) : "—");
+  const nSent = (r.heu && Array.isArray(r.heu.sents)) ? r.heu.sents.length : 0;
+  // Baris 1 naratif: ribuan format Indonesia (2173 → "2.173").
+  const wordsID = (typeof d.totalW === "number" && isFinite(d.totalW))
+    ? d.totalW.toLocaleString("id-ID") : "—";
+  // Baris pola: kondisional dari skor akhir dengan ambang render yang sama
+  // (THR_STRONG_DOC/THR_MID_DOC) — tanpa ambang baru, tanpa klaim tetap.
+  const aiNum = (typeof r.ai === "number" && isFinite(r.ai)) ? r.ai : null;
+  const polaLine = aiNum === null ? "Tingkat kemiripan pola penulisan belum dapat ditentukan dari data yang tersedia."
+    : aiNum >= THR_STRONG_DOC ? "Pola penulisan menunjukkan kemiripan dengan karakteristik teks AI"
+    : aiNum >= THR_MID_DOC ? "Sebagian pola penulisan menyerupai karakteristik teks AI dan perlu ditinjau"
+    : "Pola penulisan tidak menunjukkan kemiripan kuat dengan karakteristik teks AI";
+  // Baris variasi: dari sebaran aktual (aiLikeProp + sentSpread). Bila tak tersedia,
+  // turun ke kalimat netral — tanpa angka karangan.
+  const prop = (typeof d.aiLikeProp === "number" && isFinite(d.aiLikeProp)) ? Math.round(d.aiLikeProp * 100) : null;
+  const spread = (typeof d.sentSpread === "number" && isFinite(d.sentSpread)) ? Math.round(d.sentSpread) : null;
+  const variasiLine = (prop !== null && spread !== null)
+    ? `${prop}% kalimat memiliki pola yang cukup konsisten, dengan variasi sekitar ±${spread}%`
+    : "Konsistensi pola antarkalimat perlu ditinjau bersama konteks tulisan.";
   const reasons = (r.heu && Array.isArray(r.heu.reasons) && r.heu.reasons.length)
     ? r.heu.reasons.map((x) => `<li>${escapeHtml(String(x))}</li>`).join("")
     : `<li>Belum ada indikator yang perlu ditinjau pada teks ini.</li>`;
   const paper = (typeof REF_PAPER !== "undefined") ? escapeHtml(String(REF_PAPER)) : "—";
   const book = (typeof REF_BOOK !== "undefined") ? escapeHtml(String(REF_BOOK)) : "—";
+  const sents = (r.heu && Array.isArray(r.heu.sents)) ? r.heu.sents : [];
+  const sentScores = (r.heu && Array.isArray(r.heu.sentScores)) ? r.heu.sentScores : [];
+  // Teks yang dicek ditampilkan SEKALI: hanya kalimat skor >=45 yang di-highlight
+  // (mid 45–69, ai >=70 — ambang identik layar); kalimat human dibiarkan polos.
+  const checkedText = sents.length
+    ? sents.map((s, i) => {
+        const sc = sentScores[i] || 0;
+        const esc = escapeHtml(String(s));
+        if (sc >= 70) return `<span class="pr-spot ai">${esc}</span>`;
+        if (sc >= 45) return `<span class="pr-spot mid">${esc}</span>`;
+        return esc;
+      }).join(" ")
+    : (escapeHtml(fullText) || "(teks tidak tersedia)");
   $("printArea").innerHTML =
     `<div class="pr-doc">` +
     `<h1>FarazCheck — Laporan Indikasi AI</h1>` +
@@ -269,30 +297,32 @@ function buildPrint() {
     `<div class="pr-hero"><span class="pr-score">Skor indikasi AI ${escapeHtml(String(r.ai))}/100 • Human ${escapeHtml(String(r.human))}/100 — ${escapeHtml(String(r.lbl))}</span> ` +
     `<span class="pr-note">Skor tersebut merupakan indikasi kebahasaan, bukan probabilitas dan bukan vonis final.</span></div>` +
     `<h2>Ringkasan statistik</h2>` +
-    `<div class="pr-grid">` +
-    `<div><b>Jumlah kata:</b> ${d.totalW !== undefined ? escapeHtml(String(d.totalW)) : "—"}</div>` +
-    `<div><b>Jumlah kalimat:</b> ${r.heu && r.heu.sents ? escapeHtml(String(r.heu.sents.length)) : "—"}</div>` +
-    `<div><b>Jumlah paragraf:</b> ${escapeHtml(String(paras))}</div>` +
-    `<div><b>TTR:</b> ${fmt(d.ttr, 3)}</div>` +
-    `<div><b>Burst:</b> ${fmt(d.burst, 3)}</div>` +
-    `<div><b>Skor mentah:</b> ${escapeHtml(String(r.raw !== undefined ? r.raw : r.ai))}</div>` +
-    `<div><b>Confidence:</b> ${r.heu ? escapeHtml(String(r.heu.confidence)) : "—"}</div>` +
-    `<div><b>Daftar pustaka yang dikecualikan:</b> ${escapeHtml(String(r.refCut || 0))} kata</div>` +
+    `<div class="pr-sum">` +
+    `<p><b>${escapeHtml(String(wordsID))} kata dianalisis dalam ${escapeHtml(String(nSent))} kalimat</b></p>` +
+    `<p>${escapeHtml(polaLine)}</p>` +
+    `<p>${escapeHtml(variasiLine)}</p>` +
+    `<p><b>Hasil akhir: ${escapeHtml(String(aiNum !== null ? aiNum : "—"))}/100</b></p>` +
+    `<p class="pr-note">Confidence ${r.heu ? escapeHtml(String(r.heu.confidence)) : "—"} • ${escapeHtml(String(r.refCut || 0))} kata daftar pustaka dikecualikan dari analisis.</p>` +
     `</div>` +
     `<h2>Alasan (indikator → bukti)</h2>` +
     `<ul class="pr-reasons">${reasons}</ul>` +
     `<h2>Teks yang dicek</h2>` +
-    `<div class="pr-text">${escapeHtml(fullText) || "(teks tidak tersedia)"}</div>` +
+    `<p class="pr-legend"><span class="pr-spot mid">kuning perlu ditinjau</span> • <span class="pr-spot ai">merah perlu ditulis ulang</span></p>` +
+    `<div class="pr-text">${checkedText}</div>` +
     `<h2>Batasan &amp; tindak lanjut</h2>` +
     `<ul class="pr-limits">` +
     `<li>Hasil ini merupakan indikasi awal kebahasaan, bukan vonis final. Teks yang formal atau pendek rentan terhadap salah baca, serta akurasi detektor umum berada di bawah 80%.</li>` +
     `<li>Disarankan untuk mengonfirmasi hasil ini kepada dosen atau pembimbing sebelum mengambil keputusan.</li>` +
     `</ul>` +
     `<h2>Dasar analisis</h2>` +
-    `<p class="pr-src">Hasil teks ini berasal dari analisis sumber-sumber berikut: ${paper} • ${book} • ` +
-    `${escapeHtml("Trismanto (2016). Kalimat Efektif dalam Berkomunikasi. Bangun Rekaprima, 2(1), 3–40.")} • ` +
-    `${escapeHtml("Aquariza, N. R. (2018). Penguasaan Kohesi dan Koherensi dalam Tulisan Narasi. Reforma, 7(1), 41–45.")} • ` +
-    `${escapeHtml("Ilham, M., dkk. (2025). Analisis Bentuk dan Pilihan Kata (Diksi). Jurnal Ilmiah Wahana Pendidikan, 11(2.B), 176–181.")}</p>` +
+    `<p class="pr-src">Hasil teks ini berasal dari analisis sumber-sumber berikut:</p>` +
+    `<ol class="pr-refs">` +
+    `<li>${paper}</li>` +
+    `<li>${book}</li>` +
+    `<li>${escapeHtml("Trismanto (2016). Kalimat Efektif dalam Berkomunikasi. Bangun Rekaprima, 2(1), 3–40.")}</li>` +
+    `<li>${escapeHtml("Aquariza, N. R. (2018). Penguasaan Kohesi dan Koherensi dalam Tulisan Narasi. Reforma, 7(1), 41–45.")}</li>` +
+    `<li>${escapeHtml("Ilham, M., dkk. (2025). Analisis Bentuk dan Pilihan Kata (Diksi). Jurnal Ilmiah Wahana Pendidikan, 11(2.B), 176–181.")}</li>` +
+    `</ol>` +
     `</div>`;
 }
 
@@ -455,7 +485,10 @@ function refreshRail() {
     let outW = 0;
     try { outW = (typeof countWords === "function" ? countWords(out) : 0); } catch (_) { outW = 0; }
     if ($("btnApplyHumanize")) $("btnApplyHumanize").disabled = outW < MIN_WORDS;
-    if ($("btnCopyHumanize")) $("btnCopyHumanize").disabled = !String(out || "").trim();
+    // Copy aktif bila ada parafrase ATAU ada ringkasan/penjelasan (fallback salin aiToolsOut).
+    let toolsText = "";
+    try { toolsText = ($("aiToolsOut") && $("aiToolsOut").textContent) || ""; } catch (_) { toolsText = ""; }
+    if ($("btnCopyHumanize")) $("btnCopyHumanize").disabled = !String(out || "").trim() && !String(toolsText || "").trim();
     // Alat ringkas/jelaskan: gate ringan (teks bermakna), bukan MIN_WORDS.
     let w = 0;
     try {
@@ -612,6 +645,26 @@ function showAiTools(text) {
   refreshRail();
 }
 
+// Validasi sisi output untuk hasil AI Summarize/Explain: angka, sitasi, DOI/URL,
+// dan istilah asli harus terbawa (FarazValidate.checks). Lolos → null; gagal →
+// "check1, check2". Validator absen/gagal → null (jangan blokir hasil).
+function validateAiOutput(orig, cand) {
+  try {
+    if (typeof FarazValidate === "undefined" || !FarazValidate || !FarazValidate.checks) return null;
+    const c = FarazValidate.checks;
+    const fails = [];
+    ["numbers", "citations", "doiUrl", "terminology"].forEach((k) => {
+      try {
+        if (typeof c[k] === "function") {
+          const f = c[k](orig, cand);
+          if (f) fails.push(f.check || k);
+        }
+      } catch (_) {}
+    });
+    return fails.length ? fails.join(", ") : null;
+  } catch (_) { return null; }
+}
+
 if ($("btnSummarize")) $("btnSummarize").onclick = async () => {
   const t = currentMainText();
   if (countWords(t) < MIN_WORDS) {
@@ -619,16 +672,24 @@ if ($("btnSummarize")) $("btnSummarize").onclick = async () => {
     return;
   }
   // API dulu (/api/summarize); gagal → fallback lokal + status jujur (validation-rules §2, §5).
-  let apiFailed = false, apiReason = "";
+  // Hasil AI lolos validasi fakta dulu (validateAiOutput) sebelum ditampilkan.
+  let apiFailed = false, apiReason = "", apiInvalid = false;
   try {
     if (typeof FarazAIClient !== "undefined" && FarazAIClient && typeof FarazAIClient.summarize === "function") {
       showAiTools("Meminta ringkasan AI...");
       const ar = await FarazAIClient.summarize(t, { v: 1 });
       if (ar && ar.text && ar.text.trim()) {
-        showAiTools(`Ringkasan (via AI, confidence ${ar.confidence || "rendah"} — indikasi, bukan vonis): ${ar.text.trim()}`);
-        return;
+        const cand = ar.text.trim();
+        const vFail = validateAiOutput(t, cand);
+        if (!vFail) {
+          showAiTools(`Ringkasan (via AI, confidence ${ar.confidence || "rendah"} — indikasi, bukan vonis): ${cand}`);
+          return;
+        }
+        apiFailed = true; apiInvalid = true;
+        apiReason = "hasil AI tidak lolos validasi fakta (" + vFail + ") — dipakai ringkasan lokal";
+      } else {
+        apiFailed = true; apiReason = (ar && ar.reason) || "unavailable";
       }
-      apiFailed = true; apiReason = (ar && ar.reason) || "unavailable";
     }
   } catch (e) { console.warn(e); apiFailed = true; apiReason = "unavailable"; }
   if (typeof FarazSummarize === "undefined" || !FarazSummarize || typeof FarazSummarize.summarize !== "function") {
@@ -641,7 +702,9 @@ if ($("btnSummarize")) $("btnSummarize").onclick = async () => {
     showAiTools("Ringkasan belum dapat dibuat dari teks ini.");
     return;
   }
-  const suffix = apiFailed ? ` (mode lokal — API tidak tersedia: ${apiReason}).` : "";
+  const suffix = apiFailed
+    ? (apiInvalid ? ` (${apiReason}).` : ` (mode lokal — API tidak tersedia: ${apiReason}).`)
+    : "";
   showAiTools(`Ringkasan ekstraktif (${r.sentences.length} kalimat asli, tanpa ubah fakta): ` +
     r.sentences.map((s, i) => `${i + 1}) ${s}`).join(" ") + suffix);
 };
@@ -652,31 +715,67 @@ if ($("btnExplain")) $("btnExplain").onclick = async () => {
     showAiTools(`Teks terlalu pendek — tempel minimal ${MIN_WORDS} kata dulu.`);
     return;
   }
-  // API dulu (/api/explain, pola sama dengan summarize di atas).
-  let apiFailed = false, apiReason = "";
+  // Urutan baru: material API → /api/explain → lokal FarazExplain.
+  // Status jujur tiap tahap (validation-rules §2, §5: bahasa indikasi).
+  let materialBlock = "", materialNote = "";
+  try {
+    if (typeof FarazAIClient !== "undefined" && FarazAIClient && typeof FarazAIClient.material === "function") {
+      showAiTools("Mencari materi...");
+      const mr = await FarazAIClient.material(t, { v: 1 });
+      if (mr && Array.isArray(mr.materials) && mr.materials.length) {
+        const lines = mr.materials.slice(0, 10).map((m, i) => {
+          const title = (m && m.title) || "Tanpa judul";
+          const meta = [m.year, m.venue].filter(Boolean).join(", ");
+          const tier = (m && m.tier) || "Umum";
+          const link = (m && (m.url || m.doi)) || "-";
+          return `${i + 1}. ${title}${meta ? ` (${meta})` : ""} — ${tier} — ${link}`;
+        });
+        materialBlock = `Materi terkait (terindikasi relevan — perlu ditinjau):\n${lines.join("\n")}`;
+        if (mr.warnings && mr.warnings.length) materialBlock += `\nCatatan sumber: ${mr.warnings.join("; ")}`;
+      } else if (mr && mr.reason) {
+        materialNote = ` (pencarian materi dilewati: ${mr.reason}, lanjut ke penjelasan).`;
+      } else {
+        materialNote = " (materi tidak ditemukan untuk kueri ini, lanjut ke penjelasan).";
+      }
+    }
+  } catch (e) { console.warn(e); materialNote = " (pencarian materi tidak tersedia, lanjut ke penjelasan)."; }
+  let apiFailed = false, apiReason = "", apiInvalid = false;
   try {
     if (typeof FarazAIClient !== "undefined" && FarazAIClient && typeof FarazAIClient.explain === "function") {
-      showAiTools("Meminta penjelasan AI...");
+      showAiTools("Meminta penjelasan AI..." + materialNote);
       const ar = await FarazAIClient.explain(t, { v: 1 });
       if (ar && ar.text && ar.text.trim()) {
-        showAiTools(`Penjabaran teks (via AI, confidence ${ar.confidence || "rendah"} — indikasi, bukan vonis): ${ar.text.trim()}`);
-        return;
+        const cand = ar.text.trim();
+        const vFail = validateAiOutput(t, cand);
+        if (!vFail) {
+          const head = materialBlock ? materialBlock + "\n\n" : "";
+          showAiTools(head + `Penjabaran teks (via AI, confidence ${ar.confidence || "rendah"} — indikasi, bukan vonis): ${cand}`);
+          return;
+        }
+        apiFailed = true; apiInvalid = true;
+        apiReason = "hasil AI tidak lolos validasi fakta (" + vFail + ") — dipakai penjabaran lokal";
+      } else {
+        apiFailed = true; apiReason = (ar && ar.reason) || "unavailable";
       }
-      apiFailed = true; apiReason = (ar && ar.reason) || "unavailable";
     }
   } catch (e) { console.warn(e); apiFailed = true; apiReason = "unavailable"; }
   if (typeof FarazExplain === "undefined" || !FarazExplain || typeof FarazExplain.explain !== "function") {
-    showAiTools("Penjelas struktur belum termuat — muat ulang halaman, lalu coba lagi.");
+    const head = materialBlock ? materialBlock + "\n\n" : "";
+    showAiTools(head + "Penjelas struktur belum termuat — muat ulang halaman, lalu coba lagi." + materialNote);
     return;
   }
   let r = null;
   try { r = FarazExplain.explain(t); } catch (e) { console.warn(e); }
   if (!r || !r.text) {
-    showAiTools("Struktur belum dapat dijelaskan dari teks ini.");
+    const head = materialBlock ? materialBlock + "\n\n" : "";
+    showAiTools(head + "Struktur belum dapat dijelaskan dari teks ini." + materialNote);
     return;
   }
-  const suffix = apiFailed ? ` (mode lokal — API tidak tersedia: ${apiReason}).` : "";
-  showAiTools(`Penjabaran teks: Berikut penjabaran isi teksmu: ${r.text}` + suffix);
+  const suffix = apiFailed
+    ? (apiInvalid ? ` (${apiReason}).` : ` (mode lokal — API tidak tersedia: ${apiReason}).`)
+    : "";
+  const head = materialBlock ? materialBlock + "\n\n" : "";
+  showAiTools(head + `Penjabaran teks: Berikut penjabaran isi teksmu: ${r.text}` + suffix + materialNote);
 };
 
 $("btnSampleID").onclick = () => {
