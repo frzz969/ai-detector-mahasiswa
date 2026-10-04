@@ -1,11 +1,6 @@
-// ============================================================
-// FarazStatus — string status jujur untuk alur hybrid
-// Aturan: validation-rules §2 (status sesuai proses sebenarnya,
-// bukan animasi; tanpa klaim selesai bila kondisi tak terpenuhi),
-// detector-rules §6 + validation-rules §5 (bahasa indikasi saja;
-// tanpa klaim absolut/persen-voniskepastian/jaminan/lolos-bersih).
-// File vanilla JS global (tanpa import/export ES).
-// ============================================================
+// FarazStatus — string status jujur untuk alur hybrid.
+// Aturan: validation-rules §2 (status = proses sebenarnya), §5 + detector-rules §6
+// (bahasa indikasi; tanpa klaim absolut). File vanilla JS global.
 (function (global) {
   "use strict";
 

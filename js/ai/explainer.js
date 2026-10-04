@@ -1,11 +1,6 @@
-// ============================================================
-// FarazExplain — penjelasan STRUKTUR lokal (tanpa AI key)
-// Aturan: detector-rules §2 (tiap klaim berbasis bukti terhitung dari
-// teks) + §6 (bahasa indikasi, tanpa vonis); humanizer-rules §4 (tanpa
-// karang fakta) → hanya statistik teramati: paragraf, kalimat, bagian
-// formal, enumerasi, penghubung, data, suara penulis.
-// File vanilla JS global (tanpa import/export ES).
-// ============================================================
+// FarazExplain — penjelasan STRUKTUR lokal (tanpa AI key).
+// Aturan: detector-rules §2 + §6; humanizer-rules §4 (tanpa karang fakta) →
+// hanya statistik teramati. File vanilla JS global.
 (function (global) {
   "use strict";
 
@@ -46,8 +41,7 @@
   // explain(text) → { bullets[], text, method }. Deskriptif, bukan vonis.
   function explain(text) {
     var t = String(text == null ? "" : text);
-    // Penanda markdown tempelan dibuang (helper detector.js) — statistik
-    // teramati dihitung dari isi polos; fakta/angka/sitasi dipertahankan.
+    // Markdown dibuang (helper detector.js); fakta/angka/sitasi dipertahankan.
     try { if (typeof stripMarkdown === "function") t = stripMarkdown(t); } catch (_) {}
     var paras = t.split(/\n\s*\n/).map(function (p) { return p.trim(); }).filter(Boolean);
     var sents = getSents(t);

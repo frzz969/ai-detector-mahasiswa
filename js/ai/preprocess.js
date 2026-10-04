@@ -1,18 +1,12 @@
-// ============================================================
-// FarazPre — preprocess hybrid (wrapper, bukan duplikasi logika)
-// Aturan: detector-rules §1 (alur wajib: bersihkan → cek panjang →
-// pecah kalimat), §4 (sitasi bukan bukti AI → pisahkan pustaka).
-// Memakai fungsi existing: splitReferences(), cleanAcademic(),
-// splitSentences(), countWords() — JANGAN duplikasi regex mereka.
-// File vanilla JS global (tanpa import/export ES).
-// ============================================================
+// FarazPre — preprocess hybrid (wrapper, bukan duplikasi logika).
+// Aturan: detector-rules §1, §4. Memakai fungsi existing (splitReferences,
+// cleanAcademic, splitSentences, countWords) — JANGAN duplikasi regex. Vanilla JS.
 (function (global) {
   "use strict";
 
   var PREPROCESS_V = 1;
 
-  // Hash FNV-1a 32-bit → hex 8 char. Sync, deterministik, cukup untuk
-  // echo hash/v ke /api/analyze (bukan kriptografi, hanya korelasi).
+  // Hash FNV-1a 32-bit (hex 8 char): korelasi echo hash/v, bukan kriptografi.
   function hashText(s) {
     var h = 0x811c9dc5;
     var str = String(s);
@@ -21,15 +15,11 @@
       // Math.imul agar 32-bit konsisten di semua browser/node
       h = Math.imul(h, 0x01000193);
     }
-    // >>> 0 → unsigned, pad hex 8 digit
     return ("0000000" + (h >>> 0).toString(16)).slice(-8);
   }
 
-  // Deteksi bahasa ringan: LOGIKA SAMA dengan detectLanguageInfo() di
-  // detector.js (PRD §15.2/§15.3) — fwRate yang sama, ambang yang sama
-  // (unknown bila FW<4/fwRate<0.02; mixed bila proporsi minor>=0.30),
-  // eksklusi yang sama (produk/org multi-kata kapital + akronim).
-  // Output "id"|"en"|"mixed"|"unknown". JANGAN ubah ambang di satu sisi saja.
+  // Deteksi bahasa ringan: LOGIKA SAMA dengan detectLanguageInfo() detector.js
+  // (ambang + eksklusi sama). JANGAN ubah ambang di satu sisi saja.
   function collectLangExclusions(cleaned) {
     var excl = {};
     var multi = String(cleaned).match(/\b[A-ZÀ-Þ][a-zà-ÿ]+(?:\s+[A-ZÀ-Þ][a-zà-ÿ]+)+/g) || [];
@@ -81,9 +71,8 @@
     return (String(t).toLowerCase().match(/[\p{L}\p{N}']+/gu) || []);
   }
 
-  // Preprocess utama. Input string mentah → objek deterministik.
-  // Tahap: normalize NFKC → splitReferences() → cleanAcademic() →
-  // splitSentences() → lang/words/hash. Tidak mengubah file existing.
+  // Preprocess utama: normalize NFKC → splitReferences → cleanAcademic →
+  // splitSentences → lang/words/hash. Tidak mengubah fungsi existing.
   function preprocess(rawText) {
     var raw = String(rawText == null ? "" : rawText);
     // NFKC: samakan bentuk unicode (fullwidth, ligatur, dsb.)
@@ -108,8 +97,7 @@
       try { cleaned = cleanAcademic(main); } catch (_) { cleaned = main; }
     }
 
-    // canonicalText: bentuk kanonis untuk hash + kirim ke AI (whitespace
-    // dinormalisasi, isi tidak diubah selain cleanAcademic di atas).
+    // canonicalText: kanonis untuk hash + kirim AI (whitespace dinormalisasi).
     var canonicalText = cleaned.replace(/\s+/g, " ").trim();
 
     // 3) Pecah kalimat via fungsi existing.

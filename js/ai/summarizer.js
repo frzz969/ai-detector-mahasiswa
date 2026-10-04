@@ -1,11 +1,6 @@
-// ============================================================
-// FarazSummarize — ringkasan EKSTRAKTIF lokal (tanpa AI key)
-// Aturan: humanizer-rules §4 (angka/fakta/istilah tidak diubah, tanpa
-// data karangan) → kalimat diambil VERBATIM dari teks, hanya dipilih +
-// diurutkan; validation-rules §5 (tanpa klaim absolut).
-// Skor kalimat = frekuensi kata isi + bonus posisi/data/panjang.
-// File vanilla JS global (tanpa import/export ES).
-// ============================================================
+// FarazSummarize — ringkasan EKSTRAKTIF lokal (tanpa AI key).
+// Aturan: humanizer-rules §4 (verbatim, tanpa karangan); validation-rules §5.
+// Skor kalimat = frekuensi kata isi + bonus posisi/data/panjang. Vanilla JS.
 (function (global) {
   "use strict";
 
@@ -13,9 +8,7 @@
   var MIN_KEEP = 2;
 
   function getSents(text) {
-    // Tempelan AI berformat markdown dibersihkan dulu (satu helper
-    // stripMarkdown dari detector.js) — kalimat ekstraktif verbatim yang
-    // dipilih tampil teks polos; fakta/angka/sitasi dipertahankan.
+    // Markdown dibersihkan dulu — ekstraktif verbatim tampil teks polos.
     try { if (typeof stripMarkdown === "function") text = stripMarkdown(String(text)); } catch (_) {}
     if (typeof splitSentences === "function") {
       try {
@@ -50,8 +43,7 @@
     });
   }
 
-  // summarize(text, opts{max}) → { sentences[], picked[], method }.
-  // sentences = kalimat ASLI verbatim dalam urutan naskah.
+  // summarize(text, opts{max}) → kalimat ASLI verbatim dalam urutan naskah.
   function summarize(text, opts) {
     var o = opts || {};
     var maxKeep = typeof o.max === "number" ? Math.max(MIN_KEEP, Math.min(MAX_KEEP, Math.round(o.max))) : MAX_KEEP;

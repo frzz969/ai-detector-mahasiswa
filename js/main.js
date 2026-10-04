@@ -1,19 +1,11 @@
-// ============================================================
 // main.js — Tampil hasil + tombol + upload + init. File 4 dari 4.
 // Butuh: core.js, detector.js, humanizer.js (duluan).
 // Cek error: hasil/upload/tombol tidak jalan → buka file ini.
-//
-// ATURAN JUJUR (invariant): tidak ada skor/laporan yang tampil tanpa
-// hitung ulang. render() satu-satunya penulis skor. Teks berubah
-// sesudah hasil keluar → hasil DITANDAI BASI (markStale) dan export
-// DIBLOKIR sampai cek ulang. Model baca parsial → dilapor di method.
-// ============================================================
+// ATURAN JUJUR: render() satu-satunya penulis skor. Teks berubah sesudah hasil →
+// DITANDAI BASI (markStale), export DIBLOKIR sampai cek ulang. Tanpa skor palsu.
 
-// Tandai hasil sebagai basi (untuk teks lama). Aman dipanggil kapan
-// saja: diam bila belum ada hasil yang tampil.
-// Ringkasan/penjelasan (aiToolsOut) mandiri dari hasil cek: dibiarkan
-// tampil + diberi penanda basi (pola yang sama seperti humanizer),
-// bukan dihapus/disembunyikan.
+// Tandai hasil sebagai basi (untuk teks lama). aiToolsOut mandiri dari hasil cek:
+// dibiarkan tampil + penanda basi (pola humanizer), bukan dihapus.
 function markStale() {
   // Hybrid: pemeriksaan AI yang sedang berjalan ikut ditandai batal.
   aiPending = false;
@@ -31,15 +23,9 @@ function markStale() {
   refreshRail();
 }
 
-// ---------- Penjelasan per kalimat (highlight explainable) ----------
-// detector-rules §2-§3 + validation-rules §5: tiap mark di #highlight dapat
-// diklik/difokus keyboard untuk menampilkan alasan kalimat itu (nomor +
-// skor + pemicu utama + 1 saran formal singkat) di bawah highlight.
-// Murni MEMBACA sinyal yang sama dengan skor kalimat di detector.js
-// heuristic() (~lines 443-462: AI_PHRASES, pola 12-28, REF_SENT_PERSONAL /
-// TEMPLATE / DATA, REF_HEDGE_PATS, ACAD_NEUTRAL, ENUM_START, opener
-// berulang, data konkret) — TANPA mengubah logika/skor, tanpa popup,
-// tanpa section/halaman/card baru, bahasa indikasi saja.
+// Penjelasan per kalimat (detector-rules §2-§3, validation-rules §5): tiap mark di
+// #highlight dapat diklik/difokus untuk alasan kalimat itu. MEMBACA sinyal yang sama
+// dengan skor kalimat detector — tanpa ubah logika/skor, bahasa indikasi saja.
 function sentTriggers(heu, i) {
   const s = (heu && heu.sents && heu.sents[i]) || "";
   const lw = s.toLowerCase();
@@ -89,9 +75,7 @@ function sentTriggers(heu, i) {
   return { ups, downs };
 }
 
-// Susun teks alasan 1 kalimat: nomor + skor + pemicu utama + 1 saran
-// formal singkat (humanizer-rules §2: formal, tanpa slang; fakta/angka/
-// sitasi tidak diubah — saran hanya variasi/rincian bila tersedia).
+// Teks alasan 1 kalimat: nomor + skor + pemicu + 1 saran formal (humanizer-rules §2).
 function sentExplainText(heu, i) {
   const n = (heu && heu.sents ? heu.sents.length : 0);
   const sc = Math.round((heu && heu.sentScores && heu.sentScores[i]) || 0);
@@ -110,9 +94,7 @@ function sentExplainText(heu, i) {
   return `${head} Kalimat ini aman karena ${aman} — pertahankan. Saran: pertahankan; tidak perlu diubah.`;
 }
 
-// Tampilkan alasan kalimat ke-<i> pada <p id="sentExplain"> tepat di bawah
-// #highlight (di dalam <details> yang sama — bukan section/card baru),
-// lalu dekatkan ke pandangan tanpa popup library.
+// Alasan kalimat ke-<i> di <p id="sentExplain"> bawah #highlight (tanpa popup).
 function showSentExplain(heu, i) {
   const hl = $("highlight");
   if (!hl) return;
@@ -133,17 +115,13 @@ function showSentExplain(heu, i) {
   try { box.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (_) {}
 }
 
-// ---------- Render hasil ----------
-// Rumus akhir: ensemble 50/50 bila model ada.
+// Render hasil. Rumus akhir: ensemble 50/50 bila model ada.
 function render(heu, localVal, refCut) {
   let final = heu.score;
   let method = "heuristik offline";
   if (typeof localVal === "number") {
-    // Model lokal dilatih pada teks EN — untuk teks ID (heu.lang==="id")
-    // bobot model dikurangi. Bobot bahasa existing dipertahankan
-    // (EN 0.5, ID 0.25); Fase 3 menambah floor-0: cakupan rendah (<50%
-    // potongan terbaca) atau tak diketahui → kontribusi model 0, hanya
-    // heuristik yang dipakai, dilaporkan jujur di method.
+    // Model dilatih EN → bobot ID konservatif (EN 0.5, ID 0.25). Cakupan rendah
+    // (<50%) → kontribusi model 0, dilaporkan jujur di method.
     const base = heu.lang === "en" ? 0.5 : 0.25; // model dilatih EN → bobot ID konservatif (§10 brief)
     const covKnown = !!(localParts && localParts.of);
     const cov = covKnown ? localParts.n / localParts.of : 0;
@@ -161,23 +139,20 @@ function render(heu, localVal, refCut) {
   } else {
     localParts = null;
   }
-  // Hybrid (validation-rules §1, detector-rules §3-§4): catatan gabungan
-  // heuristik+AI dari doCheck (FarazCombine) dicantumkan jujur di method.
+  // Hybrid (validation-rules §1): catatan gabungan FarazCombine dicantumkan di method.
   if (heu.combineNote) method += ` • ${heu.combineNote}`;
 
   const ai = final, human = 100 - ai;
   $("aiPct").textContent = ai + "%";
   $("humanPct").textContent = human + "%";
   $("barFill").style.width = ai + "%";
-  // Stat dasbor: turunan tampil saja dari data yang sama (bukan skor baru).
-  // Perlu cek = skor kalimat >=45 (merah+kuning), Aman = sisanya (hijau).
+  // Stat dasbor: turunan tampil saja (Perlu cek = skor >=45, Aman = sisanya).
   const rev = heu.sentScores.filter((s) => s >= 45).length;
   $("statSent").textContent = String(heu.sents.length);
   $("statReview").textContent = String(rev);
   $("statSafe").textContent = String(heu.sents.length - rev);
 
-  // Ambang pakai CERMIN core.js (THR_*_DOC) — angka sama dengan sebelumnya
-  // (75/50/30), tidak ada tuning ambang di sini; ubah ambang hanya di core.js.
+  // Ambang pakai CERMIN core.js (THR_*_DOC); ubah ambang hanya di core.js.
   let lbl, ver;
   if (ai >= THR_STRONG_DOC)      { lbl = "Indikasi AI kuat";  ver = `<b>Skor indikasi ${ai}/100 — terdapat indikasi pola generatif.</b> Tinjau bagian merah: variasikan struktur + tambah data/opini.`; }
   else if (ai >= THR_MID_DOC) { lbl = "Campuran";          ver = `<b>Skor indikasi ${ai}/100 — campuran, perlu ditinjau.</b> Tulis ulang bagian merah/kuning dengan bahasamu.`; }
@@ -185,12 +160,8 @@ function render(heu, localVal, refCut) {
   else               { lbl = "Cenderung natural"; ver = `<b>Skor indikasi ${ai}/100 — tidak banyak pola generatif.</b> Sudah baik, tidak semua perlu diubah.`; }
 
   $("mixLbl").textContent = lbl;
-  // Verdict bersih user-facing (validation-rules §5, detector-rules §6):
-  // skor + kategori + confidence SEKALI + SATU kalimat status AI sederhana.
-  // Seluruh rincian metode (skor heuristik vs AI, bobot, cakupan, faktor
-  // bahasa, selisih) PINDAH ke <details> audit "Kenapa skor ini?" di bawah
-  // (satu <li> tambahan, default collapsed). Status jujur per tahap
-  // doCheck() tidak diubah.
+  // Verdict bersih (validation-rules §5, detector-rules §6): skor + kategori +
+  // confidence SEKALI + satu kalimat status. Rincian ke <details> audit.
   let aiLine = "Pemeriksaan AI tidak tersedia — dipakai hasil lokal.";
   try {
     if (heu.combineNote && /gabungan/i.test(heu.combineNote)) aiLine = "Hasil gabungan heuristik dan AI.";
@@ -199,9 +170,7 @@ function render(heu, localVal, refCut) {
   $("verdict").innerHTML =
     `${ver}<br><small>confidence ${escapeHtml(heu.confidence)} • ${escapeHtml(aiLine)}</small>`;
 
-  // Highlight per kalimat: merah >=70, kuning >=45, hijau sisanya.
-  // Explainable: tiap mark dapat diklik + fokus keyboard (tabindex/role/
-  // title) → alasan kalimat tampil di bawah highlight (showSentExplain).
+  // Highlight per kalimat (merah >=70, kuning >=45, hijau sisanya) + klik untuk alasan.
   const hl = $("highlight");
   hl.innerHTML = "";
   heu.sents.forEach((s, i) => {
@@ -219,8 +188,7 @@ function render(heu, localVal, refCut) {
     });
     hl.appendChild(m);
   });
-  // Petunjuk + wadah alasan (paragraf di <details> yang sama, bukan
-  // section/card baru). Direset tiap render agar tidak basi.
+  // Petunjuk + wadah alasan (direset tiap render agar tidak basi).
   try {
     let box = document.getElementById("sentExplain");
     if (!box) {
@@ -246,9 +214,7 @@ function render(heu, localVal, refCut) {
     li.textContent = `${refCut} kata daftar pustaka dikecualikan dari skor (mengurangi false-positive).`;
     rs.appendChild(li);
   }
-  // Audit metode: rincian internal (bobot/cakupan/selisih) tampil di sini
-  // — di dalam <details> "Kenapa skor ini?" yang default collapsed — agar
-  // tetap ada untuk audit tanpa mengotori verdict.
+  // Audit metode di <details> "Kenapa skor ini?" (collapsed) — untuk audit saja.
   try {
     if (method) {
       const mli = document.createElement("li");
@@ -257,8 +223,7 @@ function render(heu, localVal, refCut) {
     }
   } catch (_) {}
 
-  // Detail teknis ringkas (audit, collapsed): angka statistik saja — tanpa
-  // method, tanpa confidence ganda, tanpa pengulangan "skor indikasi".
+  // Detail teknis ringkas (audit, collapsed): angka statistik saja.
   $("stats").textContent =
     `kata dinilai: ${heu.detail.totalW} | kalimat: ${heu.sents.length} | ` +
     `TTR: ${heu.detail.ttr.toFixed(3)} | burst: ${heu.detail.burst.toFixed(3)} | ` +
@@ -281,29 +246,58 @@ function render(heu, localVal, refCut) {
   refreshRail();
 }
 
-// Susun area cetak PDF dari lastResult (di-escape semua).
+// Susun area cetak PDF dari lastResult (di-escape semua). Halaman mengikuti panjang
+// teks (tanpa potong). Bahasa indikasi (detector-rules §8): bukan probabilitas/vonis.
 function buildPrint() {
   if (!lastResult) return;
   const r = lastResult;
+  const d = (r.heu && r.heu.detail) || {};
+  const fullText = ($("inputText") && typeof $("inputText").value === "string") ? $("inputText").value : "";
+  const cleanTitle = fullText.replace(/\s+/g, " ").trim().slice(0, 60) || "(tidak tersedia)";
+  const paras = fullText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean).length
+    || (typeof d.paraCount === "number" ? d.paraCount : 1);
+  const fmt = (v, dig) => (typeof v === "number" && isFinite(v) ? v.toFixed(dig) : "—");
+  const reasons = (r.heu && Array.isArray(r.heu.reasons) && r.heu.reasons.length)
+    ? r.heu.reasons.map((x) => `<li>${escapeHtml(String(x))}</li>`).join("")
+    : `<li>Belum ada indikator yang perlu ditinjau pada teks ini.</li>`;
+  const paper = (typeof REF_PAPER !== "undefined") ? escapeHtml(String(REF_PAPER)) : "—";
+  const book = (typeof REF_BOOK !== "undefined") ? escapeHtml(String(REF_BOOK)) : "—";
   $("printArea").innerHTML =
-    `<h2>FarazCheck — Laporan Deteksi AI</h2>` +
-    `<p>Tanggal: ${escapeHtml(r.date)} • Metode: ${escapeHtml(r.method)}</p>` +
-    `<h3>Hasil: Skor indikasi AI ${r.ai}/100 / Human ${r.human}/100 (komplemen tampilan, bukan probabilitas) — ${escapeHtml(r.lbl)}</h3>` +
-    `<p>Pustaka dikecualikan: ${r.refCut || 0} kata</p>` +
-    `<h4>Alasan:</h4><ul>${r.heu.reasons.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>` +
-    `<h4>Statistik:</h4><pre>kata: ${r.heu.detail.totalW}, kalimat: ${r.heu.sents.length}, ` +
-    `TTR: ${r.heu.detail.ttr.toFixed(3)}, burst: ${r.heu.detail.burst.toFixed(3)}, ` +
-    `skor mentah: ${r.raw !== undefined ? r.raw : r.ai}, confidence: ${r.heu.confidence}</pre>` +
-    `<p><i>Catatan: skor indikasi, bukan probabilitas dan bukan vonis. Konfirmasi ke dosen.</i></p>` +
-    `<p><small>Dasar: heuristik + referensi (2 artikel + ${escapeHtml(REF_PAPER)}). Detektor umum di bawah 80% akurat; teks formal/pendek rawan salah baca.</small></p>` +
-    `<p><small>Sumber aturan: ${escapeHtml(REF_RULE_DOCS.join(" • "))}</small></p>`;
+    `<div class="pr-doc">` +
+    `<h1>FarazCheck — Laporan Indikasi AI</h1>` +
+    `<p class="pr-meta">${escapeHtml(String(r.date))} • ${escapeHtml(String(r.method))} • “${escapeHtml(cleanTitle)}”${fullText.length ? ` — ${fullText.length} karakter` : ""}</p>` +
+    `<div class="pr-hero"><span class="pr-score">Skor indikasi AI ${escapeHtml(String(r.ai))}/100 • Human ${escapeHtml(String(r.human))}/100 — ${escapeHtml(String(r.lbl))}</span> ` +
+    `<span class="pr-note">Skor tersebut merupakan indikasi kebahasaan, bukan probabilitas dan bukan vonis final.</span></div>` +
+    `<h2>Ringkasan statistik</h2>` +
+    `<div class="pr-grid">` +
+    `<div><b>Jumlah kata:</b> ${d.totalW !== undefined ? escapeHtml(String(d.totalW)) : "—"}</div>` +
+    `<div><b>Jumlah kalimat:</b> ${r.heu && r.heu.sents ? escapeHtml(String(r.heu.sents.length)) : "—"}</div>` +
+    `<div><b>Jumlah paragraf:</b> ${escapeHtml(String(paras))}</div>` +
+    `<div><b>TTR:</b> ${fmt(d.ttr, 3)}</div>` +
+    `<div><b>Burst:</b> ${fmt(d.burst, 3)}</div>` +
+    `<div><b>Skor mentah:</b> ${escapeHtml(String(r.raw !== undefined ? r.raw : r.ai))}</div>` +
+    `<div><b>Confidence:</b> ${r.heu ? escapeHtml(String(r.heu.confidence)) : "—"}</div>` +
+    `<div><b>Daftar pustaka yang dikecualikan:</b> ${escapeHtml(String(r.refCut || 0))} kata</div>` +
+    `</div>` +
+    `<h2>Alasan (indikator → bukti)</h2>` +
+    `<ul class="pr-reasons">${reasons}</ul>` +
+    `<h2>Teks yang dicek</h2>` +
+    `<div class="pr-text">${escapeHtml(fullText) || "(teks tidak tersedia)"}</div>` +
+    `<h2>Batasan &amp; tindak lanjut</h2>` +
+    `<ul class="pr-limits">` +
+    `<li>Hasil ini merupakan indikasi awal kebahasaan, bukan vonis final. Teks yang formal atau pendek rentan terhadap salah baca, serta akurasi detektor umum berada di bawah 80%.</li>` +
+    `<li>Disarankan untuk mengonfirmasi hasil ini kepada dosen atau pembimbing sebelum mengambil keputusan.</li>` +
+    `</ul>` +
+    `<h2>Dasar analisis</h2>` +
+    `<p class="pr-src">Hasil teks ini berasal dari analisis sumber-sumber berikut: ${paper} • ${book} • ` +
+    `${escapeHtml("Trismanto (2016). Kalimat Efektif dalam Berkomunikasi. Bangun Rekaprima, 2(1), 3–40.")} • ` +
+    `${escapeHtml("Aquariza, N. R. (2018). Penguasaan Kohesi dan Koherensi dalam Tulisan Narasi. Reforma, 7(1), 41–45.")} • ` +
+    `${escapeHtml("Ilham, M., dkk. (2025). Analisis Bentuk dan Pilihan Kata (Diksi). Jurnal Ilmiah Wahana Pendidikan, 11(2.B), 176–181.")}</p>` +
+    `</div>`;
 }
 
-// ---------- Tombol "Cek sekarang" + word-count ----------
-// Alur hybrid (validation-rules §1): VALIDATE → PREPROCESS (FarazPre) →
-// heuristik lokal → model lokal (opsional) → AI /api/analyze (gagal →
-// fallback lokal jujur) → COMBINE (FarazCombine) → gerbang regresi
-// (FarazValidate) → render. render() satu-satunya penulis skor.
+// Tombol "Cek sekarang". Alur hybrid (validation-rules §1): VALIDATE → PREPROCESS →
+// heuristik + model lokal → AI → COMBINE → regresi → render (satu-satunya penulis skor).
 async function doCheck() {
   if (checking) return;
   const raw = inputText.value.trim();
@@ -324,10 +318,8 @@ async function doCheck() {
     } catch (_) { /* status gagal → lanjut analisis, jangan tebak */ }
   };
   try {
-    // 0) Preprocess dulu: hash/v + canonicalText untuk korelasi AI.
-    // Heuristik tetap menerima `main` bersitasi (detector-rules §4:
-    // sitasi dibutuhkan academic-context; canonicalText yang sudah
-    // dibersihkan akan menonaktifkan sinyal sitasi bila dipakai ke heuristic).
+    // 0) Preprocess: hash/v + canonicalText untuk korelasi AI. Heuristik menerima `main`
+    // bersitasi (detector-rules §4: sitasi dibutuhkan academic-context).
     setStage("preparing");
     await new Promise((r) => setTimeout(r, 60));
     let pre = null;
@@ -354,11 +346,8 @@ async function doCheck() {
       try { lv = await localScore(main); } catch (e) { console.warn(e); lv = null; }
     }
 
-    // 2) Jalur AI: kontrak api/analyze.js = POST { v, hash, canonicalText }
-    // dengan hash = SHA-256 hex dari canonicalText. Hash FNV lama
-    // (pre.hash, 8 char) TIDAK dikirim — server menolaknya MALFORMED.
-    // SHA-256 tak tersedia (file:// non-secure context) → API dilewati
-    // jujur (unavailable), jalur lokal di bawah tetap jalan penuh.
+    // 2) Jalur AI: POST { v, hash, canonicalText }, hash = SHA-256 hex. Hash FNV lama
+    // TIDAK dikirim (server menolak MALFORMED). SHA-256 tak tersedia → API dilewati jujur.
     setStage("ai");
     aiPending = true; aiResult = null; aiError = null;
     let aiRes = { ai: null, reason: "unavailable" };
@@ -390,9 +379,7 @@ async function doCheck() {
       }
     } catch (e) { console.warn(e); combined = null; }
 
-    // 4) Gerbang regresi sebelum render: gabungan tidak boleh mengangkat
-    // skor >+10 di atas bukti lokal (cap supremacy menahan +5; ini jaring
-    // pengaman bila logika gabung berubah). Gagal → pakai lokal + catat.
+    // 4) Gerbang regresi: gabungan tidak boleh >+10 di atas bukti lokal (jaring pengaman).
     setStage("validating");
     await new Promise((r) => setTimeout(r, 60));
     let useCombined = !!(combined && typeof combined.final === "number");
@@ -427,8 +414,7 @@ async function doCheck() {
       } catch (_) { /* abaikan, pesan dasar sudah tampil */ }
     }
     statusEl.textContent = done;
-    // Tiap klik Cek selalu antar ke verdict (tengah layar) agar bagian
-    // hasil yang sesuai langsung terlihat tanpa scroll manual.
+    // Tiap klik Cek antar ke verdict agar hasil langsung terlihat.
     $("verdict").scrollIntoView({ behavior: "smooth", block: "center" });
   } finally {
     checking = false;
@@ -454,15 +440,11 @@ function updateWC() {
   try { refreshRail(); } catch (_) {}
 }
 
-// Gating tombol ringan vs gating kualitas (validation-rules §2):
-// tombol Summarize/Explain dibuka untuk teks bermakna (>=5 kata) agar
-// user tidak mengira rusak; validasi kualitas 20 kata (MIN_WORDS) tetap
-// di onclick handler dengan pesan jujur "tempel minimal 20 kata dulu".
+// Gating tombol (validation-rules §2): Summarize/Explain dibuka untuk teks >=5 kata;
+// validasi 20 kata (MIN_WORDS) tetap di handler dengan pesan jujur.
 const MIN_TOOLS_WORDS = 5;
 
-// Tombol rel kanan aktif hanya saat relevan: export butuh hasil,
-// terapkan/salin butuh keluaran humanizer. Dipanggil tiap ada
-// perubahan (updateWC, render, clear, humanize).
+// Rel kanan aktif bila relevan: export butuh hasil; terapkan/salin butuh keluaran humanizer.
 function refreshRail() {
   try {
     const canExport = !!lastResult && !resultStale;
@@ -486,8 +468,7 @@ function refreshRail() {
   } catch (_) { /* refresh tidak boleh melempar — init harus tetap jalan */ }
 }
 
-// ---------- Upload txt/md/pdf/docx ----------
-// Semua pesan salah tampil di #status agar user tahu penyebabnya.
+// Upload txt/md/pdf/docx. Pesan salah tampil di #status.
 function showFileChip(name, size, totalWords) {
   fileChip.hidden = false;
   fileName.textContent = name;
@@ -577,8 +558,7 @@ fileInput.addEventListener("change", async (e) => {
 // ---------- Kabel semua tombol + init ----------
 inputText.addEventListener("input", () => {
   updateWC(); hideFileChip(); markStale();
-  // Parafrase lama jadi basi bila teks berubah — beri tahu, jangan hapus
-  // (pola yang sama seperti markStale untuk hasil).
+  // Parafrase lama jadi basi bila teks berubah — beri tahu (pola markStale), jangan hapus.
   if (!$("humanizeBox").hidden && $("humanizeOut").value.trim()) {
     $("humanizeStatus").textContent = "Teks input berubah — parafrase di bawah untuk teks LAMA. Klik “Buatkan versi natural” lagi untuk versi baru.";
   }
@@ -610,9 +590,8 @@ $("fileClear").onclick = () => {
   statusEl.textContent = "File dilepas — teks di textarea tetap ada, bisa langsung dicek.";
 };
 
-// ---------- Ringkas + Jelaskan struktur (lokal, tanpa AI key) ----------
-// Ekstraktif/deskriptif saja: kalimat asli verbatim + statistik teramati.
-// Tanpa karang fakta (humanizer-rules §4); gagal → pesan jujur di kotak.
+// Ringkas + Jelaskan struktur (lokal): ekstraktif/deskriptif, tanpa karang fakta
+// (humanizer-rules §4); gagal → pesan jujur di kotak.
 function currentMainText() {
   const raw = inputText.value.trim();
   if ($("autoRef").checked) {
@@ -627,8 +606,7 @@ function showAiTools(text) {
   out.hidden = false;
   try { delete out.dataset.stale; } catch (_) { try { out.removeAttribute("data-stale"); } catch (_) {} }
   out.title = "";
-  // Keluaran fitur tampil teks polos: penanda markdown tempelan dibuang,
-  // isi/fakta/angka/sitasi dipertahankan (humanizer-rules §4).
+  // Keluaran fitur tampil teks polos (stripMarkdown); fakta/angka/sitasi dipertahankan.
   try { if (typeof stripMarkdown === "function") text = stripMarkdown(String(text)); } catch (_) {}
   out.textContent = text;
   refreshRail();
@@ -640,10 +618,7 @@ if ($("btnSummarize")) $("btnSummarize").onclick = async () => {
     showAiTools(`Teks terlalu pendek — tempel minimal ${MIN_WORDS} kata dulu.`);
     return;
   }
-  // API dulu (/api/summarize, kontrak {v, hash SHA-256, canonicalText},
-  // timeout ~15 dtk di FarazAIClient); gagal/offline/404/MALFORMED/
-  // unauthorized/rate-limited → fallback lokal di bawah + status jujur.
-  // Tanpa skor palsu, tanpa klaim absolut (validation-rules §2, §5).
+  // API dulu (/api/summarize); gagal → fallback lokal + status jujur (validation-rules §2, §5).
   let apiFailed = false, apiReason = "";
   try {
     if (typeof FarazAIClient !== "undefined" && FarazAIClient && typeof FarazAIClient.summarize === "function") {
@@ -771,10 +746,8 @@ $("btnDownload").onclick = () => {
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 };
 
-// Init: tampilkan "0 kata" saat halaman dibuka.
-// Dipanggil langsung (skrip defer = DOM sudah siap) + ulang saat
-// DOMContentLoaded/load agar buka via file:// maupun server tetap jalan
-// walau satu skrip/CDN lain gagal lebih dulu. Idempoten & anti-lempar.
+// Init: tampilkan "0 kata" saat dibuka (defer = DOM siap) + ulang saat
+// DOMContentLoaded/load agar file:// maupun server tetap jalan. Idempoten.
 function initRail() {
   try { updateWC(); } catch (_) { try { refreshRail(); } catch (_) {} }
 }
@@ -786,8 +759,7 @@ try {
   }
 } catch (_) {}
 
-// ---------- Demo interaktif hero (contoh beneran, skor beneran) ----------
-// Tab menjalankan heuristic() asli ke teks contoh; bukan angka tempelan.
+// Demo hero: heuristic() asli ke teks contoh; bukan angka tempelan.
 const DEMO_AI = "Perkembangan teknologi informasi memiliki peran yang penting dalam meningkatkan efektivitas proses pembelajaran di perguruan tinggi. Pemanfaatan teknologi dapat memberikan berbagai kemudahan dalam memperoleh informasi dan mendukung kegiatan akademik mahasiswa. Selain itu, penggunaan teknologi informasi juga dapat meningkatkan kualitas proses pembelajaran. Oleh karena itu, perguruan tinggi perlu memanfaatkan teknologi informasi secara optimal untuk mendukung kegiatan akademik. Dengan demikian, penerapan teknologi informasi di lingkungan perguruan tinggi diharapkan dapat memberikan manfaat yang positif bagi mahasiswa dan institusi.";
 const DEMO_HUMAN = "Berdasarkan hasil observasi awal di Program Studi Teknik Informatika Universitas X, sebagian mahasiswa masih mengalami kesulitan dalam mengakses materi perkuliahan di luar jam pembelajaran. Kondisi tersebut terlihat dari hasil kuesioner awal yang diberikan kepada 40 mahasiswa, di mana 27 mahasiswa menyatakan bahwa mereka membutuhkan media yang dapat digunakan untuk mengakses materi secara lebih fleksibel. Temuan ini menunjukkan bahwa ketersediaan media pembelajaran yang mudah diakses masih menjadi kebutuhan bagi mahasiswa. Oleh sebab itu, penelitian ini berfokus pada pengembangan media pembelajaran berbasis web yang dapat digunakan untuk mengakses materi dan latihan secara mandiri.";
 let demoKind = "ai";
@@ -827,7 +799,7 @@ $("demoOpen").onclick = () => {
 };
 runDemo("ai");
 
-// ---------- Langkah hero bisa diklik (pintasan scroll) ----------
+// Langkah hero bisa diklik (pintasan scroll).
 if (typeof document.querySelectorAll === "function") {
   document.querySelectorAll(".hero-cards .hc").forEach((el, i) => {
     const go = () => $(["editor", "editor", "hasil"][i] || "editor")

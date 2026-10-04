@@ -1,17 +1,8 @@
-// ============================================================
-// FarazAIClient — klien /api/* untuk jalur hybrid (Vercel)
-// Kontrak server (api/*.js): POST { v, hash, canonicalText } dengan
-// hash = SHA-256 hex dari canonicalText. Hash FNV lama TIDAK dikirim
-// (server menolaknya MALFORMED).
-// Aturan: validation-rules §2 (no silent failure: tiap gagal ada
-// reason jujur; dilarang fallback skor palsu), §5 (jujur soal privasi/
-// jaringan; tanpa klaim absolut), detector-rules §6 (bahasa indikasi).
-// Pola: coba API dulu (timeout 15 dtk via AbortController); gagal/
-// offline/404/MALFORMED/unauthorized/rate-limited → pemanggil FALLBACK
-// ke implementasi lokal + status jujur. Tanpa hardcode key — key hanya
-// via opts bila disediakan (production: key di env server, bukan di sini).
-// File vanilla JS global (tanpa import/export ES).
-// ============================================================
+// FarazAIClient — klien /api/* untuk jalur hybrid (Vercel).
+// Kontrak: POST { v, hash, canonicalText }, hash = SHA-256 hex (FNV TIDAK dikirim).
+// Aturan: validation-rules §2 (no silent failure; tanpa skor palsu), §5 (tanpa klaim
+// absolut); detector-rules §6 (bahasa indikasi). Gagal → fallback lokal + status jujur.
+// Tanpa hardcode key. File vanilla JS global (tanpa import/export ES).
 (function (global) {
   "use strict";
 
@@ -36,10 +27,8 @@
     return !!x && typeof x === "object" && !Array.isArray(x);
   }
 
-  // SHA-256 hex async via crypto.subtle. Tak tersedia (file:// non-secure
-  // context, browser lama, WebView) → null: pemanggil WAJIB menganggap
-  // API unavailable dan JANGAN mengirim hash palsu/FNV (server hanya
-  // terima SHA-256 64-hex → MALFORMED/HASH_MISMATCH).
+  // SHA-256 hex via crypto.subtle. Tak tersedia → null: pemanggil anggap API unavailable,
+  // JANGAN kirim hash palsu/FNV (server hanya terima SHA-256 64-hex).
   async function sha256Hex(text) {
     try {
       var subtle = null;
@@ -66,9 +55,7 @@
     } catch (_) { return null; }
   }
 
-  // Susun body kontrak server { v, hash, canonicalText }.
-  // Gagal (kosong / SHA-256 tak tersedia) → { ok:false, reason, detail },
-  // pemanggil fallback lokal. v default 1 (cermin api/config SUPPORTED_V).
+  // Susun body { v, hash, canonicalText }. Gagal → { ok:false, reason, detail }. v default 1.
   async function buildContract(canonicalText, v) {
     var t = typeof canonicalText === "string" ? canonicalText : "";
     if (!t.trim()) return { ok: false, reason: "malformed", detail: "teks kosong, tidak dikirim." };
@@ -81,10 +68,7 @@
     return { ok: true, body: { v: vv, hash: hash, canonicalText: t } };
   }
 
-  // Petakan status HTTP + server code {error, code} ke reason kanonis.
-  // Server codes: MALFORMED/HASH_MISMATCH/UNSUPPORTED_VERSION/
-  // METHOD_NOT_ALLOWED/UNAUTHORIZED/RATE_LIMITED/TIMEOUT/
-  // PROVIDER_ERROR/PROVIDER_MISCONFIGURED.
+  // Petakan status HTTP + server code (MALFORMED/HASH_MISMATCH/...) ke reason kanonis.
   function mapReason(status, serverCode) {
     if (serverCode === "RATE_LIMITED" || status === 429) return "rate-limited";
     if (serverCode === "UNAUTHORIZED" || status === 401 || status === 403) return "unauthorized";
@@ -95,9 +79,7 @@
     return "unavailable";
   }
 
-  // POST JSON generik. Sukses 2xx + JSON → { ok:true, status, body }.
-  // Gagal → { ok:false, reason, detail, status } (taksonomi di atas).
-  // opts: { endpoint?, timeoutMs?, fetchImpl?, apiKey?, extraHeaders? }
+  // POST JSON generik (opts: endpoint/timeoutMs/fetchImpl/apiKey/extraHeaders).
   async function postJson(endpoint, body, opts) {
     var o = opts || {};
     var timeoutMs = (typeof o.timeoutMs === "number" && o.timeoutMs > 0) ? o.timeoutMs : TIMEOUT_MS;
@@ -177,8 +159,7 @@
     return { ok: true, status: status, body: okBody };
   }
 
-  // Validasi bentuk respons /api/analyze. Wajib ada score angka 0-100.
-  // confidence bila ada harus rendah|sedang|tinggi (else "rendah").
+  // Validasi /api/analyze: wajib skor 0-100; confidence harus rendah|sedang|tinggi.
   function normalizeAiPayload(body) {
     if (!isPlainObject(body)) return null;
     var data = isPlainObject(body.data) ? body.data : body;
@@ -197,11 +178,8 @@
     return out;
   }
 
-  // Validasi skema terstruktur /api/summarize|explain|humanize:
-  // { result, sourceFacts[], contextualFacts[], inferences[],
-  //   protectedElements[], warnings[], confidence }.
-  // result kosong → null (RELEVANCE GATE server: bukan karangan) agar
-  // pemanggil fallback lokal, bukan tampilkan teks kosong.
+  // Validasi /api/summarize|explain|humanize. result kosong → null (RELEVANCE GATE:
+  // bukan karangan) agar pemanggil fallback lokal.
   function normalizeStructured(body) {
     if (!isPlainObject(body)) return null;
     if (typeof body.result !== "string" || !body.result.trim()) return null;
@@ -229,9 +207,7 @@
     return { text: null, confidence: "rendah", warnings: [], modelId: "", coverage: null, reason: reason, detail: detail || "" };
   }
 
-  // Panggil satu endpoint terstruktur (summarize/explain/humanize).
-  // Sukses → { text, confidence, ..., reason: null }.
-  // Gagal → { text: null, reason, detail, ... } (pemanggil fallback lokal).
+  // Satu endpoint terstruktur. Sukses → { text, ... }; gagal → fallback lokal pemanggil.
   async function callStructured(kind, canonicalText, opts) {
     var o = opts || {};
     var endpoint = (typeof o.endpoint === "string" && o.endpoint) ? o.endpoint : ENDPOINTS[kind];
@@ -247,11 +223,8 @@
     return d;
   }
 
-  // opts: { endpoint?, timeoutMs?, fetchImpl?, apiKey?, extraHeaders?, v? }
-  // payload: { canonicalText } (+ { hash, v } bila sudah dihitung pemanggil;
-  //   hash lama/FNV diabaikan → dihitung ulang SHA-256).
-  // Sukses: { ai, reason: null, echo: { hash, v } }.
-  // Gagal: { ai: null, reason, detail?, echo: { hash, v } }.
+  // Sukses: { ai, reason: null, echo }. Gagal: { ai: null, reason, detail?, echo }.
+  // Hash lama/FNV diabaikan → dihitung ulang SHA-256.
   async function analyze(payload, opts) {
     var o = opts || {};
     var p = payload || {};
@@ -265,8 +238,7 @@
       return { ai: null, reason: "malformed", detail: "teks kosong, tidak dikirim.", echo: { hash: hash, v: v } };
     }
     if (!hash) {
-      // Kompat: pemanggil lama / hash FNV → hitung ulang SHA-256.
-      // Gagal hitung → unavailable (jangan kirim hash palsu).
+      // Kompat: hash lama/FNV → hitung ulang SHA-256; gagal → unavailable.
       try { hash = await sha256Hex(text); } catch (_) { hash = null; }
       if (!hash) {
         return { ai: null, reason: "unavailable", detail: "hash aman (SHA-256) tak tersedia — API dilewati, dipakai hasil lokal.", echo: { hash: "", v: v } };
@@ -278,8 +250,7 @@
     var ai = normalizeAiPayload(sent.body);
     if (!ai) return { ai: null, reason: "malformed", detail: "respons tanpa skor numerik.", echo: echo };
 
-    // Echo balik hash/v bila server menyertakan — bantu audit korelasi.
-    // Tidak menggagalkan bila server tidak meng-echo (tetap pakai echo lokal).
+    // Echo hash/v server bila ada (bantu audit; absennya tidak menggagalkan).
     var serverEcho = (sent.body && isPlainObject(sent.body.echo)) ? sent.body.echo : null;
     void serverEcho;
 

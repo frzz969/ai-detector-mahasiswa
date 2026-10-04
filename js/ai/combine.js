@@ -1,12 +1,6 @@
-// ============================================================
-// FarazCombine — gabungan evidence-based heuristik lokal + skor AI
-// Aturan: detector-rules §3 (satu sinyal bukan bukti → hormati cap),
-// §4 (akademik ≠ AI → cap supremacy + bobot konservatif), §6 (bahasa
-// indikasi saja); core.js: SHORT_TEXT_CAP=45, SINGLE_SIGNAL_CAP=60,
-// SCORE_FLOOR=15, SCORE_CEIL=98. Bukan average buta: bobot dari
-// confidence × coverage × faktor bahasa; selisih besar → confidence
-// diturunkan + perlu ditinjau. File vanilla JS global.
-// ============================================================
+// FarazCombine — gabungan evidence-based heuristik lokal + skor AI.
+// Aturan: detector-rules §3-§4, §6; core.js caps. Bukan average buta: bobot dari
+// confidence × coverage × faktor bahasa; selisih besar → confidence turun. Vanilla JS.
 (function (global) {
   "use strict";
 
@@ -38,8 +32,7 @@
     return 0.15;
   }
 
-  // Cap lokal dari evidence lokal (tanpa menebak ulang skor):
-  // teks pendek → 45; satu sinyal → 60. Ambil yang paling ketat.
+  // Cap lokal dari evidence lokal: pendek → 45; satu sinyal → 60. Ambil paling ketat.
   function localCapOf(local) {
     var capShort = (typeof SHORT_TEXT_CAP === "number") ? SHORT_TEXT_CAP : 45;
     var capSingle = (typeof SINGLE_SIGNAL_CAP === "number") ? SINGLE_SIGNAL_CAP : 60;
@@ -53,30 +46,23 @@
     if (isFinite(sentsN) && sentsN > 0 && sentsN < 3) { cap = Math.min(cap, capShort); capKind = "short"; }
     var posSig = num(d.posSig, NaN);
     if (isFinite(posSig) && posSig <= 1) {
-      // Samakan dengan detector: single-signal cap berlaku untuk teks
-      // yang cukup panjang untuk dinilai (>=80); teks pendek sudah cap 45.
+      // Samakan detector: single-signal cap untuk teks >=80; pendek sudah cap 45.
       var reliable = !isFinite(totalW) || totalW >= 80;
       if (reliable) {
         if (capSingle < cap) { cap = capSingle; capKind = "single"; }
         else if (cap === Infinity) { cap = capSingle; capKind = "single"; }
       }
     }
-    // Jejak akademik: konteks akademik kuat menjelaskan formalitas —
-    // bukan cap angka baru, tapi dicatat agar AI tidak mengangkat
-    // skor formal di atas bukti lokal (ditangani cap supremacy).
+    // Jejak akademik dicatat agar AI tidak mengangkat skor formal (via cap supremacy).
     return { cap: cap, kind: capKind };
   }
 
-  // local: { score, confidence, lang, detail? } (keluaran heuristic())
-  // ai: { score, confidence, coverage?, lang?, modelLang? } | null
-  // aiErr: { reason } opsional bila AI gagal (untuk method jujur).
-  // Output: { final 15-98, confidence, method }.
+  // local/ai/aiErr → { final 15-98, confidence, method }.
   function combine(local, ai, aiErr) {
     var lScore = clampScore(num(local && local.score, 22));
     var lConf = (local && local.confidence) || "rendah";
     if (lConf !== "rendah" && lConf !== "sedang" && lConf !== "tinggi") lConf = "rendah";
-    // PRD §15.2/§15.3: bahasa penuh dari heuristic (detail.language:
-    // id|en|mixed|unknown); fallback ke detail.lang / local.lang (id/en).
+    // Bahasa penuh dari heuristic (detail.language); fallback detail.lang/local.lang.
     var d0 = (local && local.detail) || {};
     var textLang = d0.language || d0.lang || (local && local.lang) || "id";
     if (textLang !== "en" && textLang !== "id" && textLang !== "mixed" && textLang !== "unknown") textLang = "id";
@@ -85,10 +71,7 @@
     var capInfo = localCapOf(local || {});
     var localCapped = isFinite(capInfo.cap) ? Math.min(lScore, capInfo.cap) : lScore;
 
-    // AI tidak tersedia → heuristik saja, dilaporkan jujur.
-    // Mixed tetap confidence maks sedang meski jalur AI mati.
-    // method = audit ringkas (angka untuk <details>); confidence tampil
-    // SEKALI di verdict via return terpisah (anti duplikasi).
+    // AI tak tersedia → heuristik saja, jujur. Mixed tetap maks sedang.
     if (!ai || typeof ai.score !== "number" || !isFinite(ai.score)) {
       var why = (aiErr && aiErr.reason) ? String(aiErr.reason) : "tidak tersedia";
       var soloConf = (isMixed && lConf === "tinggi") ? "sedang" : lConf;
@@ -105,10 +88,7 @@
 
     var coverage = (typeof ai.coverage === "number" && isFinite(ai.coverage))
       ? Math.max(0, Math.min(1, ai.coverage)) : 1;
-    // Model generik umumnya dilatih dominan EN → untuk teks ID bobot
-    // dikali ≤0.5 (kecuali server menyatakan cocok ID). PRD §15.3: teks
-    // mixed/unknown diperlakukan seperti ID (bobot EN penuh dilarang —
-    // kecuali server cocok: id / id-en / multilingual).
+    // Model generik dominan EN → teks ID/mixed/unknown bobot ≤0.5 kecuali server cocok ID.
     var langFactor = 1;
     if (textLang === "id" || textLang === "mixed" || textLang === "unknown") {
       var aiIdOk = ai.lang === "id" || ai.modelLang === "id" || ai.modelLang === "id-en" || ai.modelLang === "multilingual";
@@ -121,22 +101,19 @@
 
     var blended = localCapped * wLocal + aScore * wAi;
 
-    // Cap supremacy akademik: formalitas yang dijelaskan academic
-    // convention tidak boleh diangkat AI jauh di atas bukti lokal.
+    // Cap supremacy akademik: formalitas academic convention tidak diangkat jauh.
     var ceiling = localCapped + MAX_LIFT;
     var finalRaw = Math.min(blended, ceiling);
     var final = clampScore(finalRaw);
 
-    // Agreement gate: selisih besar = kedua jalur tidak sepakat →
-    // confidence maksimal sedang + status perlu ditinjau.
+    // Agreement gate: selisih besar → confidence maks sedang + perlu ditinjau.
     var gap = Math.abs(lScore - aScore);
     var disagree = gap >= AGREE_GAP;
     var baseRank = Math.min(confRank(lConf), confRank(aConf));
     // Teks pendek / satu sinyal → bukti tipis → confidence rendah.
     if (capInfo.kind === "short") baseRank = Math.min(baseRank, 1);
     if (disagree) baseRank = Math.min(baseRank, 2);
-    // PRD §15.3: teks mixed → confidence maksimal sedang (atribusi bahasa
-    // tidak pasti). Bahasa indikasi saja (detector-rules §6).
+    // Teks mixed → confidence maks sedang (atribusi tak pasti; detector-rules §6).
     var mixedNote = "";
     if (isMixed) {
       baseRank = Math.min(baseRank, 2);
@@ -144,9 +121,7 @@
     }
     var confidence = rankConf(baseRank);
 
-    // method = audit teknis untuk <details> (angka bobot/cakupan/
-    // selisih/cap tetap ada di sana). Label kategori + confidence tampil
-    // di verdict via return terpisah — tidak diduplikasi di method.
+    // method = audit teknis untuk <details>; kategori + confidence di verdict (anti duplikasi).
     var method = "gabungan heuristik " + lScore + "/100 + AI " + aScore + "/100" +
       " (bobot AI " + wAi.toFixed(2) + ": conf " + aConf + " × cakupan " +
       coverage.toFixed(2) + " × bahasa " + langFactor.toFixed(1) +

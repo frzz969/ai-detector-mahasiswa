@@ -1,13 +1,7 @@
-// ============================================================
-// FarazValidate — 10 checks murni untuk gerbang kualitas
-// Aturan: validation-rules §4 (regression + quality gate: makna →
-// fakta → kebenaran akademik → kejelasan → koherensi → naturalness →
-// pola → skor; satu aspek penting gagal → tolak final),
-// humanizer-rules (fakta/angka/sitasi/istilah tidak diubah; tanpa
-// data karangan; hedge tidak dihapus hingga overclaim).
-// Semua fungsi pure (string in → hasil out), tanpa DOM/fetch.
-// Return validate(): { pass, fails[] }. Bahasa indikasi saja.
-// ============================================================
+// FarazValidate — 10 checks murni untuk gerbang kualitas.
+// Aturan: validation-rules §4 (makna → fakta → akademik → kejelasan → koherensi →
+// naturalness → pola → skor); humanizer-rules (fakta/angka/sitasi/istilah tetap;
+// tanpa karangan; hedge tidak overclaim). Pure, tanpa DOM/fetch. Bahasa indikasi.
 (function (global) {
   "use strict";
 
@@ -166,8 +160,7 @@
     return null;
   }
 
-  // Regression butuh skor detector yang sama untuk kedua versi:
-  // opts { origScore, revScore } — rev > orig + 10 → tolak.
+  // Regression: butuh skor detector yang sama (rev > orig + 10 → tolak).
   function checkRegression(orig, rev, opts) {
     var o = opts || {};
     if (typeof o.origScore !== "number" || typeof o.revScore !== "number") return null;

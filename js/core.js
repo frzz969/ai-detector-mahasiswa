@@ -1,10 +1,8 @@
-// ============================================================
-// core.js — Fondasi: DOM refs, state, konstanta, util kecil
+// core.js — Fondasi: DOM refs, state, konstanta, util kecil.
 // File 1 dari 4. Muat PERTAMA (defer = berurutan).
 // Cek error: ID tidak ketemu / konstanta salah → buka file ini.
-// ============================================================
 
-// ---- DOM refs (semua ID ada di index.html) ----
+// DOM refs (semua ID ada di index.html).
 const $ = (id) => document.getElementById(id);
 
 const inputText = $("inputText");
@@ -16,7 +14,7 @@ const fileChip  = $("fileChip");
 const fileName  = $("fileName");
 const fileMeta  = $("fileMeta");
 
-// ---- State bersama (dipakai detector + main) ----
+// State bersama (dipakai detector + main).
 let localPipe = null;
 let localLoading = false;
 let lastResult = null;
@@ -27,19 +25,11 @@ let localParts = null;
 let aiPending = false;
 let aiResult = null;
 let aiError = null;
-// resultStale=true artinya teks berubah sesudah hasil keluar —
-// hasil di layar untuk teks LAMA dan dilarang di-export.
-// localParts mencatat {n, of} potongan model (lapor jujur bila parsial).
-// aiPending=true selama /api/analyze berjalan; aiResult = {score,
-// confidence, ...} bila sukses; aiError = {reason} bila gagal (taksonomi
-// FarazAIClient) — digabung via FarazCombine, fallback lokal bila gagal.
+// resultStale=true: teks berubah sesudah hasil → hasil lama dilarang di-export.
+// localParts = {n, of} potongan model; aiPending/aiResult/aiError digabung via FarazCombine.
 
-// ---- Konstanta: frasa generik keluaran model ----
-// Detector-rules §3: frasa seperti "penelitian ini bertujuan", "oleh karena
-// itu", "selain itu" adalah bahasa akademik NORMAL, BUKAN bukti AI. Frasa
-// itu dipindah ke ACAD_NEUTRAL agar tidak menaikkan skor AI (menghilangkan
-// false positive pada tulisan akademik manusia formal). Yang tersisa di
-// AI_ID hanyalah frasa generik yang memang khas output model.
+// Frasa generik keluaran model. Detector-rules §3: frasa akademik normal
+// dipindah ke ACAD_NEUTRAL agar tidak menaikkan skor (anti false positive).
 const AI_ID = [
   "sebagai model bahasa", "penting untuk dicatat", "secara keseluruhan",
   "dalam konteks", "pada dasarnya", "kesimpulannya", "perlu diingat",
@@ -55,19 +45,14 @@ const AI_EN = [
 
 const AI_PHRASES = [...AI_ID, ...AI_EN];
 
-// Frasa akademik standar (detector-rules §3): dihitung sebagai konteks
-// akademik, TIDAK menaikkan skor AI. Munculnya frasa ini di teks formal
-// yang disertai metodologi/sitasi/data memperkuat penilaian academic
-// convention (mengurangi false positive).
+// Frasa akademik standar (detector-rules §3): konteks akademik, TIDAK menaikkan skor.
 const ACAD_NEUTRAL = [
   "penelitian ini bertujuan", "artikel ini membahas", "dengan demikian",
   "oleh karena itu", "selain itu",
   "dapat disimpulkan", "berdasarkan hasil penelitian",
 ];
 
-// Daftar function word ID/EN untuk deteksi bahasa (ID vs EN) di detector.js.
-// Dipakai untuk: bobot model lokal (model dilatih bahasa Inggris → bobot
-// dikurangi untuk teks Indonesia) dan sinyal kepadatan function word.
+// Function word ID/EN untuk deteksi bahasa (bobot model lokal + sinyal kepadatan FW).
 const ID_FW = new Set([
   "yang", "dan", "di", "ke", "dari", "dengan", "untuk", "pada", "ini", "itu",
   "adalah", "akan", "juga", "dalam", "oleh", "sebagai", "tidak", "atau",
@@ -93,17 +78,15 @@ const REF_HEADS = [
   "referensi", "daftar referensi",
 ];
 
-// ---- Batas global (ubah di sini saja kalau perlu) ----
+// Batas global (ubah di sini saja).
 const MIN_WORDS     = 20;    // minimal kata untuk dicek
 const MAX_CHARS     = 30000; // potong teks upload sepanjang ini
 const MAX_PDF_PAGES = 30;    // halaman PDF yang dibaca
 const MAX_CHUNKS    = 6;     // potongan teks ke model lokal
 const MAX_FILE_MB   = 8;     // ukuran file maksimal
 
-// ---- Skoring heuristic (detector.js) — evidence groups + guardrails ----
-// Fase 2 Deepwork (detector-rules §3-§4, validation-rules §4).
-// THR_*_DOC hanya CERMIN ambang yang dipakai render (main.js) — baca saja,
-// JANGAN ubah klasifikasi render dari sini.
+// Skoring heuristic (detector-rules §3-§4, validation-rules §4).
+// THR_*_DOC hanya CERMIN ambang render (main.js) — JANGAN ubah klasifikasi dari sini.
 const SCORE_FLOOR = 15;    // clamp bawah (anti-nol, bukan vonis manusia)
 const SCORE_CEIL  = 98;    // clamp atas (bukan vonis absolut)
 const SCORE_ANCHOR = 22;   // titik netral evidence-based (pengganti prior +22)
@@ -131,7 +114,6 @@ const THR_STRONG_DOC = 75; // cermin ambang render: indikasi kuat
 const THR_MID_DOC = 50;    // cermin ambang render: batas biner
 const THR_HUMAN_DOC = 30;  // cermin ambang render: cenderung natural
 
-// ---- Util kecil ----
 const escapeHtml = (s) =>
   String(s).replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
