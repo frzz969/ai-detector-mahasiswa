@@ -108,7 +108,8 @@ const GENERIC_TERMS = new Set(String(
   'belakang tinjauan pustaka referensi publikasi menurut digunakan dilakukan ' +
   'ditunjukkan berdasarkan terdapat merupakan menjadi sehingga hal dapat ini tersebut ' +
   'tetapi namun serta dalam pada dengan dari untuk yang perlu satu banyak semua harus lain ' +
-  'masa hal cara dapat mesti agar supaya bahwa hanya telah masih juga kedua ketiga keempat'
+  'masa hal cara dapat mesti agar supaya bahwa hanya telah masih juga kedua ketiga keempat ' +
+  'umum umumnya banyak sebagian terbesar istilah melalui yaitu serta telah'
 ).split(/\s+/).filter(Boolean));
 
 // Hipernim generik: TIDAK boleh dihitung sebagai bukti subtopik (breadth).
@@ -241,7 +242,17 @@ function buildQueries(profile) {
   const ctx = (p.context || []).slice(0, 2).map((c) => c.term);
   const out = [];
   const add = (arr) => {
-    const q = arr.filter(Boolean).join(' ').trim();
+    // Dedupe term: entitas bisa sama dengan topik (mis. "Indonesia" Proper
+    // + topik "indonesia") -&gt; query jadi "indonesia kelinci indonesia".
+    const seen = {};
+    const uniq = [];
+    arr.filter(Boolean).forEach((t) => {
+      const k = String(t).toLowerCase();
+      if (seen[k]) return;
+      seen[k] = 1;
+      uniq.push(t);
+    });
+    const q = uniq.join(' ').trim();
     if (q && out.indexOf(q) === -1) out.push(q);
   };
   add(topics.slice(0, 4));                                  // topik utama
@@ -510,9 +521,14 @@ function scoreCandidate(candidate, profile) {
   // Gerbang keras: skor numerik BUKAN satu-satunya syarat. Sumber yang hanya
   // cocok SATU kata kunci gagal di sini walau sitasinya 9999. Dua jalur sah:
   //   (a) menutup >= 2 topik non-hipernim, ATAU
-//   (b) menutup konteks/subtopik dengan kuat (mis. "kebutuhan + klasifikasi")
+  //   (b) menutup konteks/subtopik dengan kuat (mis. "kebutuhan + klasifikasi")
   //       - terukur: judul "Klasifikasi dan kebutuhan nutrisi kelinci rumah"
-//         hanya cocok 1 topik, tapi context 0,95 → ini tidak boleh ditolak.
+  //         hanya cocok 1 topik, tapi context 0,95 -> ini tidak boleh ditolak.
+  // CATATAN: syarat "wajib cocok topik utama (top-1)" DIJELLAHKAN. Terukur
+  // di produksi: itu menolak paper "Diagnosis Kanker Paru-paru Berbasis Data
+  // Klinis" (topik teks = model,paru,citra,klinis; judulnya tidak menyebut
+  // "model") sementara tidak memperbaiki apa pun. Penyebab paper politik
+  // menduduki 2 teratas bukan gerbang, tapi topik_generik di GENERIC_TERMS.
   const gateAnchor = anchors.some((a) => hay.indexOf(a) !== -1);
   const gateBreadth = breadthTopics.length >= MIN_TOPIC_BREADTH;
   const gateContext = ctxCoverage >= CTX_GATE;
