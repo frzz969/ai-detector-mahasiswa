@@ -10,11 +10,11 @@ Aturan: `.slim/deepwork/dataset-eval.md` + `referensi/validation-rules.md` §2/�
 | openalex human train / dev / test | 60 / 20 / 20 |
 | m4-id-newspaper human train / dev / test | 60 / 20 / 20 |
 | m4-id-newspaper machine train / dev / test | 60 / 20 / 20 |
-| **Total** | **500** (train 300 / dev 80 / test 100) |
+| **Total** | **500** (train 300 / dev 100 / test 100) |
 
 TEST beku: 100 id, `TEST-HASH: a7a7d6d1eda91c2d33373ea58b5f21b33632861fed803363adf97770f181b538`
-(`eval/test_hashes.txt`). Audit 50+50 disiapkan (`eval/audit_sample.jsonl`,
-`reviewer_verdict` menunggu tinjauan manual). Dedupe pasca-kuota: 0 gugur
+(`eval/test_hashes.txt`). Audit 50+50 selesai 100/100 (`eval/audit_sample.jsonl`,
+tinjauan manual 2026-10-05: 88 lolos + 12 lolos-bersyarat M4, 0 buang). Dedupe pasca-kuota: 0 gugur
 (sha256 & Jaccard≥0.8 bersih; pasangan yatim 0).
 
 ## Gugur (dua tahap)
@@ -51,7 +51,7 @@ waktu murni sesi cepat ini ≈ 20 mnt akuisisi wiki + <1 mnt build.
 
 ## Follow-up (sisa)
 
-- [ ] Audit manual 50+50 (`reviewer_verdict` di `audit_sample.jsonl`).
+- [x] Audit manual 50+50 (`reviewer_verdict` di `audit_sample.jsonl`) — selesai 100/100.
 - [ ] Harness eval + baseline DEV — Fase 3 (Tune hanya di DEV).
 - [ ] Keputusan reviewer atas lisensi M4 (pertahankan/ganti sel).
 - [ ] Scale-up bertahap bila perlu (slot kuota: wiki/OA oversample siap).
