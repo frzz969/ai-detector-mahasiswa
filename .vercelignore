@@ -9,9 +9,11 @@ eval/audit_sample.jsonl
 eval/dataset_stats.json
 eval/dev_baseline.json
 eval/test_hashes.txt
+eval/build_*.py
+eval/run.js
+eval/*.md
 tests/
 dataset/
 docs/
-TODO-PRD-15.txt
 .env*
 *.bak

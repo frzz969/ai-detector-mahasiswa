@@ -5,5 +5,3 @@ ai-detector-backup-20260930/
 .vercel/
 eval/raw_*.jsonl
 eval/raw_*_stats.json
-
-TODO-PRD-15.txt

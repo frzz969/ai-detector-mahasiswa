@@ -29,14 +29,14 @@ js/
   main.js           render() + doCheck() hybrid + highlight klik (sentExplain) + Summarize/Explain hybrid + validateAiOutput() ke #aiToolsOut (#hasil) + stale-guard export + demo hero
   # score-hero: #aiPct/#humanPct/#mixLbl + ringkas "Merah = cek lagi · Hijau = aman";
   # legenda warna di bawah #highlight: hijau aman · kuning cek · merah tulis ulang
-api/                skeleton Vercel gateway — BELUM deploy (key hanya via env, lihat `.env.example`)
+api/                Vercel serverless (live; key hanya via env, lihat `.env.example` di root)
   config.js         konstanta timeout/modelId/maxRetry (MAX_CHUNKS=6, ~900 char/chunk cermin localScore)
   analyze.js        POST {v,hash,canonicalText} → {score,confidence,modelId,coverage,hash,v} (Gemini primer, Groq fallback)
   humanize.js       thin proxy parafrasa formal + AI Core Rules
   summarize.js      thin proxy ringkasan setia (spec kompresi SEDANG + few-shot fotosintesis) + AI Core Rules
   explain.js        thin proxy penjelasan indikasi (bahasa indikasi saja) + AI Core Rules
   material.js       fan-out 7 sumber (Wikipedia id+en, Wikidata, OpenAlex, Crossref, Semantic Scholar, PubMed, arXiv) → filter → ranking tier jurnal>wiki → validasi; maks 10; fail-soft per sumber
-  .env.example      template env (tanpa secret; key hanya via env)
+  contact.js        POST form kontak/rate-limit (tidak tercakup PRD §15, endpoint mandiri)
 img/
   icons/            logo + heading (dipakai nav/hero/footer)
   mascot/           maskot + ilustrasi langkah (halo babay.jpg tak terpakai halaman, disimpan di sini)
@@ -45,7 +45,7 @@ tests/
   dataset.js        registry + loader (baca dataset/*.txt via fs; export tetap { DATASET })
 dataset/            evaluation data SAJA — dilarang dibaca detector/JS saat runtime
   train|validation|test/
-    human/ | ai/ | ai_edited_human/ | human_edited_human/ | paraphrased/
+    human/ | ai/ | ai_edited_human/ | human_edited_ai/ | paraphrased/
     └─ <id>.txt  (isi teks byte-identik dari registry lama; metadata di tests/dataset.js)
 docs/
   PRD.md            PRD produk (pindahan dari root, isi substantif tetap)
@@ -72,6 +72,54 @@ referensi/          dokumen aturan + referensi-1..8 (tidak dipindah, tidak diuba
 Urutan `<script>` di `index.html` dipertahankan berurutan dengan tambahan hybrid
 (`js/core → js/detector → js/referensi → js/humanizer → js/ai/preprocess → js/ai/client → js/ai/combine → js/ai/validate → js/ai/status → js/ai/summarizer → js/ai/explainer → js/main`);
 hanya prefix path yang berubah (`./` → `./js/`), modul `js/ai/*` disisipkan sebelum `js/main.js`.
+Catatan: harness Node (`tests/faraztest.js`, `eval/run.js`) memuat `js/core → js/referensi → js/detector → js/humanizer`
+(urutan `detector`/`referensi` tertukar vs browser) — aman dan setara, karena `detector.js`/`humanizer.js`
+hanya memakai `AI_PHRASES`/`REF_*` di dalam badan fungsi (call-time), bukan saat load.
+
+## Alur runtime (pipeline data)
+
+```text
+INPUT (index.html — UI/DOM)
+  ↓
+core.js (state + DOM refs + AI_PHRASES + konstanta batas)
+  ↓
+PREPROCESS — js/ai/preprocess.js (FarazPre.preprocess; main.js:357)
+  canonicalText + hash/v + wrapper splitReferences/cleanAcademic/splitSentences
+  ↓
+  ┌─────────────────────────────┴──────────────────────────────┐
+  ▼                                                            ▼
+LOCAL DETECTOR                                               AI OPSIONAL
+js/detector.js heuristic()                                   js/ai/client.js (FarazAIClient.analyze; main.js:385)
+  10 sinyal + academic dampening +                            POST /api/analyze {v,hash,canonicalText}
+  single-signal cap + short-text cap                          gagal → hasil lokal dipertahankan + pesan jujur
+  │                                                            │
+  └─────────────────────────────┬──────────────────────────────┘
+                                ▼
+COMBINE — js/ai/combine.js (FarazCombine.combine; main.js:407)
+  bobot confidence×coverage×bahasa, supremacy cap +5, agreement gap ≥30
+                                ▼
+VALIDATE — js/ai/validate.js (gerbang regresi; main.js:418)
+  FarazValidate.checks.regression(origScore → revScore)
+                                ▼
+FINAL — js/main.js render() (satu-satunya penulis skor)
+  skor + verdict indikasi + confidence + method/status (FarazStatus)
+                                ▼
+        ┌───────────────────────┼───────────────────────┐
+        ▼                       ▼                       ▼
+Highlight klik              Summarize                 Explain
+(#highlight +               AI → lokal                material → AI → lokal
+ #sentExplain)               (main.js:683-705)         (main.js:723-777)
+        │                    FarazSummarize            FarazExplain
+        ▼                    (ekstraktif verbatim)     (deskriptif struktur)
+Export (stale-guard: hanya dari hasil final segar)
+Humanize terpisah: js/humanizer.js (formal→formal + verdict
+  BETTER/EQUIVALENT/WORSE + restore; AI opsional via FarazAIClient.humanize)
+```
+
+Lapisan konsep: Core (state) → Input (preprocess) → Detection (heuristik lokal)
+→ Intelligence (AI + combine + validate) → Tools (summarize/explain/humanize)
+→ Presentation (render/highlight/export). `main.js` adalah orchestrator +
+satu-satunya penulis skor; pemisahan lebih jauh ditunda (risiko > manfaat).
 
 ## Catatan komentar
 
