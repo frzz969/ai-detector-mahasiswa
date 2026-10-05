@@ -633,7 +633,10 @@ $("fileClear").onclick = () => {
   statusEl.textContent = "File dilepas — teks di textarea tetap ada, bisa langsung dicek.";
 };
 
-// Ringkas + Jelaskan struktur (lokal): ekstraktif/deskriptif, tanpa karang fakta
+// Ringkas + Jelaskan struktur (lokal): ekstraktif/deskriptif, tanpa karang fakta.
+// Ringkasan lokal = kalimat ASLI verbatim (pasti lolos validator karena
+// SELALU substring dari teks). Penjabaran lokal = deskriptif struktur, boleh
+// memakai kosakata analisis, jadi TIDAK lewat gate fakta AI yang sama.
 // (humanizer-rules §4); gagal → pesan jujur di kotak.
 function currentMainText() {
   const raw = inputText.value.trim();
@@ -659,15 +662,26 @@ function showAiTools(text) {
   refreshRail();
 }
 
-// Validasi sisi output untuk hasil AI Summarize/Explain: angka, sitasi, DOI/URL,
-// dan istilah asli harus terbawa (FarazValidate.checks). Lolos → null; gagal →
-// "check1, check2". Validator absen/gagal → null (jangan blokir hasil).
-function validateAiOutput(orig, cand) {
+// Gerbang validasi hasil AI. Aturan: validation-rules §4 (kualitas: makna →
+// fakta → kebenaran akademik), §5 (status jujur).
+//
+// WAJIB untuk semua jalur (extraChecks opsional): angka, sitasi, DOI/URL,
+// kutipan langsung, istilah. Fakta tidak boleh berubah di output mana pun.
+//
+// extraChecks hanya untuk output yang mengulang isi teks dengan kompresi
+// (ringkasan): makna/negasi/hedge/relevance. TIDAK dipasang untuk penjabaran
+// (menjelaskan pola, bukan meringkas — boleh memakai kosakata analisis baru
+// tanpa berarti mengarang) maupun parafrase humanizer.
+// Lolos → null; gagal → "check1, check2". Validator absen/gagal → null
+// (jangan blokir hasil — validation-rules §2 tanpa silent failure lewat status).
+function validateAiOutput(orig, cand, extraChecks) {
   try {
     if (typeof FarazValidate === "undefined" || !FarazValidate || !FarazValidate.checks) return null;
     const c = FarazValidate.checks;
+    const list = ["numbers", "citations", "doiUrl", "protected", "terminology"]
+      .concat(Array.isArray(extraChecks) ? extraChecks : []);
     const fails = [];
-    ["numbers", "citations", "doiUrl", "terminology"].forEach((k) => {
+    list.forEach((k) => {
       try {
         if (typeof c[k] === "function") {
           const f = c[k](orig, cand);
@@ -694,22 +708,28 @@ if ($("btnSummarize")) $("btnSummarize").onclick = async () => {
       const ar = await FarazAIClient.summarize(t, { v: 1 });
       if (ar && ar.text && ar.text.trim()) {
         const cand = ar.text.trim();
-        // Ringkasan WAJIB ekstraktif (regression case summarizer): kalau AI
-        // mengirim sentences[], tiap kalimat harus substring verbatim dari teks.
-        // Kalau tidak ada sentences[], hasil AI ditolak karena tidak bisa
-        // diverifikasi sebagai ekstraktif (hasil paraphrase tidak terverifikasi).
-        let vFail = validateAiOutput(t, cand);
-        if (Array.isArray(ar.sentences) && ar.sentences.length) {
-          const ve = (typeof FarazSummarize !== "undefined" && FarazSummarize &&
-            typeof FarazSummarize.verifyExtractive === "function")
-            ? FarazSummarize.verifyExtractive(t, ar.sentences) : { check: "extractive", detail: "verifikator ekstraktif tidak termuat." };
-          if (ve) vFail = (vFail ? vFail + ", " : "") + "extractive: " + ve.detail;
-        } else {
-          vFail = (vFail ? vFail + ", " : "") + "extractive: AI tidak mengirim sentences[] (hasil bukan ekstraktif)";
-        }
+        // Ringkasan abstractive boleh ditulis ulang, jadi yang diperiksa bukan
+        // "apakah kalimatnya verbatim" melainkan "apakah faktanya utuh dan tidak
+        // ada karangan": angka/sitasi/DOI/kutipan/istilah WAJIB sama, dan
+        // makna/negasi/hedge/relevance ikut dijaga (validate.js menurunkan
+        // ambangnya otomatis untuk kandidat summary-like; rewrite tetap ketat).
+        // sentences[] hanya jejak audit — kalau ada, tiap kalimat WAJIB verbatim
+        // dari teks; hilang/tidak verbatim menurunkan confidence, bukan menolak.
+        const vFail = validateAiOutput(t, cand, ["meaning", "causality", "uncertainty", "relevance"]);
         if (!vFail) {
           const sents = Array.isArray(ar.sentences) ? ar.sentences : [];
-          showAiTools(`Ringkasan ekstraktif (${sents.length} kalimat asli tanpa ubah fakta, confidence ${ar.confidence || "rendah"} — indikasi, bukan vonis): ${sents.join(" ")}`);
+          let trace = "";
+          if (sents.length) {
+            const ve = (typeof FarazSummarize !== "undefined" && FarazSummarize &&
+              typeof FarazSummarize.verifyExtractive === "function")
+              ? FarazSummarize.verifyExtractive(t, sents) : null;
+            trace = ve
+              ? ` Jejak audit: ${sents.length} kalimat pendukung, ${ve.detail}.`
+              : ` Jejak audit: ${sents.length} kalimat asli pendukung.`;
+          } else {
+            trace = " Jejak audit tidak disertakan.";
+          }
+          showAiTools(`Ringkasan (${ar.confidence || "rendah"} — indikasi, bukan vonis): ${cand}${trace}`);
           return;
         }
         apiFailed = true; apiInvalid = true;
@@ -781,6 +801,13 @@ if ($("btnExplain")) $("btnExplain").onclick = async () => {
       const ar = await FarazAIClient.explain(t, { v: 1 });
       if (ar && ar.text && ar.text.trim()) {
         const cand = ar.text.trim();
+        // Penjabaran menjelaskan POLA, bukan meringkas isi. Yang dijaga hanya
+        // fakta yang tidak boleh berubah (angka/sitasi/DOI/kutipan/istilah).
+        // Check makna/relasi sengaja TIDAK dipasang: penjelas boleh memakai
+        // kosakata analisis yang tidak ada di teks asli tanpa berarti mengarang
+        // (mis. "pola enumerasi", "transisi frekuentatif"), dan penjelasan umumnya
+        // jauh lebih pendek dari teks asalnya — memblokirnya dengan ambang
+        // kompresi akan menolak penjelasan yang justru benar.
         const vFail = validateAiOutput(t, cand);
         if (!vFail) {
           const head = materialBlock ? materialBlock + "\n\n" : "";
@@ -814,7 +841,7 @@ if ($("btnExplain")) $("btnExplain").onclick = async () => {
     ? (apiInvalid ? ` (${apiReason}).` : ` (mode lokal — tidak terhubung ke internet: ${apiReason}).`)
     : "";
   const head = materialBlock ? materialBlock + "\n\n" : "";
-  showAiTools(head + `Penjabaran teks: Berikut penjabaran isi teksmu: ${r.text}` + suffix + materialNote);
+  showAiTools(head + `Penjabaran teks: ${r.text}` + suffix + materialNote);
 };
 
 $("btnSampleID").onclick = () => {

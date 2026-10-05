@@ -1,12 +1,18 @@
-// FarazSummarize - ringkasan EKSTRAKTIF lokal (tanpa AI key).
-// Aturan: humanizer-rules P4 (verbatim, tanpa karangan); validation-rules P4-P5.
+// FarazSummarize - ringkasan EKSTRAKTIF LOKAL (fallback, tanpa AI key).
+// Aturan: humanizer-rules §4 (verbatim, tanpa karangan); validation-rules §4-§5.
+//
+// Peran: ini FALLBACK. Jalur utama ringkasan adalah /api/summarize (abstractive,
+// divalidasi fakta di main.js). Skrip ini hanya dipakai bila AI tidak tersedia
+// atau hasilnya ditolak validasi — jadi kesetiaan verbatim di sini adalah
+// jaminan, bukan batasan produk.
 //
 // REGRESSION CASE (ringkasan dangkal): versi lama hanya memakai frekuensi kata
 // isi + bonus posisi/data, sehingga kalimat generik ("Kelinci memang menjadi
 // salah satu hewan yang cukup dekat dengan manusia.") mengalahkan kalimat
 // substansial. Pipeline sekarang (tetap EKSTRAKTIF, tanpa paraphrase):
 //   SEGMENTASI paragraf > KANDIDAT > SKOR (topik + kepadatan info + entitas
-//   + posisi - generik) > FILTER redundansi (MMR) > TOP-K > URUTAN ASLI.
+//   + posisi - generik - yatim) > FILTER redundansi (MMR) > SWAP yatim >
+//   TOP-K > URUTAN ASLI.
 // Output selalu kalimat verbatim dari input, urutan posisi asli.
 (function (global) {
   "use strict";
@@ -181,8 +187,55 @@
     };
   }
 
+  // Konjungsi adversatif/causal kuat: kalimat yang diawali ini hampir selalu
+  // merujuk ke kalimat sebelumnya ("Namun, kemampuan reproduksi ..." -> apa yang
+  // lama?). Ekstraktif menyalin utuh, jadi kalimat yatim tetap menggantung.
+// Penalti besar — di atas kontribusi komponen positif maksimum
+  // (0,34+0,22+0,16+0,10 = 0,82), jadi kalimat ini tenggelam kecuali teksnya
+  // memang tidak punya kandidat lain.
+  var ORPHAN_STRONG = [
+    "namun", "tetapi", "sedangkan", "sedangkanpun", "namun demikian",
+    "oleh karena itu", "karena itu", "dengan demikian", "oleh sebab itu",
+    "akan tetapi", "melainkan", "sebaliknya", "sehingga", "maka dari itu"
+  ];
+  // Penanda ketergantungan lain, penalti sedang.
+  var ORPHAN_LEADERS = [
+    "selain itu", "selain", "menurut", "hal ini", "keadaan ini", "hal tersebut",
+    "keadaan tersebut", "hal itu", "keadaan itu", "diketahui bahwa",
+    "terlihat bahwa", "tampak bahwa", "ternyata", "sebab", "masih", "kemudian"
+  ];
+  // Kata ganti penunjuk: sebagai kata kedua, subjeknya tidak bisa berdiri
+  // sendiri tanpa kalimat sebelumnya ("Hewan ini termasuk ...").
+  var ORPHAN_PRONOUNS = ["ini", "itu", "tersebut"];
+
+  // Penalti 0..0,95 (skala ~0..1). Menggeser kata pembuka yang menggantung TIDAK
+  // dilakukan: itu merusak verbatim (humanizer-rules §4).
+  function orphanPenalty(sent) {
+    var str = String(sent == null ? "" : sent);
+    var body = str.replace(/^[^A-Za-z\u00C0-\u00DE]+/, "").toLowerCase();
+    // Bandingkan per kata PADA AWAL kalimat saja (bukan " " + low, karena
+    // body sudah diawali spasi setelah normalisasi).
+    var words = body.split(/[^a-z\u00c0-\u00de\u0100-\u017f]+/).filter(Boolean);
+    // 3 kata pertama: Some frasa penanda lebih dari satu kata ("oleh karena itu",
+    // "dengan demikian", "hal ini") dan harus dicocokkan utuh, bukan dipotong.
+    var head = words.slice(0, 3).join(" ");
+    var p = 0, i;
+    var hit = function (list, val) {
+      for (var k = 0; k < list.length; k++) {
+        if (head === list[k] || head.indexOf(list[k] + " ") === 0) return true;
+      }
+      return false;
+    };
+    if (hit(ORPHAN_STRONG)) p = 0.95;
+    if (!p && hit(ORPHAN_LEADERS)) p = 0.55;
+    // "hewan ini", "proses tersebut", "hal tersebut" -> subjek tak bermakna
+    // tanpa kalimat sebelumnya.
+    if (!p && words.length >= 2 && ORPHAN_PRONOUNS.indexOf(words[1]) !== -1) p = 0.7;
+    return Math.round(p * 100) / 100;
+  }
+
   // Skor tiap kalimat (diekspor untuk audit + regression test).
-  // parts: { topic, density, entity, position, generic, penalty }
+  // parts: { topic, density, entity, position, generic, penalty, orphan }
   function scoreSentences(text) {
     var sents = getSents(text);
     if (!sents.length) return [];
@@ -243,8 +296,13 @@
       else if (r.i === 1) position = 0.08;
       var generic = r.generic.score;
       var penal = (r.words < 6 || r.words > 40) ? 0.15 : 0;
+      // Yatim: kalimat yang bergantung pada kalimat sebelumnya. Ekstraktif
+      // menyalin utuh, jadi "Selain itu, kelinci ..." / "Hewan ini ..." /
+      // "Namun, kemampuan ..." jadi terpotong dan menggantung (regression case:
+      // output 5 kalimat terputus). Penalti di sini, bukan di gate.
+      var orphan = orphanPenalty(r.sent);
       var total = 0.34 * topic + 0.22 * density + 0.16 * entity + 0.10 * position
-        - 0.34 * generic - penal;
+        - 0.34 * generic - penal - orphan;
       return {
         i: r.i,
         sent: r.sent,
@@ -256,7 +314,8 @@
           generic: generic,
           filler: r.generic.fillerRatio,
           evidence: r.generic.entities.length + r.generic.distinctive + (r.generic.hasNumber ? 1 : 0),
-          penalty: penal
+          penalty: penal,
+          orphan: orphan
         },
         generic: generic,
         total: Math.round(total * 1000) / 1000
@@ -360,16 +419,41 @@
     }
     tryPass(true);
     if (picked.length < keep) tryPass(false); // longgarkan cap paragraf, dedupe tetap
+
+    // Perbaikan kalimat bergantung: kalimat berawalan "Namun, ..."/"Selain itu, ..."
+    // menggantung tanpa kalimat sebelumnya. Kalau masih ada kandidat lain yang
+    // lebih mandiri di paragraf yang sama atau paragraf lain, tukar.
+    // Mempertahankan jumlah & verbatim (humanizer-rules §4).
+    if (useParaCap) {
+      for (var oi = 0; oi < picked.length; oi++) {
+        var oIdx = picked[oi];
+        var oEntry = scored[oIdx];
+        if (!oEntry || !oEntry.parts.orphan) continue;
+        var samePara = ranked.filter(function (e) {
+          return e.i !== oIdx && picked.indexOf(e.i) === -1 &&
+            !e.parts.orphan && paraOf[e.i] === paraOf[oIdx] && maxSim(e.i) <= 0.7;
+        });
+        var otherPara = ranked.filter(function (e) {
+          return e.i !== oIdx && picked.indexOf(e.i) === -1 &&
+            !e.parts.orphan && paraOf[e.i] !== paraOf[oIdx] &&
+            (paraCount[paraOf[e.i]] || 0) === 0 && maxSim(e.i) <= 0.7;
+        });
+        var swap = samePara[0] || otherPara[0];
+        if (swap) picked[oi] = swap.i;
+      }
+    }
     picked.sort(function (a, b) { return a - b; }); // urutan asli naskah
 
     var pickedScored = scored.filter(function (e) { return picked.indexOf(e.i) !== -1; });
     var genericLeft = pickedScored.filter(function (e) { return e.generic >= 0.5; }).length;
+    var orphanLeft = pickedScored.filter(function (e) { return e.parts.orphan > 0; }).length;
     return {
       sentences: picked.map(function (i) { return sents[i]; }),
       picked: picked,
       method: "ringkasan ekstraktif: " + picked.length + " dari " + sents.length +
         " kalimat asli dipilih (skor topik+kepadatan info+entitas+posisi, penalti kalimat generik " +
-        genericLeft + ", filter kemiripan, sebar lintas paragraf), ditampilkan verbatim - " +
+        genericLeft + ", penalti kalimat bergantung " + orphanLeft +
+        ", filter kemiripan, sebar lintas paragraf), ditampilkan verbatim - " +
         "tanpa ubah fakta, tanpa simpulan baru."
     };
   }

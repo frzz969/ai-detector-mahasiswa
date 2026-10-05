@@ -1,0 +1,62 @@
+{
+  "seed": 42,
+  "quotas": {
+    "wiki": 200,
+    "oa": 100,
+    "m4-human": 100,
+    "m4-machine": 100,
+    "pr-human": 100,
+    "pr-machine": 100
+  },
+  "dropped": {
+    "wiki:length": 1,
+    "oa:length": 7,
+    "m4:length": 4
+  },
+  "total": 900,
+  "per_cell_split": {
+    "idwiki-20211201|human|dev": 40,
+    "idwiki-20211201|human|test": 40,
+    "idwiki-20211201|human|train": 120,
+    "m4-id-newspaper|human|dev": 20,
+    "m4-id-newspaper|human|test": 20,
+    "m4-id-newspaper|human|train": 60,
+    "m4-id-newspaper|machine|dev": 20,
+    "m4-id-newspaper|machine|test": 20,
+    "m4-id-newspaper|machine|train": 60,
+    "m4-peerread-chatgpt|human|dev": 20,
+    "m4-peerread-chatgpt|human|test": 20,
+    "m4-peerread-chatgpt|human|train": 60,
+    "m4-peerread-chatgpt|machine|dev": 20,
+    "m4-peerread-chatgpt|machine|test": 20,
+    "m4-peerread-chatgpt|machine|train": 60,
+    "m4-peerread-llama|human|dev": 20,
+    "m4-peerread-llama|human|test": 20,
+    "m4-peerread-llama|human|train": 60,
+    "m4-peerread-llama|machine|dev": 20,
+    "m4-peerread-llama|machine|test": 20,
+    "m4-peerread-llama|machine|train": 60,
+    "openalex|human|dev": 20,
+    "openalex|human|test": 20,
+    "openalex|human|train": 60
+  },
+  "test_n": 180,
+  "test_hash": "6caa434d22af01fd39620f1127a76d5e84b05e0461e12e631d3ae2ae7fc0f9b2",
+  "audit_n": 100,
+  "inputs": [
+    "eval/raw_wiki.jsonl",
+    "eval/raw_openalex.jsonl",
+    "eval/raw_m4.jsonl",
+    "eval/raw_m4_peerread.jsonl"
+  ],
+  "paired_sources": [
+    "m4-id-newspaper",
+    "m4-peerread-chatgpt",
+    "m4-peerread-llama"
+  ],
+  "langs": {
+    "id": 500,
+    "en": 400
+  },
+  "legacy_dataset_used": false
+}

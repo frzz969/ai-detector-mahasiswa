@@ -16,7 +16,7 @@ Value proposition:
 - Privat-first: analisis heuristik dan model lokal berjalan di browser tanpa mengirim naskah ke server. Pada mode hybrid, teks dapat dikirim ke `/api/analyze` hanya ketika endpoint AI tersedia dan jalur AI digunakan.
 - Hybrid bila tersedia: `js/main.js` `doCheck()` menggabung bukti lokal + AI `/api/analyze` secara evidence-based (`js/ai/combine.js`) dengan gerbang regresi (`js/ai/validate.js`); AI gagal/tidak tersedia → hasil lokal + pesan jujur (`js/ai/status.js`, graceful degradation).
 - Actionable: skor + highlight per kalimat yang bisa diklik untuk penjelasan (merah/kuning/hijau) + alasan + statistik.
-- Jujur: bahasa hanya "terindikasi / perlu ditinjau / confidence rendah-sedang-tinggi", humanizer formal→formal dengan regresi per kalimat dan verdict BETTER/EQUIVALENT/WORSE; Summarize hybrid (AI divalidasi fakta → fallback ekstraktif kalimat asli verbatim) dan Explain hybrid (materi → AI tervalidasi → deskriptif struktur) — keduanya bukan vonis.
+- Jujur: bahasa hanya "terindikasi / perlu ditinjau / confidence rendah-sedang-tinggi", humanizer formal→formal dengan regresi per kalimat dan verdict BETTER/EQUIVALENT/WORSE; Summarize hybrid (AI ringkasan abstractive divalidasi fakta → fallback ekstraktif kalimat asli verbatim) dan Explain hybrid (materi → AI tervalidasi → deskriptif struktur) — keduanya bukan vonis.
 
 Non-goal PRD ini: mengubah layout/visual (tugas mesin = `js/*.js`; `style.css` desktop dan `mobile.css` ≤1100px hanya disentuh bila user eksplisit minta).
 
@@ -95,7 +95,7 @@ Persona singkat: menempel naskah → tekan cek → perbaiki yang merah → human
 | F-14 | Export | Hanya dari hasil final segar (rescan + regression + quality gate). `resultStale` → blokir Print/Download sampai cek ulang. |
 | F-15 | Demo & contoh | Demo AI terindikasi, demo human rendah, teks pendek di-cap, humanize tidak regresi (harness `tests/faraztest.js`: load `js/core→js/referensi→js/detector→js/humanizer→js/main` dengan stub DOM). |
 | F-16 | CTA `#mulai` | Responsif (aturan di `mobile.css` saja). Stack vertikal, gambar `max 38–42vw`, tombol full-width di ≤600px, tanpa overflow-x di 360/390/430px. Guard khusus window 861–1100px (`mobile.css`: `@media(max-width:1100px) and (min-width:861px)`) untuk mode desktop-site ±980px (meta viewport diabaikan browser) — kunci wrap + shrink intrinsik agar CTA tidak luber. |
-| F-17 | Summarize hybrid + validasi output | Tombol `btnSummarize` (tetap di `aside.rail` card "Ringkasan"; gate rail `refreshRail()`: `disabled` bila <20 kata/`MIN_WORDS`, handler juga menolak <20 kata) → `/api/summarize` dulu (spec kompresi SEDANG 20–40/30–50/40–60% + few-shot fotosintesis + CORE_RULES; `api/summarize.js`): hasil AI divalidasi `validateAiOutput()` (`js/main.js`: `numbers`/`citations`/`doiUrl`/`terminology` dari `FarazValidate.checks`) sebelum tampil; gagal → fallback lokal + status jujur ("hasil AI tidak lolos validasi fakta — dipakai ringkasan lokal", suffix lokal "tidak terhubung ke internet"). Fallback `FarazSummarize.summarize()` (`js/ai/summarizer.js`): kalimat ASLI verbatim (skor frekuensi+posisi+data, dedupe Jaccard >0.7, sebar lintas paragraf maks 2/paragraf, keep ~1/5 kalimat min 2 maks 5; teks ≤3 kalimat utuh), tanpa ubah fakta/simpulan baru. Output bernomor di `#aiToolsOut` (`section#hasil`, `.ai-tools-result#aiToolsResult`) via `showAiTools()`; teks pendek/gagal → pesan jujur. |
+| F-17 | Summarize hybrid + validasi output | Tombol `btnSummarize` (tetap di `aside.rail` card "Ringkasan"; gate rail `refreshRail()`: `disabled` bila <20 kata/`MIN_WORDS`, handler juga menolak <20 kata) → `/api/summarize` dulu (spec kompresi SEDANG 20–40/30–50/40–60% + few-shot fotosintesis + CORE_RULES; `api/summarize.js`): hasil AI divalidasi `validateAiOutput()` (`js/main.js`: `numbers`/`citations`/`doiUrl`/`protected`/`terminology` + `meaning`/`causality`/`uncertainty`/`relevance` dari `FarazValidate.checks`) sebelum tampil; gagal → fallback lokal + status jujur ("hasil AI tidak lolos validasi fakta — dipakai ringkasan lokal", suffix lokal "tidak terhubung ke internet"). Prompt AI = `MODE ABSTRACTIVE` (boleh gabung/padatkan kalimat; dilarang menambah fakta atau membalik negasi; angka/sitasi/istilah wajib persis); `sentences[]` = jejak audit verbatim, disaring server-side bila provider mengirim yang bukan substring. Fallback `FarazSummarize.summarize()` (`js/ai/summarizer.js`): kalimat ASLI verbatim (skor frekuensi+posisi+data, penalti kalimat generik + penalti kalimat bergantung, dedupe Jaccard >0.7, sebar lintas paragraf maks 1/paragraf, keep ~1/5 kalimat min 2 maks 5; teks ≤3 kalimat utuh), tanpa ubah fakta/simpulan baru. Output bernomor di `#aiToolsOut` (`section#hasil`, `.ai-tools-result#aiToolsResult`) via `showAiTools()`; teks pendek/gagal → pesan jujur. |
 | F-18 | Explain hybrid + materi | Tombol `btnExplain` (tetap di `aside.rail` card "Ringkasan"; gate rail `refreshRail()`: `disabled` bila <5 kata/`MIN_TOOLS_WORDS`, handler juga menolak <5 kata) → urutan: materi `FarazAIClient.material()` (`api/material.js`: fan-out paralel Wikipedia id+en, Wikidata, OpenAlex, Crossref, Semantic Scholar, PubMed, arXiv → filter → ranking tier jurnal>wiki → validasi; maks 10; fail-soft per sumber via warnings) → `/api/explain` (hasil AI divalidasi `validateAiOutput()` seperti F-17; gagal → lokal + status jujur, suffix lokal "tidak terhubung ke internet") → `FarazExplain.explain()` (`js/ai/explainer.js`): statistik teramati (paragraf, kalimat, penanda bagian, enumerasi, penghubung, angka/sitasi, suara penulis) — deskriptif struktur, bukan vonis. Offline (API unavailable + tanpa materi) → pesan persis "Maaf, kamu sedang mode offline — fitur Explainer tidak bisa digunakan. Hubungkan ke internet" (`js/main.js`); wording lama (bayangan "API … tersedia") sudah tidak dipakai. Output di `#aiToolsOut` (`section#hasil`); gagal → pesan jujur. |
 | F-19 | Highlight explainable (klik kalimat) | Tiap `mark` di `#highlight` (`js/main.js` `render()`): `tabindex/role/button` + `title` "Klik untuk lihat alasan" + handler klik/Enter/Spasi → `showSentExplain()` menulis `sentExplainText()` (nomor + skor indikasi + pemicu utama dari sinyal yang sama dengan `heuristic()` + 1 saran formal) ke `<p id="sentExplain">` tepat di bawah highlight (dalam `<details>` yang sama, tanpa section/card baru). Reset tiap render; `markStale()` mengosongkannya agar tidak basi. Legenda warna di bawah highlight + ringkas merah/hijau di score-hero (`#aiPct/#humanPct/#mixLbl`). |
 | F-20 | Copy di judul hasil | Tombol `btnCopyHumanize` berada di `panel-head #hasil` (`index.html`, bukan rail), aktif bila ada keluaran humanizer ATAU isi `#aiToolsOut` (`js/main.js` `refreshRail()`); bila `humanizeOut` kosong tapi `aiToolsOut` ada → salin `aiToolsOut` dengan label jujur "(ringkasan/penjelasan)" (+ fallback textarea sementara bila clipboard gagal). |
@@ -119,7 +119,7 @@ Persona singkat: menempel naskah → tekan cek → perbaiki yang merah → human
 - `js/referensi.js` — data `REF_*` (connectors/hedge/enum/meth/personal/fluffy/voice/sent) + `REF_HUMANIZE_EXTRA` (formal) + `REF_RULE_DOCS` (provenance) + `REF_PAPER Cahyana dkk 2025`.
 - `js/humanizer.js` — `humanizeSentence()` + `humanizeText()` + handler tombol + verdict + restore.
 - `js/main.js` — `render()` (bahasa indikasi; satu-satunya penulis skor), `doCheck()` hybrid (preprocess → lokal → AI → combine → gerbang regresi → render), highlight klik + `sentTriggers()/sentExplainText()/showSentExplain()` ke `#sentExplain`, Summarize/Explain hybrid (`validateAiOutput()` sebelum tampil) ke `#aiToolsOut` di `#hasil`, stale-guard export, demo hero.
-- `js/ai/` — `preprocess.js` (`FarazPre`: hash/v + canonicalText) → `client.js` (`FarazAIClient`: `/api/analyze`, timeout 15 dtk, echo hash/v) → `combine.js` (`FarazCombine`: evidence-based + cap supremacy + agreement gate) → `validate.js` (`FarazValidate`: 10 checks + gerbang regresi) → `status.js` (`FarazStatus`: status jujur per tahap) → `summarizer.js` (`FarazSummarize`: ekstraktif verbatim) → `explainer.js` (`FarazExplain`: deskriptif struktur).
+- `js/ai/` — `preprocess.js` (`FarazPre`: hash/v + canonicalText) → `client.js` (`FarazAIClient`: `/api/analyze`, timeout 15 dtk, echo hash/v) → `combine.js` (`FarazCombine`: evidence-based + cap supremacy + agreement gate) → `validate.js` (`FarazValidate`: 10 checks + gerbang regresi) → `status.js` (`FarazStatus`: status jujur per tahap) → `summarizer.js` (`FarazSummarize`: fallback ekstraktif verbatim, penalti kalimat bergantung) → `explainer.js` (`FarazExplain`: deskriptif struktur).
 - `api/` — skeleton Vercel gateway **belum deploy**: `config.js` (konstanta + key via env), `analyze.js` (validasi hash/v + chunking cermin `localScore` + Gemini primer/Groq fallback), `humanize.js`/`summarize.js`/`explain.js` (thin proxy + AI Core Rules), `material.js` (fan-out 7 sumber materi akademik → filter → ranking tier jurnal>wiki → validasi; maks 10; fail-soft). Key hanya via env, lihat `.env.example`.
 - `index.html` — struktur + semua ID fungsional (jangan rename/hapus): `btnCheck`, `btnSummarize`/`btnExplain` (tetap di `aside.rail` card "Ringkasan", `index.html:101-105`) + `#aiToolsOut` (pindah ke `section#hasil` wrapper `.ai-tools-result#aiToolsResult`, `index.html:116-118`), `btnCopyHumanize` (panel-head `#hasil`), `#highlight` + `#sentExplain`, `btnSampleID/EN` (ghost small), demo `demoAi/demoHuman/demoOpen`.
 - `style.css` / `mobile.css` — pemisahan desktop/mobile tegas.
@@ -304,12 +304,168 @@ Implemented contract (`js/ai/summarizer.js`):
   proper, istilah distinctive). Kalimat generik regression turun ke bawah.
 - Filter redundansi (Jaccard > 0.7) + sebar lintas paragraf (maks 1/paragraf).
 - `verifyExtractive(text, sentences)` -> WAJIB substring verbatim, tanpa
-  duplikat; dipakai `js/main.js` untuk menolak hasil AI yang tidak ekstraktif.
-- `api/summarize.js` prompt diubah ke mode ekstraktif mutlak + schema
-  `sentences[]`; tanpa `sentences[]` hasil AI DITOLAK (fallback lokal).
+  duplikat. Dipakai `js/main.js` untuk memeriksa jejak audit `sentences[]`, dan
+  oleh test sebagai jaminan fallback lokal tidak mengorbankan verbatim.
+- `orphanPenalty(sent)` -> penalti 0,35–0,95 untuk kalimat yang bergantung pada
+  kalimat sebelumnya ("Namun, kemampuan reproduksi ...", "Selain itu, ...",
+  "Hewan ini termasuk ..."). Ekstraktif menyalin utuh, jadi kalimat seperti ini
+  berdiri tanpa konteks. Ditambah swap ke kandidat mandiri satu paragraf.
 
-Test: `node tests/tools-regression.js` (CASE A-E, tanpa jaringan, mock).
+Test: `node tests/tools-regression.js` (CASE A-G, tanpa jaringan, mock).
 
 ---
+
+## 18. REGRESSION CASE — RINGKASAN BAGUS DITOLAK VALIDASI
+
+Input: teks 708 kata tentang kelinci (12 paragraf).
+
+Observed incorrect output (ditolak) — 5 kalimat terputus + catatan internal:
+1. "Hewan ini termasuk ke dalam ordo Lagomorpha dan famili Leporidae."
+2. "Secara ilmiah, salah satu spesies kelinci ... Oryctolagus cuniculus ..."
+3. "Selain itu, kelinci memiliki kemampuan melihat ke arah yang luas ..."
+4. "Namun, kemampuan reproduksi yang tinggi juga dapat menimbulkan masalah ..."
+5. "Namun, memelihara kelinci tetap membutuhkan tanggung jawab."
+   + "(hasil AI ditolak validasi (terminology) — dipakai ringkasan ekstraktif lokal)"
+
+Problem: hasil AI yang BENAR justru ditolak, dan output yang tampil tidak
+terbaca sebagai ringkasan.
+
+Akar masalah (dua bug terpisah, keduanya dihitung dari teks yang sama):
+1. `properNouns()` memakai `/\s[A-ZÀ-Þ][a-zà-ÿ]{2,}/` — menghitung SETIAP kata
+   yang diawali huruf besar, termasuk setiap kata awal kalimat. Teks Indonesia
+   memakai huruf besar di awal kalimat, sehingga 708 kata menghasilkan **34
+   "istilah"** yang sebagian besar kata tugas (`selain`, `dari`, `dalam`,
+   `kemudian`, `selama`). Istilah sungguhan hanya 4: `Lagomorpha`, `Leporidae`,
+   `Oryctolagus cuniculus`, `Eropa`. `checkTerminology` ambang 0,7 → hasil
+   10/34 (29%) = GAGAL. every ringkasan ditolak, termasuk yang sempurna.
+2. `checkMeaning()` ambang Jaccard 0,45 — tidak bisa dicapai ringkasan mana pun.
+   Kompresi 75% (25% sisa) menghasilkan Jaccard 0,34 secara matematis. Check
+   yang sama juga menolak `checkCausality` (4 negasi → 0) dan `checkHedge`,
+   padahal pengurangan itu konsekuensi normal menyingkirkan kalimat, bukan
+   pembalikan makna.
+
+Expected behavior:
+- Ringkasan AI yang faktanya utuh DITAMPILKAN, bukan dibuang demi ambang yang
+  tidak bisa dicapai.
+- Ringkasan boleh abstractive (gabung/padatkan kalimat) — inilah bedanya
+  ringkasan dengan potongan teks.
+- Fakta TIDAK boleh longgar: angka, sitasi, DOI, kutipan, istilah, dan arah
+  negasi tetap dijaga seketat rewrite.
+
+Implemented contract:
+- `properNouns()` -> hanya kata yang (a) pernah kapital, (b) tidak pernah
+  huruf kecil, (c) muncul minimal sekali di TENGAH kalimat, (d) bukan kata
+  tugas; nama majemuk/binomial digabung jadi satu unit. 34 → 4 istilah.
+- Konteks ringkasan = rasio token kandidat/original < 0,45. Di konteks itu:
+  `meaning` 0,45→0,12; `terminology` 0,7→0,3; `causality` hanya menolak
+  PENAMBAHAN/pembalikan negasi; `hedge` tidak menolak penghilangan;
+  `relevance` hanya menghitung kata ISI baru (kata penghubung bukan karangan).
+  Rewrite (rasio ≥ 0,45) tetap ambang penuh.
+- `api/summarize.js` prompt `MODE EKSTRAKTIF WAJIB` → `MODE ABSTRACTIVE`:
+  boleh menggabungkan/memadatkan kalimat, dilarang menambah fakta, dilarang
+  membalik arah negasi, angka/sitasi/istilah wajib persis. `sentences[]`
+  menjadi jejak audit, disaring server-side supaya tidak menyesatkan.
+- `js/main.js` gate ringkasan ke 9 check fakta; `validateAiOutput(orig, cand,
+  extraChecks)` dipisah supaya humanizer tidak ikut memakai check ringkasan.
+
+Test: `node tests/tools-regression.js` CASE F (validator) + CASE G (kalimat
+yatim). Anti-bocor dijaga: karangan dengan angka/istilah rekaan ditolak
+(`terminology`,`meaning`), pembalikan negasi ditolak (`causality`), angka yang
+hilang saat ringkasan ditolak (`numbers`).
+
+---
+
+## 19. TIGA PIPELINE TERPISAH (sumber kebenaran arsitektur)
+
+Tiga fitur ini **bukan satu pipeline**. Mencampurkannya bikin dokumentasi
+menyesatkan dan tempted orang meng-`combine`-kan output yang tak bisa
+di-`combine`-kan. Kontrak bersama: `main.js` = orchestrator + satu-satunya
+penulis skor, `validate.js` = gerbang lokal, `api/*` = proxy tipis.
+
+### 19.1 F-21 Detector — local dan AI PARALEL
+
+```text
+INPUT
+ ↓
+PREPROCESS (canonicalText + hash/v)
+ ↓
+┌───────────────┴───────────────┐
+LOCAL heuristic()          AI /api/analyze
+10 sinyal + dampening      timeout 15 dtk, echo hash/v
+│                          gagal → hasil lokal + pesan jujur
+└───────────────┬───────────────┘
+                ↓
+COMBINE (evidence-based, confidence×coverage×bahasa)
+                ↓
+VALIDATE (gerbang regresi: tolak bila >+10 di atas bukti lokal)
+                ↓
+RENDER → SKOR + VERDICT (indikasi, bukan vonis)
+```
+
+`combine` dipakai karena lokal dan AI sama-sama menghasilkan **evidence/skor**
+yang bisa digabung berbobot.
+
+### 19.2 F-22 Summarizer — select-or-fallback, tanpa combine
+
+```text
+INPUT → /api/summarize → 9 check fakta → VALID? → AI ringkasan
+                                          └→ INVALID → FarazSummarize (ekstraktif)
+```
+
+**Tidak ada `combine`:** tidak ada dua ringkasan yang bisa di-blend. "AI 60% +
+lokal 40%" tidak bermakna untuk teks naratif — yang ada hanya pilih salah
+satu atau fallback.
+
+### 19.3 F-23 Explainer — select-or-fallback, tanpa combine
+
+```text
+INPUT → /api/material → /api/explain → 5 check fakta
+       → VALID? → AI penjelasan
+                 → INVALID → FarazExplain (deskriptif struktur)
+```
+
+Penjabaran **menjelaskan pola**, bukan meringkas isi. Karena itu check
+`meaning`/`relevance` sengaja tidak dipasang di jalur ini: penjelasan boleh
+memakai kosakata analisis yang tidak ada di teks asli ("pola enumerasi",
+"transisi frekuentatif") tanpa berarti mengarang. Yang wajib dijaga hanya
+fakta: angka, sitasi, DOI/URL, kutipan langsung, istilah.
+
+### 19.4 Runtime validation ≠ AI quality evaluation
+
+Dua hal berbeda yang tidak boleh dicampur:
+
+| | Runtime validation | AI quality evaluation |
+|---|---|---|
+| File | `js/ai/validate.js` | `tests/ai-live-eval.js`, `eval/run.js` |
+| Pertanyaan | "apakah output AI untuk user ini aman dipakai?" | "apakah AI masih layak dipercaya setelah perubahan kode/model?" |
+| Kapan | tiap request user | oleh developer, offline, di luar runtime |
+| Sumber kebenaran | kode lokal | benchmark berlabel |
+
+Validator menjawab **"apakah output konsisten dengan input?"** — bukan
+**"apakah skor AI 72 itu benar?"`. Yang kedua hanya bisa dijawab benchmark.
+Dataset evaluasi TIDAK boleh masuk ke pipeline scan user.
+
+### 19.5 Status method — user tahu skor dari mana
+
+`js/ai/status.js` wajib membedakan, bukan hanya menampilkan "68/100":
+
+| Keadaan | Method yang ditulis |
+|---|---|
+| Lokal + model lokal + AI | `gabungan heuristik X/100 + AI Y/100` + catatan combine |
+| AI tidak tersedia | `heuristik offline X/100 (AI <reason>)` |
+| AI ditolak gerbang regresi | `AI ditolak gerbang regresi — dipakai hasil lokal` |
+
+Ditulis ke `render()` (`method`) dan ke status akhir `doCheck()`, muncul di
+`<details>Detail teknis</details>` dan laporan ekspor.
+
+### 19.6 Larangan yang sudah dibuktikan (jangan dikembalikan)
+
+- **Jangan pakai `combine` untuk summary/explain** — lihat 19.2/19.3.
+- **Jangan hidupkan lagi aturan "wajib cocok topik utama"** di `api/material.js` —
+  sudah diuji menolak paper yang relevan ("Diagnosis Kanker Paru-paru Berbasis
+  Data Klinis"). Relevansi berbasis skor + alasan, bukan kecocokan kata.
+- **Jangan naikkan bobot AI di `js/ai/combine.js`** — data membuktikan merusak
+  (10 teks manusia ID dapat +25 poin palsu).
+- **Jangan turunkan standar test** supaya CI hijau.
 
 *Dokumen ini adalah PRD produk, bukan vonis akademik. Semua skor adalah indikasi yang perlu ditinjau manusia.*

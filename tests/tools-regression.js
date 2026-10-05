@@ -10,6 +10,9 @@
 // CASE C  Semua kandidat relevance < threshold -> materials kosong (boleh 0).
 // CASE D  Kalimat hasil AI yang tidak verbatim -> TOLAK (fallback lokal).
 // CASE E  Sumber dengan relevance lemah -> ditolak meski sitasi tinggi.
+// CASE F  Validator: hanya istilah sungguhan yang dihitung (bukan kata awal
+//         kalimat), dan ringkasan terkompresi boleh lolos tanpa mengorbankan fakta.
+// CASE G  Summarizer: hindari kalimat bergantung ("Namun, ..."/"Hewan ini ...").
 'use strict';
 
 const fs = require('fs');
@@ -38,6 +41,11 @@ function loadSummarizer() {
   const factory = new Function('document', 'window', 'navigator', code +
     '\n;return globalThis.FarazSummarize;');
   return factory(documentStub, {}, {});
+}
+
+function loadValidate() {
+  const code = fs.readFileSync(path.join(ROOT, 'js/ai/validate.js'), 'utf8');
+  return new Function('globalThis', code + '\n;return globalThis.FarazValidate;')({});
 }
 
 const MATERIAL = require(path.join(ROOT, 'api', 'material.js'));
@@ -168,6 +176,92 @@ console.log('CASE D - kalimat AI tidak verbatim -> TOLAK (fallback lokal)');
   ok(S.verifyExtractive(RABBIT, duplikat) === null, 'kalimat verbatim asli diterima');
 }
 
+// ================= CASE F =================
+// REGRESSION CASE (ringkasan bagus tertolak): properNouns() lama memakai
+// /\s[A-Z][a-z]+/ yang menghitung SETIAP kata awal kalimat sebagai "istilah",
+// sehingga teks Indonesia (huruf besar di awal kalimat) menghasilkan puluhan
+// istilah palsu dan setiap ringkasan ditolak oleh checkTerminology.
+console.log('CASE F - Validator: istilah sungguhan, bukan kata awal kalimat');
+const LONG_SRC = [
+  'Kelinci merupakan salah satu jenis mamalia yang dikenal di berbagai belahan dunia.',
+  'Hewan ini termasuk ke dalam ordo Lagomorpha dan famili Leporidae.',
+  'Kelinci memiliki ciri khas berupa telinga panjang, tubuh berbulu, kaki belakang yang kuat, serta gigi seri yang terus tumbuh.',
+  'Salah satu spesies yang menjadi dasar kelinci domestik adalah Oryctolagus cuniculus atau kelinci Eropa.',
+  'Kelinci merupakan hewan herbivora yang memakan rumput, daun, dan berbagai tumbuhan.',
+  'Sistem pencernaannya mampu mengolah makanan yang kaya serat, termasuk melalui memakan cecotropes.',
+  'Di alam, kelinci berperan sebagai pemakan tumbuhan sekaligus bagian dari rantai makanan bagi predator.',
+  'Kelinci juga memiliki kemampuan berkembang biak yang cukup tinggi sehingga populasinya cepat berkembang.',
+  'Kelinci telah didomestikasi dan dikembangkan menjadi berbagai ras dengan ukuran dan warna bulu berbeda.',
+  'Oleh karena itu, kelinci memiliki peranan penting dalam ekosistem maupun kehidupan manusia.',
+].join(' ');
+{
+  const V = loadValidate();
+  // Ringkasan abstractive (gabung + parafrase) yang_SEHAT_: harus LOLOS.
+  const RINGKAS_BAGUS = [
+    'Kelinci termasuk ordo Lagomorpha dan famili Leporidae dengan ciri khas telinga panjang, tubuh berbulu, dan gigi seri yang terus tumbuh.',
+    'Oryctolagus cuniculus atau kelinci Eropa menjadi dasar kelinci domestik.',
+    'Sebagai herbivora, kelinci mengolah serat melalui cecotropes dan berperan dalam rantai makanan sebagai makanan predator.',
+    'Kemampuan berkembang biaknya tinggi, dan setelah didomestikasi menjadi berbagai ras dengan ukuran serta warna bulu berbeda.',
+  ].join(' ');
+  const r1 = V.validate(LONG_SRC, RINGKAS_BAGUS, {});
+  ok(r1.pass === true, 'ringkasan abstractive yang sehat LOLOS', r1.fails.map((f) => f.check).join(','));
+
+  // Fallback ekstraktif: kalimat ASLI yang benar-benar ada di LONG_SRC.
+  const FALLBACK_LAMA = [
+    'Hewan ini termasuk ke dalam ordo Lagomorpha dan famili Leporidae.',
+    'Kelinci merupakan hewan herbivora yang memakan rumput, daun, dan berbagai tumbuhan.',
+    'Oleh karena itu, kelinci memiliki peranan penting dalam ekosistem maupun kehidupan manusia.',
+  ].join(' ');
+  const r2 = V.validate(LONG_SRC, FALLBACK_LAMA, {});
+  ok(r2.pass === true, 'fallback ekstraktif tetap valid', r2.fails.map((f) => f.check).join(','));
+
+  // ANTI BOCOR: karangan harus tetap DITOLAK.
+  const KARPAN = 'Kelinci termasuk ordo Lagomorpha. Kelinci dapat terbang 300 km dalam 15 menit dan dapat hidup 50 tahun. Predator utamanya adalah Harimau Jawa yang sering memangsa kelinci dewasa. Penelitian menunjukkan 87% kelinci memiliki struktur khusus pada rahangnya.';
+  const r3 = V.validate(LONG_SRC, KARPAN, {});
+  ok(r3.fails.length > 0, 'karangan (angka/istilah rekaan) DITOLAK', r3.fails.map((f) => f.check).join(','));
+
+  // Angka/sitasi/istilah asli WAJIB utuh walau ringkasan boleh parafrase.
+  const dgnAngka = 'Penelitian dilakukan di tiga sekolah tahun 2021 dengan 120 siswa. Data dianalisis dengan uji t. Hasil menunjukkan perbedaan signifikan antarkelompok, namun terbatas pada satu wilayah.';
+  const r4 = V.validate(dgnAngka, 'Penelitian dilakukan di tiga sekolah dengan kuesioner dan uji t, menunjukkan perbedaan signifikan antarkelompok.', {});
+  ok(r4.fails.some((f) => f.check === 'numbers'), 'angka/tahun hilang saat ringkasan DITOLAK',
+    r4.fails.map((f) => f.check).join(','));
+  // Negasi: boleh berkurang (kompresi) tapi TIDAK boleh dibalik.
+  // Teks asli panjang agar kandidat benar-benar "summary-like" (rasio < 0,45).
+  const negAsli = 'Kelinci tidak dapat hidup tanpa air karena sistem pencernaannya bergantung pada cairan. '
+    + 'Kelinci tidak takut pada cahaya lemah selama lingkungan tetap hangat. '
+    + 'Hewan ini tidak menyukai suhu yang sangat tinggi di lingkungan lembap. '
+    + 'Kelinci tidak pernah berkumpul dengan predatornya di alam terbuka. '
+    + 'Kelinci tidak memiliki kemampuan untuk berenang dalam waktu lama. '
+    + 'Pola hidup soliter membuat kelinci tidak mudah beradaptasi pada kandang beramai-ramai.';
+  const r5 = V.validate(negAsli, 'Kelinci membutuhkan air, toleransi cahaya, dan suhu yang tidak terlalu tinggi agar bertahan hidup.', {});
+  ok(r5.pass === true, 'ringkasan yang membuang negasi (kompresi) LOLOS', r5.fails.map((f) => f.check).join(','));
+  const r6 = V.validate(negAsli, negAsli + ' Kelinci dapat hidup tanpa air dan tidak takut pada cahaya.', {});
+  ok(r6.fails.length > 0, 'pembalikan negasi DITOLAK', r6.fails.map((f) => f.check).join(','));
+  // Rewrite panjang sebanding TIDAK boleh ikut ambang ringkasan.
+  const par = dgnAngka.replace('Penelitian dilakukan', 'Penelitian ini dilaksanakan');
+  ok(V.validate(dgnAngka, par, {}).pass === true, 'rewrite sebanding tetap lolos (ambang 0,45)');
+}
+
+// ================= CASE G =================
+// REGRESSION CASE (ringkasan menggantung): ekstraktif menyalin utuh, jadi kalimat
+// berawalan "Namun,"/"Selain itu,"/"Hewan ini" berdiri tanpa kalimat sebelumnya.
+console.log('CASE G - Summarizer: hindari kalimat bergantung (yatim)');
+{
+  const S = loadSummarizer();
+  const scored = S.scoreSentences(LONG_SRC);
+  const chosen = S.summarize(LONG_SRC).sentences;
+  // Searik dengan ORPHAN_STRONG/ORPHAN_LEADERS di js/ai/summarizer.js.
+  const ORPHAN_HEAD = /^(namun|tetapi|sedangkan|namun demikian|melainkan|sebaliknya|oleh karena itu|karena itu|oleh sebab itu|dengan demikian|maka dari itu|sehingga|selain itu|selain|menurut|sebab|hal ini|keadaan ini|hal tersebut|keadaan tersebut|hal itu|keadaan itu)\b/i;
+  const orphan = chosen.filter((s) =>
+    ORPHAN_HEAD.test(s) || /^\S+\s+(ini|itu|tersebut)\b/i.test(s));
+  ok(orphan.length === 0, 'fallback tidak memilih kalimat bergantung', orphan.length + ' yatim');
+  // Penalti orphan harus terpasang di skor (bukan hanya dihapus pasif).
+  const orphanScored = scored.filter((e) => e.parts.orphan > 0);
+  ok(orphanScored.length > 0, 'penalti kalimat bergantung terdeteksi', orphanScored.length + ' kalimat');
+  // Sifat verbatim tidak boleh dikorbankan demi menghindari kalimat yatim.
+  ok(S.verifyExtractive(LONG_SRC, chosen) === null, 'fallback tetap 100% verbatim');
+}
+
 // ================= CASE E =================
 console.log('CASE E - sumber relevance lemah DITOLAK meski sitasi tinggi');
 {
@@ -289,4 +383,4 @@ if (failures.length) {
   failures.forEach((f) => console.log(' - ' + f));
   process.exit(1);
 }
-console.log('REGRESSION LOLOS: CASE A-E semua sesuai kontrak.');
+console.log('REGRESSION LOLOS: CASE A-G semua sesuai kontrak.');

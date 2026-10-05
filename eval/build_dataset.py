@@ -2,7 +2,15 @@
 """Fase 2 — Gabung raw -> eval/dataset.jsonl (skema final + gate + split).
 
 Masukan (HANYA dari eval/; direktori dataset/ lama DITOLAK anti-bocor):
-  eval/raw_wiki.jsonl, eval/raw_openalex.jsonl, eval/raw_m4.jsonl
+  eval/raw_wiki.jsonl, eval/raw_openalex.jsonl, eval/raw_m4.jsonl,
+  eval/raw_m4_peerread.jsonl (opsional --peerread)
+
+STEP 2 (2026-10-05) — sel ACADEMIC ditambahkan:
+  eval/raw_m4_peerread.jsonl: M4 PeerRead (peer review makalah, human +
+  pasangan machine) per generator. menutup gap `machine x genre academic = 0`
+  yang bikin metrik lama hanya mengukur genre, bukan author.
+  PENTING: sel ini `lang=en`, sedangkan sel lama `lang=id`. Metrik TIDAK boleh
+  dicampur tanpa pisah per bahasa (lihat run.js).
 
 Skema JSONL per baris:
   {id,text,label,source,url,license,pub_date,genre,lang,ai_kind,generator,
@@ -111,21 +119,32 @@ def main():
     ap.add_argument("--wiki", default="eval/raw_wiki.jsonl")
     ap.add_argument("--openalex", default="eval/raw_openalex.jsonl")
     ap.add_argument("--m4", default="eval/raw_m4.jsonl")
+    ap.add_argument("--peerread", default="eval/raw_m4_peerread.jsonl",
+                    help="opsional: kosongkan ('') untuk rebuild dataset lama")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--q-wiki", type=int, default=200)
     ap.add_argument("--q-oa", type=int, default=100)
     ap.add_argument("--q-m4", type=int, default=100)
+    ap.add_argument("--q-peerread", type=int, default=100)
     ap.add_argument("--out", default="eval/dataset.jsonl")
     ap.add_argument("--stats", default="eval/dataset_stats.json")
     ap.add_argument("--audit", default="eval/audit_sample.jsonl")
     ap.add_argument("--hashes", default="eval/test_hashes.txt")
     a = ap.parse_args()
 
-    for p in (a.wiki, a.openalex, a.m4):
+    inputs = [a.wiki, a.openalex, a.m4]
+    if a.peerread:
+        inputs.append(a.peerread)
+    for p in inputs:
         if not os.path.isfile(p):
+            if p == a.peerread:
+                print("CATATAN: %s tidak ada -> sel academic dilewati "
+                      "(--peerread '' untuk tegas dilewati)" % p, flush=True)
+                a.peerread = ""
+                continue
             print("GAGAL: masukan hilang: %s" % p, file=sys.stderr)
             return 2
-    guard_no_legacy_dataset(a.wiki, a.openalex, a.m4)
+    guard_no_legacy_dataset(*inputs)
 
     rng = random.Random(a.seed)
     drop = {}
@@ -198,8 +217,36 @@ def main():
                                    "split": None,
                                    "_date_verified": False}))
 
+    # --- m4 peerread (academic, en) — opsional ---
+    if a.peerread:
+        for r in load_jsonl(a.peerread):
+            text = r.get("text") or ""
+            if not license_ok(r.get("license")):
+                cut("pr:license"); continue
+            nw = words_of(text)
+            if not (50 <= nw <= 3000):
+                cut("pr:length"); continue
+            lab = r.get("label")
+            if lab not in ("human", "machine"):
+                cut("pr:label"); continue
+            src = r.get("source")
+            if not src or not src.startswith("m4-peerread-"):
+                cut("pr:source"); continue
+            cand.append(("pr-" + lab, {
+                "id": None, "text": text, "label": lab, "source": src,
+                "url": r.get("data_url"), "license": r["license"],
+                "pub_date": None, "genre": "academic", "lang": "en",
+                "ai_kind": r.get("ai_kind"), "generator": r.get("generator"),
+                "prompt_id": r.get("m4_source_id"),
+                "pair_id": r.get("pair_id"), "words": nw,
+                "sha256": sha_text(text), "split": None,
+                "_date_verified": False}))
+
     quotas = {"wiki": a.q_wiki, "oa": a.q_oa,
               "m4-human": a.q_m4, "m4-machine": a.q_m4}
+    if a.peerread:
+        quotas["pr-human"] = a.q_peerread
+        quotas["pr-machine"] = a.q_peerread
     by_cell = {}
     for cell, row in cand:
         by_cell.setdefault(cell, []).append(row)
@@ -211,32 +258,59 @@ def main():
                   file=sys.stderr)
             return 3
 
+    # Sumber berpasangan (unit split = pasangan utuh, bukan baris):
+    #   m4-id-newspaper   -> human+machine satu pair_id (sudah ada)
+    #   m4-peerread-*     -> human+machine satu pair_id (STEP 2)
+    PAIR_CELLS = ("m4-human", "m4-machine", "pr-human", "pr-machine")
+    PAIR_QUOTA = {"m4-id-newspaper": a.q_m4}
+    PAIR_SOURCES = ["m4-id-newspaper"]
+
     # kuota: shuffle deterministik per sel lalu ambil N.
-    # M4 diambil per pasangan utuh (human+machine satu pair_id) supaya
-    # pasangan selalu se-split; pasangan tak lengkap (satu sisi gugur di
-    # gate) tidak dipakai. (Aturan: dataset-eval.md pasangan M4 se-split.)
+    # Sel berpasangan diambil per pasangan utuh (human+machine satu pair_id)
+    # supaya pasangan selalu se-split; pasangan tak lengkap (satu sisi gugur
+    # di gate) tidak dipakai. (Aturan: dataset-eval.md pasangan M4 se-split.)
     kept = []
     for cell, q in quotas.items():
-        if cell.startswith("m4-"):
+        if cell in PAIR_CELLS:
             continue
         rows = by_cell[cell][:]
         rng.shuffle(rows)
         kept.extend(rows[:q])
-    m4q = a.q_m4
-    pair_groups = {}
-    for r in by_cell.get("m4-human", []) + by_cell.get("m4-machine", []):
-        pair_groups.setdefault(r["pair_id"], []).append(r)
-    complete = [g for g in pair_groups.values()
-                if {x["label"] for x in g} == {"human", "machine"}]
-    rng.shuffle(complete)
-    print("sel m4-pairs   kandidat-pasangan-utuh=%d kuota=%d"
-          % (len(complete), m4q), flush=True)
-    if len(complete) < m4q:
-        print("GAGAL kuota sel m4 pairs: %d < %d" % (len(complete), m4q),
-              file=sys.stderr)
-        return 3
-    for g in complete[:m4q]:
-        kept.extend(g)
+
+    if a.peerread:
+        # Kuota per sumber peerread (chatgpt + llama dipisah supaya generator
+        # diversity benar-benar tercatat, bukan tercampur jadi satu sel).
+        pr_src = {}
+        for cell in ("pr-human", "pr-machine"):
+            for r in by_cell.get(cell, []):
+                pr_src.setdefault(r["source"], []).append(r)
+        for src in sorted(pr_src):
+            PAIR_QUOTA[src] = a.q_peerread
+            PAIR_SOURCES.append(src)
+
+    for src in PAIR_SOURCES:
+        rows = [r for r in kept if r["source"] == src]
+        rows += [r for cell in PAIR_CELLS for r in by_cell.get(cell, [])
+                 if r["source"] == src]
+        pair_groups = {}
+        for r in rows:
+            if r.get("pair_id"):
+                pair_groups.setdefault(r["pair_id"], []).append(r)
+        complete = [g for g in pair_groups.values()
+                    if {x["label"] for x in g} == {"human", "machine"}]
+        rng.shuffle(complete)
+        q = PAIR_QUOTA[src]
+        print("sel %-20s pasangan-utuh=%d kuota=%d"
+              % (src, len(complete), q), flush=True)
+        if len(complete) < q:
+            print("GAGAL kuota sel %s: %d < %d" % (src, len(complete), q),
+                  file=sys.stderr)
+            return 3
+        for g in complete[:q]:
+            kept.extend(g)
+    # Buang sisa non-pasangan dari sel berpasangan (sudah diambil di atas).
+    kept = [r for r in kept
+            if not (r["source"] in PAIR_SOURCES and not r.get("pair_id"))]
 
     # dedupe exact sha256 (global)
     seen_sha, uniq = {}, []
@@ -266,13 +340,14 @@ def main():
     # dedupe) agar pasangan tetap utuh se-split.
     pair_count = {}
     for r in final:
-        if r["source"] == "m4-id-newspaper":
-            pair_count[r["pair_id"]] = pair_count.get(r["pair_id"], 0) + 1
+        if r["source"] in PAIR_SOURCES:
+            pair_count[(r["source"], r["pair_id"])] = pair_count.get(
+                (r["source"], r["pair_id"]), 0) + 1
     if pair_count:
         kept_final = []
         for r in final:
-            if (r["source"] == "m4-id-newspaper"
-                    and pair_count.get(r["pair_id"], 0) != 2):
+            if (r["source"] in PAIR_SOURCES
+                    and pair_count.get((r["source"], r["pair_id"]), 0) != 2):
                 cut("dedupe:orphan-mate")
                 continue
             kept_final.append(r)
@@ -282,9 +357,10 @@ def main():
     from collections import Counter
     cnt = Counter((r["source"], r["label"]) for r in final)
     need = {("idwiki-20211201", "human"): a.q_wiki,
-            ("openalex", "human"): a.q_oa,
-            ("m4-id-newspaper", "human"): a.q_m4,
-            ("m4-id-newspaper", "machine"): a.q_m4}
+            ("openalex", "human"): a.q_oa}
+    for src, q in PAIR_QUOTA.items():
+        need[(src, "human")] = q
+        need[(src, "machine")] = q
     ok = True
     for k, q in need.items():
         if cnt.get(k, 0) < q:
@@ -299,8 +375,8 @@ def main():
     # utuh (pair_id) sehingga human+machine satu pasangan selalu se-split.
     groups = {}
     for r in final:
-        if r["source"] == "m4-id-newspaper":
-            skey = ("m4-id-newspaper", "news")
+        if r["source"] in PAIR_SOURCES:
+            skey = (r["source"], r["genre"])
             ukey = "pair:" + str(r["pair_id"])
         else:
             skey = (r["source"], r["label"])
@@ -329,6 +405,8 @@ def main():
     # id final + tulis
     prefix = {"idwiki-20211201": "wiki", "openalex": "oa",
               "m4-id-newspaper": "m4"}
+    for i, src in enumerate(PAIR_SOURCES):
+        prefix.setdefault(src, "m4pr%d" % i)
     seq = {}
     for r in sorted(final, key=lambda x: (x["source"], x["label"],
                                           x.get("pair_id") or x["sha256"])):
@@ -377,9 +455,11 @@ def main():
              "total": len(final),
              "per_cell_split": {"|".join(k): v for k, v in
                                 sorted(per_split.items())},
-             "test_n": len(test_ids), "test_hash": test_hash,
-             "audit_n": len(audit), "inputs": [a.wiki, a.openalex, a.m4],
-             "legacy_dataset_used": False}
+"test_n": len(test_ids), "test_hash": test_hash,
+              "audit_n": len(audit), "inputs": inputs,
+              "paired_sources": PAIR_SOURCES,
+              "langs": dict(Counter(r["lang"] for r in final)),
+              "legacy_dataset_used": False}
     with open(a.stats, "w", encoding="utf-8") as f:
         json.dump(stats, f, ensure_ascii=False, indent=2)
 

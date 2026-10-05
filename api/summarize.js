@@ -16,24 +16,39 @@ const {
   PROVIDER_TIMEOUT_MS, MAX_RETRY, GEMINI_MODEL, GROQ_MODEL, getKeys,
 } = require('./config');
 
+// Aturan: validation-rules §4 (makna → fakta → kebenaran akademik → kejelasan),
+// §5 (tanpa klaim absolut); humanizer-rules §4 (angka/istilah/sitasi WAJIB utuh).
+//
+// REGRESSION CASE (ringkasan terlalu umum): versi lama menyuruh provider
+// menyalin kalimat mentah, sehingga hasilnya 5 kalimat terputus ("Selain itu,
+// kelinci memiliki...") yang tidak terbaca sebagai ringkasan.
+//
+// MODE SEKARANG: ringkasan abstractive yang DIJAGA. Provider boleh menulis ulang
+// kalimat (menggabungkan, memadatkan, melompati penghubung) karena itulah
+// bedanya ringkasan dengan potongan teks — TAPI tidak boleh menambah, mengubah,
+// atau mengarang fakta. Gerbang fakta (angka/sitasi/istilah/negasi/relevance)
+// ada di sisi klien dan diulang di sini supaya provider tidak perlu di-hardcode.
 const TASK_INSTRUCTION = [
-  'Tugas: pilih kalimat-kalimat ASLI dari naskah berikut yang paling mewakili isi utamanya.',
-  'MODE EKSTRAKTIF WAJIB (regression case: ringkasan terlalu umum):',
-  '(1) setiap kalimat output HARUS disalin PERSIS dari teks input, kata demi kata, termasuk tanda baca di akhir -',
-  '    dilarang menulis ulang kalimat baru;',
-  '(2) DILARANG menggabungkan dua kalimat menjadi kalimat baru;',
-  '(3) DILARANG mengubah urutan kata, angka, istilah teknis, nama, atau klaim;',
-  '(4) DILARANG menambah fakta, opini, atau contoh dari luar teks;',
-  '(5) pilih kalimat yang membawa INFORMASI SUBSTANTIF (klasifikasi, data, proses, hasil, penyebab, angka,',
-  '    nama) - JANGAN pilih kalimat yang hanya pernyataan umum (contoh:',
-  '    "X merupakan salah satu Y yang sering dijumpai");',
-  '(6) bila teks punya beberapa subtopik, pilih kalimat yang mewakili tiap subtopik secara proporsional,',
-  '    bukan semuanya dari satu bagian;',
-  '(7) hindari kalimat yang isinya berulang-ulang (redundansi);',
-  '(8) jumlah kalimat: 3-5 kalimat, atau lebih sedikit bila teksnya pendek.',
-  'Pilih kalimat berdasarkan kepentingan informasi, bukan yang paling mudah atau paling awal saja.',
-  'CATATAN REGRESSION: ringkasan yang hanya berisi kalimat umum (mis. "X merupakan salah satu Y",',
-  '"salah satu hal yang paling mudah dikenali adalah Z") dianggap GAGAL - itu output lama yang ditolak.',
+  'Tugas: tulis ringkasan yang padat dan enak dibaca dari naskah di bawah ini.',
+  'MODE ABSTRACTIVE (boleh tulis ulang kalimat; fakta TIDAK boleh berubah):',
+  '(1) BOLEH menggabungkan beberapa kalimat menjadi satu kalimat ringkas,',
+  '    memadatkanfrasa panjang, dan memakai kalimat aktif yang jelas;',
+  '(2) BOLEH memakai kata penghubung (di alam, selain itu, karena itu) agar',
+  '    kalimat ringkasan tidak menggantung;',
+  '(3) DILARANG menambah fakta, angka, nama, istilah, contoh, atau/opini yang tidak',
+  '    ada di teks input - ini yang paling penting;',
+  '(4) DILARANG mengubah atau membalik arah makna, terutama kalimat bernegasi',
+  '    ("tidak", "tanpa", "bukan") - bila isi aslinya negatif, hasilmu harus negatif;',
+  '(5) WAJIB pertahankan setiap angka, tahun, sitasi, dan istilah teknis yang',
+  '    kamu bawa, PERSIS seperti tertulis di teks (jangan dibulatkan/diterjemahkan);',
+  '(6) pilih isi yang paling substantif (klasifikasi, proses, hasil, hubungan',
+  '    sebab-akibat) - JANGAN isi ringkasan hanya dengan pernyataan umum',
+  '    (mis. "X merupakan salah satu Y yang sering dijumpai");',
+  '(7) bila teks punya beberapa subtopik, masing-masing harus tercakup secara',
+  '    proporsional - jangan seluruh ringkasan dari satu bagian saja;',
+  '(8) hasil akhir: 2-4 paragraf pendek (atau 3-6 kalimat bila teksnya pendek).',
+  'Jangan tulis pengantar seperti "Berikut ringkasannya" - langsung isi ringkasan.',
+  'Pilih berdasarkan kepentingan informasi, bukan yang paling mudah atau paling awal saja.',
 ].join('\n');
 
 const CORE_RULES = [
@@ -41,8 +56,13 @@ const CORE_RULES = [
   '1. NO HALLUCINATION: dilarang menambah/mengarang fakta, statistik, nama, DOI, URL, atau kutipan baru.',
   '2. PRESERVE: angka, sitasi, istilah, makna, tingkat ketidakpastian (hedge), dan arah kausalitas WAJIB sama.',
   '3. RELEVANCE GATE: bila input kosong/tak relevan untuk diringkas, kembalikan result="" dan jelaskan di warnings; JANGAN mengarang.',
-  '4. VERBATIM: sentences[] = potongan kalimat yang disalin PERSIS dari input (tanpa paraphrase, tanpa penggabungan).',
-  '5. Balas HANYA JSON valid tanpa markdown dengan skema:',
+  '4. SENTENCES SAMPLE: sentences[] = 3-8 kalimat代表性 yang DISALIN PERSIS dari input',
+  '   (dipakai sebagai jejak audit, BUKAN sebagai isi ringkasan). result = ringkasan',
+  '   abstractive hasilmu sendiri, sentences[] = kalimat asli pendukungnya.',
+  '5. CONFIDENCE: "tinggi" hanya bila semua fakta ringkasan bisa dipetakan ke teks',
+  '   input. Bila ada bagian yang tidak bisa dipastikan, pakai "sedang" atau "rendah"',
+  '   dan taruh alasannya di warnings.',
+  '6. Balas HANYA JSON valid tanpa markdown dengan skema:',
   '{"result": string, "sentences": string[], "sourceFacts": string[], "contextualFacts": string[], "inferences": string[], "protectedElements": string[], "warnings": string[], "confidence": "<rendah|sedang|tinggi>"}',
 ].join('\n');
 
@@ -99,19 +119,44 @@ function validateStructured(o) {
     !Array.isArray(o.protectedElements) || !Array.isArray(o.warnings)) {
     throw Object.assign(new Error('Skema provider tidak valid'), { code: 'PROVIDER_ERROR', status: 502 });
   }
-  // sentences[] opsional di sisi provider, tapi WAJIB string verbatim-utuh.
+  // sentences[] = jejak audit, harus kalimat ASLI verbatim dari input.
+  // Kehilangan sentence hanya menurunkan confidence, bukan menggagalkan hasil —
+  // yang menentukan kelayakannya tetap gerbang fakta di sisi klien.
   if (o.sentences == null) o.sentences = [];
   if (!Array.isArray(o.sentences)) o.sentences = [];
   o.sentences = o.sentences.filter(function (s) { return typeof s === 'string' && s.trim(); }).slice(0, 12);
+  // Buang yang bukan substring verbatim dari teks yang dikirim, supaya jejak
+  // audit tidak menyesatkan (validation-rules §2: no silent failure).
+  var haystack = ' ' + String((o.__src || '')).replace(/\s+/g, ' ').trim() + ' ';
+  if (haystack.length > 2) {
+    var kept = [];
+    for (var i = 0; i < o.sentences.length; i++) {
+      var norm = ' ' + o.sentences[i].replace(/\s+/g, ' ').trim() + ' ';
+      if (haystack.indexOf(norm) !== -1) kept.push(o.sentences[i]);
+    }
+    if (kept.length < o.sentences.length) {
+      o.warnings = o.warnings.concat(['Beberapa kalimat pendukung tidak verbatim dari teks; dibuang dari jejak audit.']);
+    }
+    o.sentences = kept;
+  }
   if (!['rendah', 'sedang', 'tinggi'].includes(o.confidence)) o.confidence = 'rendah';
   return o;
 }
 
-function parseStructured(text) {
-  const m = String(text || '').match(/\{[\s\S]*\}/);
+function parseStructured(text, srcText) {
+  var m = String(text || '').match(/\{[\s\S]*\}/);
   if (!m) throw Object.assign(new Error('Respons provider bukan JSON'), { code: 'PROVIDER_ERROR', status: 502 });
-  try { return validateStructured(JSON.parse(m[0])); }
-  catch (e) { if (e && e.code) throw e; throw Object.assign(new Error('Respons provider tidak dapat diparse'), { code: 'PROVIDER_ERROR', status: 502 }); }
+  var obj;
+  try { obj = JSON.parse(m[0]); } catch (_) {
+    throw Object.assign(new Error('Respons provider tidak dapat diparse'), { code: 'PROVIDER_ERROR', status: 502 });
+  }
+  try {
+    obj.__src = String(srcText || '');
+    return validateStructured(obj);
+  } catch (e) {
+    if (e && e.code) throw e;
+    throw Object.assign(new Error('Respons provider tidak dapat diparse'), { code: 'PROVIDER_ERROR', status: 502 });
+  }
 }
 
 function classifyHttpError(status, text) {
@@ -121,7 +166,7 @@ function classifyHttpError(status, text) {
   return { status: 502, code: 'PROVIDER_ERROR', error: 'Provider menolak permintaan (' + status + '). ' + String(text || '').slice(0, 200) };
 }
 
-async function callGemini(apiKey, model, prompt) {
+async function callGemini(apiKey, model, prompt, srcText) {
   const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(apiKey);
   let lastErr = null;
   for (let a = 0; a <= MAX_RETRY; a++) {
@@ -135,13 +180,13 @@ async function callGemini(apiKey, model, prompt) {
       }
       const j = await r.json();
       const text = ((j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || []).map((p) => p.text || '').join('\n');
-      return parseStructured(text);
+      return parseStructured(text, srcText);
     } catch (e) { if (e && e.code === 'TIMEOUT' && a < MAX_RETRY) { lastErr = e; continue; } throw e; }
   }
   throw lastErr || Object.assign(new Error('Gemini gagal'), { code: 'PROVIDER_ERROR', status: 502 });
 }
 
-async function callGroq(apiKey, model, prompt) {
+async function callGroq(apiKey, model, prompt, srcText) {
   const url = 'https://api.groq.com/openai/v1/chat/completions';
   let lastErr = null;
   for (let a = 0; a <= MAX_RETRY; a++) {
@@ -159,7 +204,7 @@ async function callGroq(apiKey, model, prompt) {
       }
       const j = await r.json();
       const text = j.choices && j.choices[0] && j.choices[0].message ? j.choices[0].message.content : '';
-      return parseStructured(text);
+      return parseStructured(text, srcText);
     } catch (e) { if (e && e.code === 'TIMEOUT' && a < MAX_RETRY) { lastErr = e; continue; } throw e; }
   }
   throw lastErr || Object.assign(new Error('Groq gagal'), { code: 'PROVIDER_ERROR', status: 502 });
@@ -194,18 +239,26 @@ module.exports = async function handler(req, res) {
   const prompt = TASK_INSTRUCTION + '\n' + CORE_RULES + '\nTeks:\n"""\n' + excerpt + '\n"""';
   const keys = getKeys();
 
+  // __src hanya dipakai server-side untuk menyaring jejak audit — jangan
+  // pernah bocor ke respons (teks user tidak keluar dari server).
+  const reply = (out, modelId) => {
+    var body = Object.assign({}, out);
+    delete body.__src;
+    return send(res, 200, Object.assign(body, {
+      modelId: modelId, coverage: coverage, hash: actual.toLowerCase(), v: v
+    }));
+  };
+
   let primaryErr = null;
   if (keys.gemini) {
     try {
-      const out = await callGemini(keys.gemini, GEMINI_MODEL, prompt);
-      return send(res, 200, { ...out, modelId: 'gemini:' + GEMINI_MODEL, coverage, hash: actual.toLowerCase(), v });
+      return reply(await callGemini(keys.gemini, GEMINI_MODEL, prompt, usedText || canonicalText), 'gemini:' + GEMINI_MODEL);
     } catch (e) { primaryErr = e; }
   } else { primaryErr = Object.assign(new Error('GEMINI_API_KEY belum diset'), { code: 'PROVIDER_MISCONFIGURED', status: 500 }); }
 
   if (keys.groq) {
     try {
-      const out = await callGroq(keys.groq, GROQ_MODEL, prompt);
-      return send(res, 200, { ...out, modelId: 'groq:' + GROQ_MODEL, coverage, hash: actual.toLowerCase(), v });
+      return reply(await callGroq(keys.groq, GROQ_MODEL, prompt, usedText || canonicalText), 'groq:' + GROQ_MODEL);
     } catch (e) {
       if (primaryErr && primaryErr.code === 'PROVIDER_MISCONFIGURED' && !(e && e.status)) {
         return send(res, 500, { error: 'Provider belum dikonfigurasi (set GEMINI_API_KEY / GROQ_API_KEY).', code: 'PROVIDER_MISCONFIGURED' });

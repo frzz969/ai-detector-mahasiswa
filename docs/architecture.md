@@ -24,7 +24,9 @@ js/
     combine.js      FarazCombine (evidence-based: bobot confidence×coverage×bahasa, cap supremacy +5, gap ≥30)
     validate.js     FarazValidate (10 checks murni + gerbang regresi +10)
     status.js       FarazStatus (label per tahap hybrid: preparing/local/ai/combining/validating/done)
-    summarizer.js   FarazSummarize (extractive verbatim: dedupe Jaccard >0.7, sebar lintas paragraf, keep ~1/5 min 2 maks 5)
+    summarizer.js   FarazSummarize (fallback ekstraktif verbatim: dedupe Jaccard >0.7,
+                                  penalti kalimat generik + kalimat bergantung,
+                                  sebar lintas paragraf, keep ~1/5 min 2 maks 5)
     explainer.js    FarazExplain (deskriptif struktur: paragraf/kalimat/bagian/enumerasi/penghubung/data/suara; urutan Explain: material → AI → lokal)
   main.js           render() + doCheck() hybrid + highlight klik (sentExplain) + Summarize/Explain hybrid + validateAiOutput() ke #aiToolsOut (#hasil) + stale-guard export + demo hero
   # score-hero: #aiPct/#humanPct/#mixLbl + ringkas "Merah = cek lagi · Hijau = aman";
@@ -33,7 +35,8 @@ api/                Vercel serverless (live; key hanya via env, lihat `.env.exam
   config.js         konstanta timeout/modelId/maxRetry (MAX_CHUNKS=6, ~900 char/chunk cermin localScore)
   analyze.js        POST {v,hash,canonicalText} → {score,confidence,modelId,coverage,hash,v} (Gemini primer, Groq fallback)
   humanize.js       thin proxy parafrasa formal + AI Core Rules
-  summarize.js      thin proxy ringkasan setia (spec kompresi SEDANG + few-shot fotosintesis) + AI Core Rules
+  summarize.js      thin proxy ringkasan abstractive-terjaga (spec kompresi SEDANG +
+                    few-shot fotosintesis + AI Core Rules; facts gate di klien)
   explain.js        thin proxy penjelasan indikasi (bahasa indikasi saja) + AI Core Rules
   material.js       fan-out 7 sumber (Wikipedia id+en, Wikidata, OpenAlex, Crossref, Semantic Scholar, PubMed, arXiv) → filter → ranking tier jurnal>wiki → validasi; maks 10; fail-soft per sumber
   contact.js        POST form kontak/rate-limit (tidak tercakup PRD §15, endpoint mandiri)
@@ -109,11 +112,39 @@ FINAL — js/main.js render() (satu-satunya penulis skor)
 Highlight klik              Summarize                 Explain
 (#highlight +               AI → lokal                material → AI → lokal
  #sentExplain)               (main.js:683-705)         (main.js:723-777)
-        │                    FarazSummarize            FarazExplain
-        ▼                    (ekstraktif verbatim)     (deskriptif struktur)
+         │                    FarazSummarize            FarazExplain
+         ▼                    (fallback ekstraktif)      (deskriptif struktur)
 Export (stale-guard: hanya dari hasil final segar)
 Humanize terpisah: js/humanizer.js (formal→formal + verdict
   BETTER/EQUIVALENT/WORSE + restore; AI opsional via FarazAIClient.humanize)
+```
+
+## Tiga pipeline terpisah
+
+Detector, Summarizer, dan Explainer TIDAK satu pipeline. Ringkasan dan
+penjabaran memakai **select-or-fallback** (AI valid → tampil, invalid → lokal),
+bukan `combine` — tidak ada dua ringkasan/penjabaran yang bisa di-blend.
+Detail + alasan: `docs/PRD.md` §19.
+
+```text
+F-21 DETECTOR — lokal & AI PARALEL
+  INPUT → PREPROCESS → ┌LOCAL heuristic()┬AI /api/analyze┐
+                       └──────┬───────────┴───────────────┘
+                              ↓ COMBINE (evidence-based)
+                              ↓ VALIDATE (gerbang regresi >+10)
+                              ↓ RENDER → SKOR + VERDICT
+
+F-22 SUMMARIZER — select-or-fallback
+  INPUT → /api/summarize → 9 check fakta → VALID? → AI ringkasan
+                                           → INVALID → FarazSummarize (ekstraktif)
+
+F-23 EXPLAINER — select-or-fallback
+  INPUT → /api/material → /api/explain → 5 check fakta
+         → VALID? → AI penjelasan  |  → INVALID → FarazExplain (deskriptif)
+
+AI TRUST EVALUATION — offline, developer, BUKAN bagian runtime
+  DATASET → ┌LOCAL metrics┬AI metrics┐ → COMPARE → QUALITY GATE → TRUST / NO TRUST
+  (tests/ai-live-eval.js, eval/run.js — bukan file di request user)
 ```
 
 Lapisan konsep: Core (state) → Input (preprocess) → Detection (heuristik lokal)

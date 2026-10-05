@@ -1,5 +1,5 @@
 {
-  "note": "Baseline DEV Fase 3 SLIM — TEST-blind, ambang eksisting 50/75/30, tanpa tuning. js/ read-only.",
+  "note": "Baseline DEV Fase 3 SLIM — TEST-blind, ambang eksisting 50/75/30, tanpa tuning. js/ read-only. Presisi/recal/F1/FNR = null bila pembagi 0 (bukan 0). Skor 0-100 BUKAN probability: kalibrasi tidak diuji, jangan dibaca sebagai peluang.",
   "split": "dev",
   "thr_mid": 50,
   "thr_strong": 75,
@@ -8,13 +8,40 @@
   "n_machine": 20,
   "auc": 0.7425,
   "accuracy": 0.81,
+  "precision": 1,
+  "recall_tpr": 0.05,
+  "f1": 0.09523809523809523,
+  "fnr": 0.95,
+  "fpr_human": 0,
+  "accuracy_majority_baseline": 0.8,
+  "calibration": "not_tested",
+  "per_lang": {
+    "id": {
+      "n": 100,
+      "human": 80,
+      "machine": 20,
+      "valid": true,
+      "confusion": {
+        "tp": 1,
+        "tn": 80,
+        "fp": 0,
+        "fn": 19
+      },
+      "accuracy": 0.81,
+      "precision": 1,
+      "recall": 0.05,
+      "f1": 0.09523809523809523,
+      "fpr": 0,
+      "fnr": 0.95,
+      "auc": 0.7425
+    }
+  },
   "confusion": {
     "tp": 1,
     "tn": 80,
     "fp": 0,
     "fn": 19
   },
-  "fpr_human": 0,
   "fpr_formal_abstract": {
     "n": 20,
     "fpr": 0
