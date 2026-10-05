@@ -9,7 +9,16 @@
 'use strict';
 
 const crypto = require('crypto');
+const fs = require('fs');
 const path = require('path');
+// Muat .env bila ada (untuk lokal). Di CI key datang dari secrets/env.
+const envPath = path.join(__dirname, '..', '.env');
+if (fs.existsSync(envPath)) {
+  fs.readFileSync(envPath, 'utf8').split(/\r?\n/).forEach((l) => {
+    const m = l.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+  });
+}
 const MATERIAL = require(path.join(__dirname, '..', 'api', 'material.js'));
 
 const OFFTOPIC = /\b(kelinci|hewan|ternak|unggas|ayam|sapi|domba|rabbit|livestock|poultry|cattle)\b/i;
@@ -32,6 +41,15 @@ const DOC_TAX = [
   'Kepatuhan terhadap kewajiban perpajakan menjadi perhatian utama dalam pengauditan internal perusahaan.',
   'Pemodelan penghitungan pajak memerlukan data transaksi yang lengkap dan dapat ditelusuri.',
   'Penyetoran pajak dilakukan secara bulanan melalui sistem resmi milik negara.',
+].join(' ');
+
+// CASE 2 (nyata): topik model/citra/data klinis paru.
+const DOC_LUNG = [
+  'Machine learning diterapkan untuk mendeteksi penyakit paru-paru dari citra rontgen dada.',
+  'Model klasifikasi dilatih memakai ribuan citra yang berlabel oleh dokter spesialis.',
+  'Evaluasi model memakai metrik akurasi, sensitivitas, dan spesifisitas pada data uji.',
+  'Dataset tidak seimbang dapat menimbulkan bias pada hasil prediksi kelompok minoritas.',
+  'Integrasi model ke alur kerja klinis memerlukan validasi prospektif dan pemantauan.',
 ].join(' ');
 
 function mkRes() {
@@ -83,6 +101,14 @@ async function run(key, doc, isAnimal) {
 
 (async function () {
   console.log('MATERIAL LIVE (butuh internet)');
+  // Tanpa key: lewati, jangan paksa hijau. Provider yang dikonfigurasi tapi
+  // tidak merespons = kegagalan (itu bug), key yang tidak ada = tidak diuji.
+  const hasKeys = !!(process.env.GEMINI_API_KEY || process.env.GROQ_API_KEY);
+  if (!hasKeys) {
+    console.log('  DILEWATI: GEMINI_API_KEY / GROQ_API_KEY tidak diset.');
+    console.log('  (di CI, tambahkan secret bila ingin menguji jalur provider)');
+    process.exit(0);
+  }
   // Kontrak error harus tetap berlaku.
   let r = mkRes();
   await MATERIAL({ method: 'POST', body: { v: 1, hash: sha('beda'), canonicalText: DOC_RABBIT } }, r);
@@ -93,6 +119,40 @@ async function run(key, doc, isAnimal) {
 
   await run('kelinci', DOC_RABBIT, true);
   await run('perpajakan', DOC_TAX, false);
+
+  // ---- SEMANTIC: embedding sungguhan (bukan skor diinjeksi) ----
+  // Lewati kalau tidak ada key / EMBEDDING_ENABLED=false: semantic yang
+  // tidak aktif harus dilaporkan, bukan dianggap lulus diam-diam.
+  console.log('\n=== 3. semantic similarity (embedding nyata) ===');
+  if (!process.env.GEMINI_API_KEY || String(process.env.EMBEDDING_ENABLED || 'true').toLowerCase() === 'false') {
+    console.log('  DILEWATI: tidak ada GEMINI_API_KEY atau EMBEDDING_ENABLED=false.');
+    console.log('  Di produksi, api/material.js mengirim semanticMode; kalau fallback,');
+    console.log('  user melihat warning bahwa relevansi hanya dari pencocokan kata.');
+  } else {
+    const rmk = mkRes();
+    await MATERIAL({ method: 'POST', body: { v: 1, hash: sha(DOC_LUNG), canonicalText: DOC_LUNG } }, rmk);
+    const bmk = rmk.body || {};
+    console.log('  semanticMode   : ' + bmk.semanticMode + (bmk.embeddingModel ? ' (' + bmk.embeddingModel + ')' : ''));
+    console.log('  confidence     : ' + bmk.retrievalConfidence);
+    ok(bmk.semanticMode === 'embedding', 'semantic AKTIF (bukan fallback)', String(bmk.semanticMode));
+    (bmk.materials || []).slice(0, 4).forEach((m) => {
+      console.log('   - rel=' + m.relevance + ' conf=' + m.confidence +
+        ' sem=' + (m.signals && m.signals.semantic) + ' | ' + String(m.title).slice(0, 56));
+    });
+    // CASE 2 sungguhan: judul tanpa kata "model" tetap boleh lolos.
+    const paru = (bmk.materials || []).filter((m) => /paru|toraks|rontgen|tuberculosis/i.test(m.title));
+    ok(paru.length > 0, 'CASE 2 (nyata): paper paru lolos walau judul tanpa kata model',
+      paru.length + ' dari ' + (bmk.materials || []).length);
+    // CASE 1 sungguhan: tidak boleh ada materi yang cuma menyinggung topik.
+    const singleton = (bmk.materials || []).filter((m) =>
+      m.signals && m.signals.semantic !== undefined && m.signals.semantic < 0.62);
+    ok(singleton.length === 0, 'tidak ada materi dengan semantic di bawah ambang',
+      singleton.length + ' lolos');
+    (bmk.materials || []).forEach((m) => {
+      ok(!!m.confidence && !!m.signals,
+        'materi punya confidence + rincian sinyal', String(m.title).slice(0, 30));
+    });
+  }
 
   console.log('');
   if (failures.length) {

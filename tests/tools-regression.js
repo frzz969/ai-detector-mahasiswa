@@ -201,6 +201,89 @@ console.log('CASE E - sumber relevance lemah DITOLAK meski sitasi tinggi');
 
 // ---------- Ringkasan ----------
 console.log('');
+// ================= CASE 1-6: SEMANTIC RELEVANCE =================
+// Sinyal utama = semantic similarity (embedding). Diuji OFFLINE dengan skor
+// semantic DI-INJEKSI supaya kontrak scoring bisa dijaga tanpa jaringan.
+// Test semantic sungguhan (embedding Gemini) ada di tests/material-live.js.
+console.log('CASE 1-6 - semantic relevance (skor diinjeksi, offline)');
+const SEM_DOC_PARU = [
+  'Machine learning diterapkan untuk mendeteksi penyakit paru-paru dari citra rontgen dada.',
+  'Model klasifikasi dilatih memakai ribuan citra yang berlabel oleh dokter spesialis.',
+  'Evaluasi model memakai metrik akurasi, sensitivitas, dan spesifisitas pada data uji.',
+  'Dataset tidak seimbang dapat menimbulkan bias pada hasil prediksi kelompok minoritas.',
+].join(' ');
+const SEM_DOC_KELINCI = [
+  'Kelinci termasuk hewan herbivora yang telah lama domesticated di Indonesia.',
+  'Sistem pencernaan kelinci bergantung pada fermentasi selulosa di usus besar caecum.',
+  'Kebutuhan nutrisi kelinci dipenuhi oleh hijauan dan Timothy hay agar mikrobiota caecum seimbang.',
+  'Penyakit yang umum muncul pada kelinci adalah pasteurellosis, coccidiosis, dan snuffles.',
+].join(' ');
+
+// Skor semantic nyata yang terukur (embedding Gemini; lihat material-live.js):
+// dokumen kelinci vs judul relevan 0.74-0.80, vs tidak relevan 0.51-0.57.
+function withSemantic(map) { return { mode: 'embedding', scores: map }; }
+function cand(title, id) {
+  return { title: title, venue: 'Jurnal Uji', doi: id, tier: 'Jurnal/paper', citations: 20, year: 2023 };
+}
+function semKey(c) { return MATERIAL.candKey(c); }
+
+// CASE 1: sumber hanya menyebut entitas sebagai objek sampingan.
+{
+  const p = MATERIAL.buildProfile(SEM_DOC_KELINCI);
+  const a = cand('Perancangan Sistem Informasi Penjualan Hewan Peliharaan Kelinci', 'c1a');
+  const b = cand('GASTRONOMI MAKANAN BETAWI SEBAGAI IDENTITAS BUDAYA DAERAH', 'c1b');
+  const sel = MATERIAL.selectMaterials([a, b], p,
+    { semantic: withSemantic({ [semKey(a)]: 0.71, [semKey(b)]: 0.55 }) });
+  ok(sel.materials.length === 0, 'CASE 1 entitas-sampingan DITOLAK (walaupun semantic 0.71)', 'lolos: ' + sel.materials.length);
+}
+
+// CASE 2: paper relevan dengan terminologi berbeda.
+{
+  const p = MATERIAL.buildProfile(SEM_DOC_PARU);
+  const target = cand('Diagnosis Kanker Paru-paru Berbasis Data Klinis: Evaluasi Performa Algoritma', 'c2a');
+  const off = cand('Reformasi Transportasi Umum sebagai Solusi Kemacetan di Kota Besar', 'c2b');
+  const sel = MATERIAL.selectMaterials([target, off], p,
+    { semantic: withSemantic({ [semKey(target)]: 0.77, [semKey(off)]: 0.51 }) });
+  ok(sel.materials.length === 1 && sel.materials[0].title === target.title,
+    'CASE 2 paper paru LOLOS walau judulnya tidak memuat kata model', 'lolos: ' + sel.materials.length);
+  ok(!sel.materials.some((m) => m.title === off.title), 'CASE 2 paper tak relevan ditolak');
+}
+
+// CASE 3: satu keyword sama, semantic moderat tanpa dukungan lexical.
+{
+  const p = MATERIAL.buildProfile(SEM_DOC_KELINCI);
+  const only = cand('Studi Kelinci dan Domba', 'c3');
+  const sc = MATERIAL.scoreCandidate(only, p, withSemantic({ [semKey(only)]: 0.63 }));
+  ok(sc.passes === false, 'CASE 3 satu keyword + semantic 0.63 tanpa breadth/context DITOLAK',
+    'semantic: ' + sc.semantic + ', passes: ' + sc.passes);
+}
+
+// CASE 4: semua kandidat semantic rendah -> kosong.
+{
+  const p = MATERIAL.buildProfile(SEM_DOC_KELINCI);
+  const a = cand('Reformasi Transportasi Umum Kota Besar', 'c4a');
+  const b = cand('Kajian Ekonomi PerDense', 'c4b');
+  const sel = MATERIAL.selectMaterials([a, b], p,
+    { semantic: withSemantic({ [semKey(a)]: 0.50, [semKey(b)]: 0.52 }) });
+  ok(sel.materials.length === 0, 'CASE 4 semua semantic rendah -> EMPTY RESULT', 'lolos: ' + sel.materials.length);
+}
+
+// CASE 5: semantic tinggi, lexical rendah -> tetap boleh lolos.
+{
+  const p = MATERIAL.buildProfile(SEM_DOC_PARU);
+  const target = cand('Resevaluasi Radiograf Toraks dengan Jaringan Syaraf Dalam', 'c5');
+  const sc = MATERIAL.scoreCandidate(target, p, withSemantic({ [semKey(target)]: 0.74 }));
+  ok(sc.passes === true, 'CASE 5 semantic tinggi (0.74) + lexical rendah tetap LOLOS',
+    'semantic: ' + sc.semantic + ', lexical: ' + sc.lexical);
+}
+
+// CASE 6: fallback leksikal harus dilaporkan, bukan diam-diam.
+{
+  const p = MATERIAL.buildProfile(SEM_DOC_KELINCI);
+  const sel = MATERIAL.selectMaterials([cand('Klasifikasi dan kebutuhan nutrisi kelinci rumah', 'c6')], p, {});
+  ok(sel.semanticMode === 'fallback', 'fallback leksikal dilaporkan lewat semanticMode', sel.semanticMode);
+}
+
 if (failures.length) {
   console.log('REGRESSION GAGAL (' + failures.length + '):');
   failures.forEach((f) => console.log(' - ' + f));

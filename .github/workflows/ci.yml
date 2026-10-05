@@ -1,0 +1,64 @@
+name: CI
+
+# Mandat: regression suite jalan otomatis tiap push/PR; kalau ada yang gagal,
+# deploy harus berhenti. Test TIDAK boleh diubah hanya supaya hijau.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  regression:
+    name: regression suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: syntax check (node --check semua file)
+        run: |
+          for f in js/*.js js/ai/*.js api/*.js tests/*.js; do
+            node --check "$f" || exit 1
+          done
+
+      - name: detector + humanizer smoke
+        run: node tests/faraztest.js
+
+      - name: tools regression (CASE A-E)
+        run: node tests/tools-regression.js
+
+      - name: domain independence (4 bidang)
+        run: node tests/domain-independence.js
+
+      - name: render smoke
+        run: node .slim/deepwork/benchmarks/smoke-render.js
+
+      - name: material live (skip graceful tanpa key)
+        run: node tests/material-live.js
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+
+  # Gerbang terpisah. Sengaja TIDAK dipakai sebagai syarat deploy:
+  # skor AI belum terbukti jadi diskriminator (exit 1 = belum dipercaya).
+  # Jangan lowering standar supaya CI hijau.
+  ai-trust:
+    name: AI trust (separate gate, not blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ secrets.GEMINI_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: ukur skor AI vs baseline lokal
+        continue-on-error: true
+        run: node tests/ai-live-eval.js 6
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}

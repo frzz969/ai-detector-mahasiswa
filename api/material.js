@@ -16,7 +16,10 @@
 // ============================================================
 
 const crypto = require('crypto');
-const { SUPPORTED_V, MAX_CHARS } = require('./config');
+const {
+  SUPPORTED_V, MAX_CHARS, getKeys,
+  EMBEDDING_MODEL, EMBEDDING_ENABLED, EMBEDDING_TIMEOUT_MS,
+} = require('./config');
 
 const TOTAL_BUDGET_MS = 10000;
 const UA = 'FarazDetectorAI/1.0 (pencari materi akademik; kontak: faraz-detector@example.com)';
@@ -272,17 +275,171 @@ function numOrNull(x) {
   return Number.isFinite(n) ? n : null;
 }
 
+// ---- SEMANTIC SIMILARITY (sinyal UTAMA) ----
+// Gemini embeddings (gemini-embedding-001) via batchEmbedContents: 1 panggilan
+// untuk 1 dokumen + N kandidat. Kalau key/model tidak tersedia atau gagal,
+// kembalikan null -> pipeline jatuh ke mode leksikal dan melaporkannya lewat
+// `semanticMode` (JANGAN diam-diam fallback; lihat validation-rules §2).
+const EMB_MAX_CHARS = 1800;
+function cosine(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return 0;
+  let dot = 0, na = 0, nb = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    na += a[i] * a[i];
+    nb += b[i] * b[i];
+  }
+  const den = Math.sqrt(na) * Math.sqrt(nb);
+  return den ? dot / den : 0;
+}
+
+// Ringkasan teks user untuk di-embed: kalimat paling padat topik (bukan
+// 30k karakter mentah, dan bukan cuma 600 karakter pertama).
+function topicDigest(text, profile, maxChars) {
+  const cap = maxChars || EMB_MAX_CHARS;
+  const sents = splitSents(String(text == null ? '' : text));
+  const topicTerms = (profile && profile.topics ? profile.topics : []).map((t) => t.term);
+  const ranked = sents.map((s, i) => {
+    const low = ' ' + s.toLowerCase() + ' ';
+    let hit = 0;
+    topicTerms.forEach((t) => { if (low.indexOf(t) !== -1) hit++; });
+    return { i: i, s: s, hit: hit, pos: i };
+  });
+  ranked.sort((a, b) => (b.hit - a.hit) || (a.pos - b.pos));
+  const picked = [];
+  let len = 0;
+  for (let k = 0; k < ranked.length && len < cap; k++) {
+    if (ranked[k].hit === 0 && picked.length >= 3) continue;
+    picked.push(ranked[k]);
+    len += ranked[k].s.length + 1;
+    if (picked.length >= 8) break;
+  }
+  picked.sort((a, b) => a.pos - b.pos);
+  const digest = picked.map((p) => p.s).join(' ').trim();
+  const terms = topicTerms.slice(0, 6).join(', ');
+  return cleanStr(digest + (terms ? ' Topik: ' + terms : ''), cap);
+}
+
+// Kunci key per-teks (dipakai untuk mengaitkan embedding kandidat).
+function candKey(m) {
+  const d = cleanStr(m && m.doi, 200).toLowerCase();
+  if (d) return 'doi:' + d;
+  const u = cleanStr(m && m.url, 300).toLowerCase();
+  if (u) return 'url:' + u;
+  return 't:' + normTitleKey(m && m.title);
+}
+
+// embedBatch(texts) -> { vectors } | { error: 'alasan' } (tanpa diam-diam).
+// Dipecah jadi chunk dan dijalankan PARALEL: 1 panggilan berisi 50 kandidat
+//_require_ ~7 detik (terukur), sedangkan fan-out sudah memakai ~10 detik.
+// Vercel (function 10 dtk) tidak akan tahan satu panggilan besar, jadi
+// chunk 25 dipakai: wall time ~ sama dengan satu chunk, bukan dijumlahkan.
+const EMB_CHUNK = 25;
+async function embedBatch(texts) {
+  const list = (Array.isArray(texts) ? texts : []).filter((t) => typeof t === 'string' && t.trim());
+  if (!list.length) return { error: 'tidak ada teks' };
+  if (!EMBEDDING_ENABLED) return { error: 'EMBEDDING_ENABLED=false' };
+  const keys = getKeys();
+  if (!keys.gemini) return { error: 'GEMINI_API_KEY tidak diset' };
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
+    encodeURIComponent(EMBEDDING_MODEL) + ':batchEmbedContents?key=' + encodeURIComponent(keys.gemini);
+
+  const chunks = [];
+  for (let i = 0; i < list.length; i += EMB_CHUNK) chunks.push(list.slice(i, i + EMB_CHUNK));
+  const call = (chunk) => {
+    const requests = chunk.map((t) => ({
+      model: 'models/' + EMBEDDING_MODEL,
+      content: { parts: [{ text: String(t).slice(0, EMB_MAX_CHARS) }] },
+    }));
+    return fetchWithTimeout(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requests: requests }),
+    }, EMBEDDING_TIMEOUT_MS).then((r) => {
+      if (!r.ok) return { error: 'HTTP ' + r.status + ' dari provider embedding' };
+      return r.json();
+    });
+  };
+  try {
+    const parts = await Promise.all(chunks.map(call));
+    const vectors = [];
+    for (const p of parts) {
+      if (!p || p.error) return { error: p && p.error ? p.error : 'respons embedding kosong' };
+      const embs = Array.isArray(p.embeddings) ? p.embeddings : [];
+      const rows = embs.map((e) => (e && (e.values || (e.embedding && e.embedding.values))) || null);
+      if (rows.some((v) => !Array.isArray(v))) return { error: 'respons embedding tidak lengkap' };
+      rows.forEach((v) => vectors.push(v));
+    }
+    if (vectors.length !== list.length) return { error: 'jumlah embedding tidak lengkap' };
+    return { vectors: vectors };
+  } catch (e) {
+    return { error: (e && e.code === 'TIMEOUT') ? 'timeout embedding' : ('gagal: ' + String((e && e.message) || e).slice(0, 80)) };
+  }
+}
+
+// Skor semantic untuk tiap kandidat: { mode, scores, reason }.
+// scores keyed oleh candKey() supaya tidak bergantung urutan.
+async function semanticScores(canonicalText, profile, candidates) {
+  const list = (Array.isArray(candidates) ? candidates : []).filter(Boolean);
+  if (!list.length) return { mode: 'fallback', reason: 'tidak ada kandidat', scores: {} };
+  const keys = list.map(candKey);
+  const seen = {};
+  const uniqIdx = [];
+  keys.forEach((k, i) => {
+    if (seen[k]) return;
+    seen[k] = 1;
+    uniqIdx.push(i);
+  });
+  const texts = [topicDigest(canonicalText, profile)].concat(uniqIdx.map((i) => sourceText(list[i])));
+  const res = await embedBatch(texts);
+  if (!res.vectors) return { mode: 'fallback', reason: res.error || 'embedding tidak tersedia', scores: {} };
+  const docVec = res.vectors[0];
+  const scores = {};
+  uniqIdx.forEach((srcIdx, k) => {
+    scores[keys[srcIdx]] = cosine(docVec, res.vectors[k + 1]);
+  });
+  return { mode: 'embedding', model: EMBEDDING_MODEL, scores: scores };
+}
+
 // ---- Fan-out per sumber (fail-soft: lempar Error → ditampung jadi warnings) ----
+
+// Abstrak OpenAlex disimpan sebagai inverted index (kata -> posisi). Kita
+// susun balik supaya bisa dipakai semantic/lexical scoring (hanya judul
+// selalu insufficient: judul pendek,cosine antar topik merk kokoh ~0.50).
+function openAlexAbstract(inv) {
+  if (!inv || typeof inv !== 'object') return '';
+  const pairs = [];
+  Object.keys(inv).forEach((w) => {
+    const ps = inv[w];
+    if (Array.isArray(ps)) ps.forEach((p) => { if (typeof p === 'number') pairs.push([p, w]); });
+  });
+  pairs.sort((a, b) => a[0] - b[0]);
+  return cleanStr(pairs.map((p) => p[1]).join(' '), 1200);
+}
+
+// Abstrak Crossref = JATS XML; buang tagnya.
+function crossrefAbstract(x) {
+  if (typeof x !== 'string' || !x.trim()) return '';
+  return cleanStr(x.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '), 1200);
+}
+
+// Teks representasi sumber: judul + abstrak (bukan judul saja).
+function sourceText(m) {
+  if (!m) return '';
+  return cleanStr([cleanStr(m.title, 300), cleanStr(m.abstract, 1200)].join('. '), 1500);
+}
 
 async function srcOpenAlex(q) {
   const url = 'https://api.openalex.org/works?search=' + encodeURIComponent(q) +
-    '&per-page=10&select=id,title,doi,publication_year,cited_by_count&mailto=' + encodeURIComponent(MAILTO);
+    '&per-page=10&select=id,title,doi,publication_year,cited_by_count,abstract_inverted_index' +
+    '&mailto=' + encodeURIComponent(MAILTO);
   const r = await fetchWithTimeout(url, { headers: { 'User-Agent': UA } }, 8000);
   if (!r.ok) throw new Error('OpenAlex HTTP ' + r.status);
   const j = await r.json();
   const items = Array.isArray(j.results) ? j.results : [];
   return items.map((w) => ({
     title: cleanStr(w.title, 300),
+    abstract: openAlexAbstract(w.abstract_inverted_index),
     authors: [],
     year: numOrNull(w.publication_year),
     venue: 'OpenAlex',
@@ -296,7 +453,7 @@ async function srcOpenAlex(q) {
 
 async function srcCrossref(q) {
   const url = 'https://api.crossref.org/works?query.bibliographic=' + encodeURIComponent(q) +
-    '&rows=5&select=DOI,title,publisher,published,is-referenced-by-count&mailto=' + encodeURIComponent(MAILTO);
+    '&rows=5&select=DOI,title,publisher,published,is-referenced-by-count,abstract&mailto=' + encodeURIComponent(MAILTO);
   const r = await fetchWithTimeout(url, { headers: { 'User-Agent': UA } }, 8000);
   if (!r.ok) throw new Error('Crossref HTTP ' + r.status);
   const j = await r.json();
@@ -311,7 +468,7 @@ async function srcCrossref(q) {
     } catch (_) { year = null; }
     const doi = cleanStr(w.DOI, 200);
     return {
-      title, authors: [], year,
+      title, abstract: crossrefAbstract(w.abstract), authors: [], year,
       venue: cleanStr(w.publisher, 200),
       doi, url: doi ? 'https://doi.org/' + doi : '',
       citations: numOrNull(w['is-referenced-by-count']),
@@ -458,16 +615,42 @@ function weightedCoverage(items, haystack) {
   return total > 0 ? hit / total : 0;
 }
 
+// Bobot blended (starting point, KALIBRASI DIUKUR - bukan ground truth):
+//   semantic 0.55 (UTAMA) + lexical 0.25 + context 0.20, lalu x quality (tier).
+// Entitas tidak masuk bobot (sudah di dalam context + tampil di alasan),
+// supaya entitas saja tidak pernah menaikkan relevansi.
+const B_SEM = 0.55, B_LEX = 0.25, B_CTX = 0.20;
+// Ambang semantic. Diukur (dokumen kelinci vs judul): relevan 0.74-0.80,
+// tidak relevan 0.51-0.57. Dua tingkat:
+//  - SEM_HIGH: semantic saja sudah cukup sah (judul tak memuat kata kunci teks,
+//    tapi isinya relevan - regression CASE 2/5).
+//  - SEM_GATE + dukungan lexical: semantic sedang + kandidat juga cocok
+//    satu topik/konteks teks. Mencegah "sekadar|party yang menyinggung topik"
+//    lolos hanya karena embedding-nya mirip.
+// Catatan jujur: "Perancangan Sistem Informasi ... Kelinci" (sem 0.711) vs
+// "Rabbit Haemorrhagic Disease pada Kelinci" (sem 0.744) hanya beda 0.03 -
+// itu di bawah noise embedding, TIDAK bisa dipisahkan oleh ambang. Butuh
+// sinyal lain (rerank LLM) untuk memisahkannya.
+const SEM_GATE = 0.62;
+const SEM_HIGH = 0.72;
+// Relative ranking: kalau skor teratas datar (margin kecil), retrieval tidak
+// yakin -> confidence turun, dan kalau di bawah MIN_TOP_CONF tidak ada hasil.
+const CLUSTER_MARGIN = 0.06;
+const MIN_TOP_CONF = 0.55;
+// Skor teratas di atas ini = retrieval yakin meski skor lain berdekatan.
+const CONF_TOP_HIGH = 0.75;
+
 function sat(x, full) { return full > 0 ? Math.max(0, Math.min(1, x / full)) : 0; }
 
-// scoreCandidate(candidate, profile) -> skor relevansi + alasan spesifik.
-// relevance = semantic*0.45 + topic*0.25 + context*0.20 + entity*0.10 (x quality)
-//   semantic = berapa bobot topik UTAMA teks yang tertutup kandidat (apakah sumber
-//              ini membahas isi teks, bukan sekadar menyebut kata kuncinya)
-//   topic    = BREADTH: berapa topik berbeda yang tertutup (bukan cuma 1)
-//   context  = bobot ko-occurrence konteks yang ikut tertutup
-//   entity   = entitas yang cocok (bobot kecil; entitas saja tidak sah relevansi)
-function scoreCandidate(candidate, profile) {
+// scoreCandidate(candidate, profile, sem) -> skor relevansi + alasan spesifik.
+// sem = hasil semanticScores(): { mode, scores }. boleh null (mode fallback).
+// relevance = semantic*0.55 + lexical*0.25 + context*0.20  (x quality tier)
+//   semantic = cosine embedding dokumen <-> (judul + abstrak)  [SINYAL UTAMA]
+//   lexical  = berapa bobot topik UTAMA teks yang tertutup kandidat
+//   context  = cakupan ko-occurrence konteks
+// Kata kunci TIDAK lagi jadi penentu: kandidat boleh lolos lewat semantic
+// walau judulnya tidak memuat satu pun kata kunci teks (regression CASE 2/5).
+function scoreCandidate(candidate, profile, sem) {
   const p = profile || {};
   const topics = p.topics || [];
   const context = p.context || [];
@@ -478,6 +661,7 @@ function scoreCandidate(candidate, profile) {
   const hay = (' ' + title + ' ' + venue + ' ').toLowerCase();
 
   const candToks = Array.from(new Set(contentToks(title + ' ' + venue)));
+  // Presisi hanya untuk audit (tidak dipakai gerbang).
   const matchedCand = candToks.filter((t) => !!(p.termFreq && p.termFreq.has(t)));
   const precision = candToks.length ? matchedCand.length / candToks.length : 0;
   const matchedTopics = topics.filter((t) => hay.indexOf(t.term) !== -1);
@@ -485,75 +669,95 @@ function scoreCandidate(candidate, profile) {
   const topicRecall = weightedCoverage(topics, hay);
   const ctxCoverage = weightedCoverage(context, hay);
   // Breadth: topik yang cocok DAN bukan hipernim generik (hewan/ternak/...).
-  // Pengecualian: bila hipernim itu justru topik jangkar/utama dokumen, tetap
-  // dihitung (user yang menulis tentang peternakan tidak boleh dirugikan).
+  // Pengecualian: hipernim yang jadi topik jangkar dokumen tetap dihitung.
   const breadthTopics = matchedTopics.filter((t) =>
     !GENERIC_NOUNS.has(t.term) || anchors.indexOf(t.term) !== -1);
 
-  const semantic = sat(topicRecall, RECALL_FULL);
-  const topic = sat(breadthTopics.length, TOPIC_BREADTH_FULL);
-  // Konteks: coverage ko-occurrence. Bila konteks tidak terukur (tidak ada term
-  // ko-occurrence) ATAU hampir tidak ada yang cocok (< CTX_NEUTRAL_BELOW),
-  // komponen = NETRAL: satu term konteks yang tidak muncul BUKAN bukti sumber
-  // tidak relevan. Kalau dipaksa 0, sumber on-topik lintasbahasa terbuang hanya
-  // karena kosakata teknisnya berbeda (terukur: relevansi 0,62 vs 0,74).
-  // CATATAN: gate memakai ctxCoverage (mentah), bukan contextScore (yang bisa netral).
+  const semanticOn = !!(sem && sem.mode === 'embedding' && sem.scores);
+  const rawSem = semanticOn ? sem.scores[candKey(candidate)] : 0;
+  const semantic = semanticOn && typeof rawSem === 'number'
+    ? Math.max(0, Math.min(1, rawSem)) : 0;
+  const lexical = sat(topicRecall, RECALL_FULL);
+  // Konteks tidak terukur ATAU hampir tidak ada yang cocok -> komponen NETRAL,
+  // bukan sinyal negatif (satu term konteks yang tidak muncul bukan kontra-bukti).
   const contextScore = (context.length === 0 || ctxCoverage < CTX_NEUTRAL_BELOW)
     ? ENT_NEUTRAL
     : sat(ctxCoverage, CTX_FULL);
   const matchedEntities = entities.filter((e) => hay.indexOf(e) !== -1);
-  const entityScore = entities.length === 0
-    ? ENT_NEUTRAL
-    : sat(matchedEntities.length, ENT_FULL);
 
   const tier = (candidate && candidate.tier) || 'Umum';
   const quality = TIER_QUALITY[tier] != null ? TIER_QUALITY[tier] : TIER_QUALITY.Umum;
-  const raw = W_SEM * semantic + W_TOPIC * topic + W_CTX * contextScore + W_ENT * entityScore;
+  let raw;
+  if (semanticOn) {
+    raw = B_SEM * semantic + B_LEX * lexical + B_CTX * contextScore;
+  } else {
+    // Fallback leksikal: bobot LAMA (tervalidasi) supaya hasil tidak diam-diam
+    // berubah saat embedding mati. Mode dilaporkan lewat semanticMode.
+    raw = W_SEM * lexical
+      + W_TOPIC * sat(breadthTopics.length, TOPIC_BREADTH_FULL)
+      + W_CTX * contextScore
+      + W_ENT * (entities.length === 0 ? ENT_NEUTRAL : sat(matchedEntities.length, ENT_FULL));
+  }
   const relevance = round2(Math.max(0, Math.min(1, raw * quality)));
 
-// Alasan SPESIFIK (wajib menyebut term yang cocok; kalau tidak bisa → tolak).
+  // Alasan SPESIFIK (wajib menyebut term yang cocok; kalau tidak bisa -> tolak).
   const bits = [];
+  if (semanticOn) bits.push('makna: ' + round2(semantic));
   if (matchedTopics.length) bits.push('topik: ' + matchedTopics.slice(0, 3).map((t) => t.term).join(', '));
   if (matchedContext.length) bits.push('konteks: ' + matchedContext.slice(0, 2).map((c) => c.term).join(', '));
   if (matchedEntities.length) bits.push('entitas: ' + matchedEntities.slice(0, 2).join(', '));
   const reason = bits.join('; ');
 
-  // Gerbang keras: skor numerik BUKAN satu-satunya syarat. Sumber yang hanya
-  // cocok SATU kata kunci gagal di sini walau sitasinya 9999. Dua jalur sah:
-  //   (a) menutup >= 2 topik non-hipernim, ATAU
-  //   (b) menutup konteks/subtopik dengan kuat (mis. "kebutuhan + klasifikasi")
-  //       - terukur: judul "Klasifikasi dan kebutuhan nutrisi kelinci rumah"
-  //         hanya cocok 1 topik, tapi context 0,95 -> ini tidak boleh ditolak.
-  // CATATAN: syarat "wajib cocok topik utama (top-1)" DIJELLAHKAN. Terukur
-  // di produksi: itu menolak paper "Diagnosis Kanker Paru-paru Berbasis Data
-  // Klinis" (topik teks = model,paru,citra,klinis; judulnya tidak menyebut
-  // "model") sementara tidak memperbaiki apa pun. Penyebab paper politik
-  // menduduki 2 teratas bukan gerbang, tapi topik_generik di GENERIC_TERMS.
+  // Gate leksikal (tidak dikembalikan ke "wajib cocok topik utama" - sudah
+  // terbukti false-negative, lihat riwayat commit).
   const gateAnchor = anchors.some((a) => hay.indexOf(a) !== -1);
   const gateBreadth = breadthTopics.length >= MIN_TOPIC_BREADTH;
   const gateContext = ctxCoverage >= CTX_GATE;
-  const gateReason = !!reason;
-  const passes = gateAnchor && (gateBreadth || gateContext) && gateReason;
+  const lexicalPass = gateAnchor && (gateBreadth || gateContext) && !!reason;
+  // Jalur kedua (semantic): semantic tinggi sendiri sudah sah relevansi walau
+  // judulnya tidak memuat kata kunci teks (regression CASE 2 dan CASE 5).
+// Semantic sedang hanya sah bila kandidat juga punya dukungan lexical
+  // (topik atau konteks) - mencegah sumber yang "hanya menyinggung" topik.
+  const semanticStrong = semanticOn && semantic >= SEM_HIGH && hasText(candidate);
+  const semanticMid = semanticOn && semantic >= SEM_GATE && hasText(candidate)
+    && (gateBreadth || gateContext);
+  const semanticPass = semanticStrong || semanticMid;
+  const passes = lexicalPass || semanticPass;
 
   return {
-    relevance, semantic: round2(semantic), topic: round2(topic),
-    context: round2(contextScore), contextCoverage: round2(ctxCoverage), entity: round2(entityScore), quality,
-    // Audit: presisi & recall ditampilkan di "Detail teknis", bukan dipakai gate.
+    relevance,
+    signals: {
+      semantic: round2(semantic), lexical: round2(lexical),
+      context: round2(contextScore), quality: quality,
+    },
+    semantic: round2(semantic), lexical: round2(lexical),
+    context: round2(contextScore), contextCoverage: round2(ctxCoverage),
     precision: round2(precision), topicRecall: round2(topicRecall),
     topicBreadth: breadthTopics.length, topicMatched: matchedTopics.length,
     reason, matchedTopics: matchedTopics.map((t) => t.term), matchedEntities,
+    semanticMode: semanticOn ? 'embedding' : 'fallback',
     passes,
-    gates: { anchor: gateAnchor, breadth: gateBreadth, context: gateContext, reason: gateReason },
+    gates: {
+      anchor: gateAnchor, breadth: gateBreadth, context: gateContext,
+      semantic: semanticPass, lexical: lexicalPass, reason: !!reason,
+    },
   };
 }
 
+// Sumber tanpa judul tidak bisa dipakai sebagai materi terkait.
+function hasText(m) { return !!(m && cleanStr(m.title, 80)); }
+
 // selectMaterials(candidates, profile, opts) — MURNI (tanpa fetch) supaya bisa
 // diuji offline dengan kandidat mock. Dedupe + ambang + gate + urutan.
+// selectMaterials(candidates, profile, opts) - MURNI (tanpa fetch) supaya bisa
+// diuji offline dengan kandidat mock. Dedupe + ambang + gate + urutan.
+// opts.semantic = { mode, scores } dari semanticScores().
 function selectMaterials(candidates, profile, opts) {
   const o = opts || {};
   const threshold = typeof o.minRelevance === 'number' ? o.minRelevance : MIN_SOURCE_RELEVANCE;
   const cap = typeof o.max === 'number' && o.max > 0 ? Math.round(o.max) : MAX_RESULTS;
   const list = Array.isArray(candidates) ? candidates : [];
+  const sem = o.semantic || null;
   const seen = { doi: new Set(), url: new Set(), title: new Set() };
   const materials = [];
   let rejectedLowRelevance = 0, rejectedNoReason = 0, rejectedDuplicate = 0, rejectedGate = 0;
@@ -565,7 +769,7 @@ function selectMaterials(candidates, profile, opts) {
     const kUrl = cleanStr(m.url, 300).toLowerCase();
     if ((kDoi && seen.doi.has(kDoi)) || (kUrl && seen.url.has(kUrl)) ||
         (kTitle && seen.title.has(kTitle))) { rejectedDuplicate++; return; }
-    const sc = scoreCandidate(m, profile);
+    const sc = scoreCandidate(m, profile, sem);
     if (!sc.passes) {
       if (!sc.gates.reason || sc.reason === '') rejectedNoReason++;
       else rejectedGate++;
@@ -582,6 +786,8 @@ function selectMaterials(candidates, profile, opts) {
       citations: typeof m.citations === 'number' ? m.citations : null,
       tier: m.tier || 'Umum', source: m.source || 'Umum',
       relevance: sc.relevance, relevanceReason: sc.reason,
+      signals: sc.signals,
+      confidence: confidenceOf(sc),
     });
   });
 
@@ -598,11 +804,51 @@ function selectMaterials(candidates, profile, opts) {
     return yb - ya;
   });
 
+  // RELATIVE RANKING: confidence retrieval, bukan sekadar skor absolut.
+  // Contoh dari requirement: 0.84/0.81/0.79/0.42 -> "tiga pertama kuat" (top tinggi
+  // -> percaya). 0.53/0.52/0.51/0.50 -> "tidak cukup yakin" (top rendah DAN
+  // datar) -> tidak menampilkan apa-apa lebih baik daripada 10 yang menyesatkan.
+  const kept = materials.slice(0, cap);
+  let retrievalConfidence = 'tinggi';
+  let trimmedByConfidence = 0;
+  if (!kept.length) {
+    retrievalConfidence = 'rendah';
+  } else {
+    const top = kept[0].relevance;
+    const rest = kept.slice(1).map((x) => x.relevance);
+    const lowRest = rest.length ? Math.min.apply(null, rest) : top;
+    const margin = top - lowRest;
+    if (top >= CONF_TOP_HIGH) {
+      retrievalConfidence = 'tinggi';
+    } else if (top < MIN_TOP_CONF) {
+      retrievalConfidence = 'rendah';
+      trimmedByConfidence = kept.length;
+      kept.length = 0;
+    } else {
+      retrievalConfidence = margin < CLUSTER_MARGIN ? 'rendah' : 'sedang';
+    }
+  }
+
   return {
-    materials: materials.slice(0, cap),
+    materials: kept,
     rejectedLowRelevance, rejectedNoReason, rejectedDuplicate, rejectedGate,
+    trimmedByConfidence,
     threshold,
+    semanticMode: (sem && sem.mode) || 'fallback',
+    retrievalConfidence,
   };
+}
+
+// Confidence per sumber dari kekuatan sinyalnya (bukan dari skor mutlak).
+function confidenceOf(sc) {
+  if (sc.semanticMode === 'embedding') {
+    if (sc.semantic >= 0.7 && sc.lexical >= 0.4) return 'tinggi';
+    if (sc.semantic >= SEM_GATE) return 'sedang';
+    return 'rendah';
+  }
+  if (sc.relevance >= 0.75 && sc.lexical >= 0.6) return 'tinggi';
+  if (sc.relevance >= MIN_SOURCE_RELEVANCE) return 'sedang';
+  return 'rendah';
 }
 
 module.exports = async function handler(req, res) {
@@ -672,37 +918,62 @@ module.exports = async function handler(req, res) {
     });
   }
 
+  // SEMANTIC similarity (sinyal utama) dihitung setelah fan-out: 1 embedding
+  // dokumen + 1 per kandidat (satu panggilan batch). Gagal/tanpa key -> mode
+  // fallback, DILAPORKAN lewat semanticMode (tidak diam-diam; validation-rules 2).
+  const sem = await semanticScores(canonicalText, profile, merged);
+
   // RELEVANCE GATE: saring dulu, baru urutkan. Tidak memaksa jumlah sumber.
-  const sel = selectMaterials(merged, profile, {});
+  const sel = selectMaterials(merged, profile, { semantic: sem });
   const materials = sel.materials;
   const dropped = sel.rejectedLowRelevance + sel.rejectedNoReason + sel.rejectedGate;
   if (!materials.length) {
-    // Empty result state JUJUR — tanpa diisi sumber keyword-match (regression
+    // Empty result state JUJUR - tanpa diisi sumber keyword-match (regression
     // case kelinci: dulu 10 sumber sampah, kini 0 + penjelasan).
     warnings.push('Tidak ditemukan materi yang cukup relevan dengan teks (' +
       sel.rejectedLowRelevance + ' kandidat ditolak: relevansi di bawah ' +
       sel.threshold + '; ' + sel.rejectedGate + ' kandidat ditolak: hanya cocok kata kunci; ' +
-      sel.rejectedNoReason + ' kandidat ditolak: alasan relevansi tidak spesifik) — ' +
-      'sumber yang kemungkinan tidak nyambung tidak ditampilkan.');
+      sel.rejectedNoReason + ' kandidat ditolak: alasan relevansi tidak spesifik' +
+      (sel.trimmedByConfidence ? '; ' + sel.trimmedByConfidence +
+        ' kandidat disembunyikan karena skor teratas tidak cukup tinggi' : '') +
+      ') - sumber yang kemungkinan tidak nyambung tidak ditampilkan.');
   } else if (dropped > 0) {
     warnings.push(dropped + ' kandidat tidak ditampilkan (relevansi di bawah ' + sel.threshold +
-      ' atau hanya cocok kata kunci) — materi terkait bersifat indikasi, perlu ditinjau.');
+      ' atau hanya cocok kata kunci) - materi terkait bersifat indikasi, perlu ditinjau.');
   }
+  if (sel.semanticMode !== 'embedding') {
+    warnings.push('Perbandingan makna (semantic) tidak aktif (' +
+      (sem && sem.reason ? sem.reason : 'alasan tidak diketahui') +
+      ') - relevansi dihitung dari pencocokan kata. Ambil relevansi sebagai indikasi, perlu ditinjau.');
+  }
+
+  const blendTxt = sel.semanticMode === 'embedding'
+    ? 'semantic 0,55 + lexical 0,25 + konteks 0,20'
+    : 'FALLBACK leksikal: lexical 0,45 + topik 0,25 + konteks 0,20 + entitas 0,10';
 
   return send(res, 200, {
     ...base,
     materials, query: main, queries, warnings,
     threshold: sel.threshold,
     topics: profile.topics.map((t) => t.term),
+    semanticMode: sel.semanticMode,
+    embeddingModel: sel.semanticMode === 'embedding' ? EMBEDDING_MODEL : null,
+    retrievalConfidence: sel.retrievalConfidence,
     method: 'pencari materi: profil topik + ' + queries.length + ' kueri, fan-out paralel (' +
-      jobs.map((j) => j[0]).join(', ') + '), gerbang relevansi (ambang ' + sel.threshold +
-      ': semantic 0,45 + topik 0,25 + konteks 0,20 + entitas 0,10) lalu validasi sumber — ' +
-      'hasil terindikasi relevan, perlu ditinjau.',
+      jobs.map((j) => j[0]).join(', ') + '), skor (' + blendTxt + ', ambang ' + sel.threshold +
+      ') lalu validasi sumber; confidence retrieval ' + sel.retrievalConfidence +
+      ' - hasil terindikasi relevan, perlu ditinjau.',
   });
 };
 
 module.exports.MIN_SOURCE_RELEVANCE = MIN_SOURCE_RELEVANCE;
+module.exports.SEM_GATE = SEM_GATE;
 module.exports.buildProfile = buildProfile;
 module.exports.buildQueries = buildQueries;
 module.exports.scoreCandidate = scoreCandidate;
 module.exports.selectMaterials = selectMaterials;
+module.exports.semanticScores = semanticScores;
+module.exports.embedBatch = embedBatch;
+module.exports.topicDigest = topicDigest;
+module.exports.candKey = candKey;
+module.exports.sourceText = sourceText;

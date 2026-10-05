@@ -18,9 +18,17 @@ const PROVIDER_TIMEOUT_MS = 12000; // batas per panggilan provider
 const MAX_RETRY = 1; // 1x coba ulang untuk 429/5xx/timeout saja
 
 // Model dibaca dari env agar bisa diganti tanpa ubah kode.
-// Default sama dengan bot WA (wa-ai-bot-b/config.js).
+// Default sama dengan bot WA (wa-ai-bot-w/config.js).
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 const GROQ_MODEL = process.env.GROQ_MODEL || 'qwen/qwen3.8-27b';
+
+// Embedding untuk semantic relevance di api/material.js (semanticSimilarity
+// jadi sinyal UTAMA; leksikal tetap dipakai sebagai sinyal pendukung).
+// Nama model HARUS persis: "embedding-001"/"text-embedding-404" akan 404.
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'gemini-embedding-001';
+// Set EMBEDDING_ENABLED=false untuk mematikan semantic (jatuh ke leksikal).
+const EMBEDDING_ENABLED = String(process.env.EMBEDDING_ENABLED || 'true').toLowerCase() !== 'false';
+const EMBEDDING_TIMEOUT_MS = 6000;
 
 // Key TIDAK disimpan di sini — hanya dibaca dari env saat dipakai.
 function getKeys() {
@@ -40,5 +48,8 @@ module.exports = {
   MAX_RETRY,
   GEMINI_MODEL,
   GROQ_MODEL,
+  EMBEDDING_MODEL,
+  EMBEDDING_ENABLED,
+  EMBEDDING_TIMEOUT_MS,
   getKeys,
 };
