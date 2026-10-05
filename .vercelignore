@@ -1,0 +1,17 @@
+# File dev-only / repro yang tidak dipakai runtime Vercel.
+# Kode produksi (index.html, js/, *.css, api/) TIDAK di-ignore.
+ai-detector-backup-20260930/
+.slim/
+eval/raw_*.jsonl
+eval/raw_*_stats.json
+eval/dataset.jsonl
+eval/audit_sample.jsonl
+eval/dataset_stats.json
+eval/dev_baseline.json
+eval/test_hashes.txt
+tests/
+dataset/
+docs/
+TODO-PRD-15.txt
+.env*
+*.bak
