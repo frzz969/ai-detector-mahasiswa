@@ -1,0 +1,38 @@
+{
+  "seed": 42,
+  "quotas": {
+    "wiki": 200,
+    "oa": 100,
+    "m4-human": 100,
+    "m4-machine": 100
+  },
+  "dropped": {
+    "wiki:length": 1,
+    "oa:length": 7,
+    "m4:length": 4
+  },
+  "total": 500,
+  "per_cell_split": {
+    "idwiki-20211201|human|dev": 40,
+    "idwiki-20211201|human|test": 40,
+    "idwiki-20211201|human|train": 120,
+    "m4-id-newspaper|human|dev": 20,
+    "m4-id-newspaper|human|test": 20,
+    "m4-id-newspaper|human|train": 60,
+    "m4-id-newspaper|machine|dev": 20,
+    "m4-id-newspaper|machine|test": 20,
+    "m4-id-newspaper|machine|train": 60,
+    "openalex|human|dev": 20,
+    "openalex|human|test": 20,
+    "openalex|human|train": 60
+  },
+  "test_n": 100,
+  "test_hash": "a7a7d6d1eda91c2d33373ea58b5f21b33632861fed803363adf97770f181b538",
+  "audit_n": 100,
+  "inputs": [
+    "eval/raw_wiki.jsonl",
+    "eval/raw_openalex.jsonl",
+    "eval/raw_m4.jsonl"
+  ],
+  "legacy_dataset_used": false
+}

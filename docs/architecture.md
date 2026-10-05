@@ -8,7 +8,7 @@ Aturan audit wajib: `referensi/detector-rules.md`, `referensi/humanizer-rules.md
 
 ```text
 index.html          struktur + semua ID fungsional (script: js/core → js/detector → js/referensi → js/humanizer → js/ai/* → js/main)
-  # ID aktual: btnCheck (rail Cek) · btnSummarize/btnExplain + #aiToolsOut (section #hasil, .hasil-tools; rail-card "Ringkasan" dihapus)
+  # ID aktual: btnCheck (rail Cek) · btnSummarize/btnExplain (tetap di aside.rail card "Ringkasan", index.html:101-105) + #aiToolsOut (pindah ke section #hasil, wrapper .ai-tools-result#aiToolsResult, index.html:116-118)
   # btnCopyHumanize di panel-head #hasil (bukan rail) · #highlight + #sentExplain (klik per kalimat)
   # btnSampleID/btnSampleEN (ghost small) · demo demoAi/demoHuman/demoPct/demoLbl/demoFill/demoText/demoOpen
 style.css           DESKTOP saja (biru langit + putih, full-width)

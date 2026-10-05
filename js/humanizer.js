@@ -263,7 +263,7 @@ $("btnHumanize").onclick = async () => {
   } else {
     msg += `Perubahan${viaAI ? " (via AI)" : ""} tidak memberikan peningkatan yang berarti (estimasi ${pre.score}% → ${post.score}%). Versi asli tetap digunakan.`;
   }
-  if (apiTried && !viaAI) msg += ` (mode lokal — API tidak tersedia: ${apiReason}).`;
+  if (apiTried && !viaAI) msg += ` (mode lokal — tidak terhubung ke internet: ${apiReason}).`;
   msg += ` “Terapkan & cek ulang” untuk pemindaian final yang diukur beneran, bukan ditempel.`;
   $("humanizeStatus").textContent = msg;
   $("humanizeBox").scrollIntoView({ behavior: "smooth", block: "center" });

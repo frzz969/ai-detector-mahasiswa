@@ -18,6 +18,11 @@
 .content-sec h2{font-size:32px}
 #mulai{grid-template-columns:1fr;text-align:center}
 #mulai .hero-cta{justify-content:center}
+/* Output Summarize/Explain di #hasil: rapat + anti-luber di semua lebar ≤1100px
+   (termasuk window 861–1100px tempat viewport desktop-site ±980px mendarat). */
+.ai-tools-result{padding:12px 16px;min-width:0;max-width:100%;overflow-x:clip}
+.ai-tools-result h3{font-size:16px}
+.ai-tools-result #aiToolsOut{font-size:15px;line-height:1.75;overflow-wrap:anywhere;white-space:pre-wrap;min-width:0;max-width:100%}
 /* Accordion + motion polish */
 .det summary{list-style:none}
 .det summary::-webkit-details-marker{display:none}
@@ -96,6 +101,9 @@ aside.rail .rail-card:has(#fileInput){margin-bottom:2px}
 aside.rail .rail-card #btnCheck{grid-column:1/-1;order:1;min-height:54px;font-size:17px;font-weight:800;padding:12px 20px}
 aside.rail #btnApplyHumanize{order:3;font-size:14px;line-height:1.35;padding:10px 12px;min-height:48px;white-space:normal;overflow-wrap:break-word}
 aside.rail #btnHumanize{order:4;font-size:15px;line-height:1.35;padding:10px 12px;min-height:48px;white-space:normal;overflow-wrap:break-word}
+aside.rail #btnSummarize{order:6;font-size:15px;line-height:1.35;padding:10px 12px;min-height:48px;white-space:normal;overflow-wrap:break-word}
+aside.rail #btnExplain{order:7;font-size:15px;line-height:1.35;padding:10px 12px;min-height:48px;white-space:normal;overflow-wrap:break-word}
+aside.rail .rail-card:has(#btnSummarize) p.muted{grid-column:1/-1;min-width:0;order:6}
 aside.rail #btnClear{order:8;font-size:15px;line-height:1.35;padding:10px 12px;min-height:48px;white-space:normal;overflow-wrap:break-word}
 aside.rail #btnPrint{order:9;font-size:14px;line-height:1.35;padding:10px 12px;min-height:48px;white-space:normal;overflow-wrap:break-word}
 aside.rail .rail-card button:disabled{opacity:.8}
@@ -269,6 +277,27 @@ aside.rail #btnClear,aside.rail #btnHumanize,aside.rail #btnApplyHumanize,aside.
 .hero-text{width:62%;max-width:100%}
 .hero-character{left:auto;right:0;top:-8px;width:200px}
 .hero-character img{width:200px}
+}
+/* FIX: HP Chrome "Desktop site" ≈980px layout viewport (meta viewport
+   diabaikan browser) — hanya @media ≤1100px yang kepicu, guard ≤860px
+   (stacking, min-width:0, img wrap) TIDAK jalan. Di window 861–1100px,
+   #mulai sudah 1 kolom (baris 19) tapi .cta-text tanpa min-width:0
+   (grid 1fr = minmax(auto,1fr) → min-content bisa blowout), .cta-imgs
+   tetap flex-row tanpa wrap dengan gambar clamp min 130px (style.css
+   :271-274, tidak bisa shrink), dan .hero-cta tetap row tanpa wrap —
+   hasilnya band overflow/viewport geser saat diskala ke layar HP.
+   Blok ini hanya 861–1100px: kunci wrap + shrink intrinsik.
+   Desktop (>1100px), index.html, dan *.js tidak disentuh. */
+@media(max-width:1100px) and (min-width:861px){
+#mulai{gap:20px;align-items:center;justify-items:center;max-width:100%;overflow-x:clip}
+.cta-text{min-width:0;max-width:100%;width:100%}
+#mulai .cta-text p{margin-left:auto;margin-right:auto;max-width:100%}
+.cta-imgs{width:100%;max-width:100%;min-width:0;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:16px}
+.cta-imgs img{max-width:100%;height:auto;flex:0 1 auto;min-width:0}
+.cta-imgs .mascot-cta,.cta-imgs .kick-cta{width:132px;max-width:38vw}
+#mulai .hero-cta{max-width:100%;min-width:0;flex-wrap:wrap;justify-content:center}
+#mulai .hero-cta .btn-hero{min-width:0;max-width:100%;white-space:normal;text-align:center;overflow-wrap:anywhere}
+.cta-band h2{overflow-wrap:anywhere}
 }
 /* <=860px (cek 768px): kunci CTA di baris 3 di bawah sub, trust-row baris 4. */
 @media(max-width:860px){

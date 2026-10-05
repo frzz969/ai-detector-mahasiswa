@@ -1,0 +1,967 @@
+{
+  "note": "Baseline DEV Fase 3 SLIM — TEST-blind, ambang eksisting 50/75/30, tanpa tuning. js/ read-only.",
+  "split": "dev",
+  "thr_mid": 50,
+  "thr_strong": 75,
+  "n": 100,
+  "n_human": 80,
+  "n_machine": 20,
+  "auc": 0.7425,
+  "accuracy": 0.81,
+  "confusion": {
+    "tp": 1,
+    "tn": 80,
+    "fp": 0,
+    "fn": 19
+  },
+  "fpr_human": 0,
+  "fpr_formal_abstract": {
+    "n": 20,
+    "fpr": 0
+  },
+  "tpr_machine": 0.05,
+  "tpr_genre": {
+    "news": {
+      "n": 20,
+      "tpr": 0.05
+    }
+  },
+  "tpr_lang": {
+    "id": {
+      "n": 20,
+      "tpr": 0.05
+    }
+  },
+  "tpr_bucket": {
+    "pendek<50": {
+      "n": 0,
+      "tpr": null
+    },
+    "sedang50-119": {
+      "n": 0,
+      "tpr": null
+    },
+    "panjang>=120": {
+      "n": 20,
+      "tpr": 0.05
+    }
+  },
+  "fpr_bucket": {
+    "pendek<50": {
+      "n": 0,
+      "fpr": null
+    },
+    "sedang50-119": {
+      "n": 19,
+      "fpr": 0
+    },
+    "panjang>=120": {
+      "n": 61,
+      "fpr": 0
+    }
+  },
+  "med_human": 18,
+  "med_machine": 26.5,
+  "rows": [
+    {
+      "id": "wikih-0012",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 75,
+      "score": 16,
+      "confidence": "sedang",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0179",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 820,
+      "score": 15,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0016",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 120,
+      "score": 41,
+      "confidence": "sedang",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0027",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 98,
+      "score": 23,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0180",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 88,
+      "score": 16,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0102",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 1590,
+      "score": 17,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0155",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 189,
+      "score": 21,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0178",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 172,
+      "score": 20,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0094",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 80,
+      "score": 16,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0137",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 265,
+      "score": 21,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0063",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 86,
+      "score": 15,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0170",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 165,
+      "score": 26,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0013",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 95,
+      "score": 23,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0086",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 92,
+      "score": 23,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0092",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 235,
+      "score": 27,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0163",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 715,
+      "score": 21,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0166",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 165,
+      "score": 20,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0028",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 202,
+      "score": 21,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0068",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 223,
+      "score": 20,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0160",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 387,
+      "score": 25,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0130",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 108,
+      "score": 23,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0145",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 530,
+      "score": 15,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0122",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 98,
+      "score": 18,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0197",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 859,
+      "score": 14,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0066",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 453,
+      "score": 21,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0108",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 163,
+      "score": 21,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0051",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 117,
+      "score": 36,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0079",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 89,
+      "score": 23,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0185",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 89,
+      "score": 31,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0168",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 97,
+      "score": 16,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0157",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 527,
+      "score": 21,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0014",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 167,
+      "score": 28,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0071",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 263,
+      "score": 28,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0188",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 193,
+      "score": 15,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0143",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 145,
+      "score": 20,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0156",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 101,
+      "score": 16,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0019",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 90,
+      "score": 30,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0064",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 246,
+      "score": 14,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0096",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 570,
+      "score": 27,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "wikih-0150",
+      "label": "human",
+      "genre": "encyclopedia",
+      "words": 200,
+      "score": 32,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "oah-0039",
+      "label": "human",
+      "genre": "abstract",
+      "words": 165,
+      "score": 36,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "oah-0046",
+      "label": "human",
+      "genre": "abstract",
+      "words": 156,
+      "score": 18,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "oah-0051",
+      "label": "human",
+      "genre": "abstract",
+      "words": 350,
+      "score": 16,
+      "confidence": "sedang",
+      "predAI": false
+    },
+    {
+      "id": "oah-0062",
+      "label": "human",
+      "genre": "abstract",
+      "words": 197,
+      "score": 37,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "oah-0009",
+      "label": "human",
+      "genre": "abstract",
+      "words": 100,
+      "score": 15,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "oah-0082",
+      "label": "human",
+      "genre": "abstract",
+      "words": 90,
+      "score": 14,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "oah-0006",
+      "label": "human",
+      "genre": "abstract",
+      "words": 238,
+      "score": 18,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "oah-0038",
+      "label": "human",
+      "genre": "abstract",
+      "words": 140,
+      "score": 15,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "oah-0017",
+      "label": "human",
+      "genre": "abstract",
+      "words": 125,
+      "score": 15,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "oah-0085",
+      "label": "human",
+      "genre": "abstract",
+      "words": 155,
+      "score": 14,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "oah-0053",
+      "label": "human",
+      "genre": "abstract",
+      "words": 173,
+      "score": 29,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "oah-0012",
+      "label": "human",
+      "genre": "abstract",
+      "words": 126,
+      "score": 15,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "oah-0064",
+      "label": "human",
+      "genre": "abstract",
+      "words": 159,
+      "score": 12,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "oah-0003",
+      "label": "human",
+      "genre": "abstract",
+      "words": 121,
+      "score": 27,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "oah-0033",
+      "label": "human",
+      "genre": "abstract",
+      "words": 67,
+      "score": 14,
+      "confidence": "sedang",
+      "predAI": false
+    },
+    {
+      "id": "oah-0095",
+      "label": "human",
+      "genre": "abstract",
+      "words": 162,
+      "score": 25,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "oah-0057",
+      "label": "human",
+      "genre": "abstract",
+      "words": 215,
+      "score": 13,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "oah-0077",
+      "label": "human",
+      "genre": "abstract",
+      "words": 192,
+      "score": 14,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "oah-0054",
+      "label": "human",
+      "genre": "abstract",
+      "words": 242,
+      "score": 15,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "oah-0072",
+      "label": "human",
+      "genre": "abstract",
+      "words": 73,
+      "score": 16,
+      "confidence": "sedang",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0025",
+      "label": "human",
+      "genre": "news",
+      "words": 177,
+      "score": 15,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0025",
+      "label": "machine",
+      "genre": "news",
+      "words": 413,
+      "score": 33,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0079",
+      "label": "human",
+      "genre": "news",
+      "words": 226,
+      "score": 15,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0079",
+      "label": "machine",
+      "genre": "news",
+      "words": 253,
+      "score": 19,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0092",
+      "label": "human",
+      "genre": "news",
+      "words": 354,
+      "score": 15,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0092",
+      "label": "machine",
+      "genre": "news",
+      "words": 285,
+      "score": 26,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0010",
+      "label": "human",
+      "genre": "news",
+      "words": 171,
+      "score": 15,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0010",
+      "label": "machine",
+      "genre": "news",
+      "words": 291,
+      "score": 30,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0029",
+      "label": "human",
+      "genre": "news",
+      "words": 344,
+      "score": 14,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0029",
+      "label": "machine",
+      "genre": "news",
+      "words": 261,
+      "score": 26,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0056",
+      "label": "human",
+      "genre": "news",
+      "words": 304,
+      "score": 29,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0056",
+      "label": "machine",
+      "genre": "news",
+      "words": 338,
+      "score": 41,
+      "confidence": "sedang",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0041",
+      "label": "human",
+      "genre": "news",
+      "words": 811,
+      "score": 15,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0041",
+      "label": "machine",
+      "genre": "news",
+      "words": 325,
+      "score": 67,
+      "confidence": "tinggi",
+      "predAI": true
+    },
+    {
+      "id": "m4h-0017",
+      "label": "human",
+      "genre": "news",
+      "words": 135,
+      "score": 18,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0017",
+      "label": "machine",
+      "genre": "news",
+      "words": 269,
+      "score": 18,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0089",
+      "label": "human",
+      "genre": "news",
+      "words": 238,
+      "score": 27,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0089",
+      "label": "machine",
+      "genre": "news",
+      "words": 358,
+      "score": 41,
+      "confidence": "sedang",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0088",
+      "label": "human",
+      "genre": "news",
+      "words": 153,
+      "score": 13,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0088",
+      "label": "machine",
+      "genre": "news",
+      "words": 282,
+      "score": 27,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0015",
+      "label": "human",
+      "genre": "news",
+      "words": 291,
+      "score": 49,
+      "confidence": "sedang",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0015",
+      "label": "machine",
+      "genre": "news",
+      "words": 316,
+      "score": 44,
+      "confidence": "sedang",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0037",
+      "label": "human",
+      "genre": "news",
+      "words": 175,
+      "score": 15,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0037",
+      "label": "machine",
+      "genre": "news",
+      "words": 311,
+      "score": 23,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0094",
+      "label": "human",
+      "genre": "news",
+      "words": 234,
+      "score": 14,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0094",
+      "label": "machine",
+      "genre": "news",
+      "words": 361,
+      "score": 16,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0040",
+      "label": "human",
+      "genre": "news",
+      "words": 189,
+      "score": 41,
+      "confidence": "sedang",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0040",
+      "label": "machine",
+      "genre": "news",
+      "words": 363,
+      "score": 28,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0008",
+      "label": "human",
+      "genre": "news",
+      "words": 251,
+      "score": 21,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0008",
+      "label": "machine",
+      "genre": "news",
+      "words": 344,
+      "score": 20,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0078",
+      "label": "human",
+      "genre": "news",
+      "words": 261,
+      "score": 20,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0078",
+      "label": "machine",
+      "genre": "news",
+      "words": 319,
+      "score": 28,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0080",
+      "label": "human",
+      "genre": "news",
+      "words": 289,
+      "score": 14,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0080",
+      "label": "machine",
+      "genre": "news",
+      "words": 339,
+      "score": 15,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0001",
+      "label": "human",
+      "genre": "news",
+      "words": 305,
+      "score": 13,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0001",
+      "label": "machine",
+      "genre": "news",
+      "words": 298,
+      "score": 18,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0083",
+      "label": "human",
+      "genre": "news",
+      "words": 253,
+      "score": 15,
+      "confidence": "rendah",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0083",
+      "label": "machine",
+      "genre": "news",
+      "words": 342,
+      "score": 31,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "m4h-0046",
+      "label": "human",
+      "genre": "news",
+      "words": 205,
+      "score": 16,
+      "confidence": "tinggi",
+      "predAI": false
+    },
+    {
+      "id": "m4m-0046",
+      "label": "machine",
+      "genre": "news",
+      "words": 314,
+      "score": 21,
+      "confidence": "tinggi",
+      "predAI": false
+    }
+  ]
+}

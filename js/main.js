@@ -489,15 +489,15 @@ function refreshRail() {
     let toolsText = "";
     try { toolsText = ($("aiToolsOut") && $("aiToolsOut").textContent) || ""; } catch (_) { toolsText = ""; }
     if ($("btnCopyHumanize")) $("btnCopyHumanize").disabled = !String(out || "").trim() && !String(toolsText || "").trim();
-    // Alat ringkas/jelaskan: gate ringan (teks bermakna), bukan MIN_WORDS.
+    // Alat ringkas/jelaskan: Summarize butuh MIN_WORDS (handler menolak <20),
+    // Explain cukup teks bermakna (MIN_TOOLS_WORDS) — gate rail disamakan.
     let w = 0;
     try {
       const v = (typeof inputText !== "undefined" && inputText && inputText.value) || "";
       w = (typeof countWords === "function" ? countWords(String(v).trim()) : String(v).trim().split(/\s+/).filter(Boolean).length);
     } catch (_) { w = 0; }
-    const hasText = w >= MIN_TOOLS_WORDS;
-    if ($("btnSummarize")) $("btnSummarize").disabled = !hasText;
-    if ($("btnExplain")) $("btnExplain").disabled = !hasText;
+    if ($("btnSummarize")) $("btnSummarize").disabled = w < MIN_WORDS;
+    if ($("btnExplain")) $("btnExplain").disabled = w < MIN_TOOLS_WORDS;
   } catch (_) { /* refresh tidak boleh melempar — init harus tetap jalan */ }
 }
 
@@ -606,6 +606,7 @@ $("btnClear").onclick = () => {
   refInfo.textContent = "";
   aiResult = null; aiError = null; aiPending = false;
   if ($("aiToolsOut")) { $("aiToolsOut").hidden = true; $("aiToolsOut").textContent = ""; }
+  if ($("aiToolsResult")) { $("aiToolsResult").hidden = true; }
   lastResult = null; // hasil lama dibuang: tidak boleh di-export lagi
   resultStale = false;
   try { const b = document.getElementById("sentExplain"); if (b) b.textContent = ""; } catch (_) {}
@@ -636,12 +637,16 @@ function currentMainText() {
 function showAiTools(text) {
   const out = $("aiToolsOut");
   if (!out) return;
+  // Output pindah ke section#hasil (.ai-tools-result): tampilkan wrapper + antar ke pandangan.
+  const wrap = $("aiToolsResult");
+  if (wrap) wrap.hidden = false;
   out.hidden = false;
   try { delete out.dataset.stale; } catch (_) { try { out.removeAttribute("data-stale"); } catch (_) {} }
   out.title = "";
   // Keluaran fitur tampil teks polos (stripMarkdown); fakta/angka/sitasi dipertahankan.
   try { if (typeof stripMarkdown === "function") text = stripMarkdown(String(text)); } catch (_) {}
   out.textContent = text;
+  try { ((wrap && !wrap.hidden && wrap) || out).scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (_) {}
   refreshRail();
 }
 
@@ -703,7 +708,7 @@ if ($("btnSummarize")) $("btnSummarize").onclick = async () => {
     return;
   }
   const suffix = apiFailed
-    ? (apiInvalid ? ` (${apiReason}).` : ` (mode lokal — API tidak tersedia: ${apiReason}).`)
+    ? (apiInvalid ? ` (${apiReason}).` : ` (mode lokal — tidak terhubung ke internet: ${apiReason}).`)
     : "";
   showAiTools(`Ringkasan ekstraktif (${r.sentences.length} kalimat asli, tanpa ubah fakta): ` +
     r.sentences.map((s, i) => `${i + 1}) ${s}`).join(" ") + suffix);
@@ -711,8 +716,8 @@ if ($("btnSummarize")) $("btnSummarize").onclick = async () => {
 
 if ($("btnExplain")) $("btnExplain").onclick = async () => {
   const t = currentMainText();
-  if (countWords(t) < MIN_WORDS) {
-    showAiTools(`Teks terlalu pendek — tempel minimal ${MIN_WORDS} kata dulu.`);
+  if (countWords(t) < MIN_TOOLS_WORDS) {
+    showAiTools(`Teks terlalu pendek — tempel minimal ${MIN_TOOLS_WORDS} kata dulu.`);
     return;
   }
   // Urutan baru: material API → /api/explain → lokal FarazExplain.
@@ -759,6 +764,10 @@ if ($("btnExplain")) $("btnExplain").onclick = async () => {
       }
     }
   } catch (e) { console.warn(e); apiFailed = true; apiReason = "unavailable"; }
+  if (apiFailed && !apiInvalid && !materialBlock) {
+    showAiTools("Maaf, kamu sedang mode offline — fitur Explainer tidak bisa digunakan. Hubungkan ke internet");
+    return;
+  }
   if (typeof FarazExplain === "undefined" || !FarazExplain || typeof FarazExplain.explain !== "function") {
     const head = materialBlock ? materialBlock + "\n\n" : "";
     showAiTools(head + "Penjelas struktur belum termuat — muat ulang halaman, lalu coba lagi." + materialNote);
@@ -772,7 +781,7 @@ if ($("btnExplain")) $("btnExplain").onclick = async () => {
     return;
   }
   const suffix = apiFailed
-    ? (apiInvalid ? ` (${apiReason}).` : ` (mode lokal — API tidak tersedia: ${apiReason}).`)
+    ? (apiInvalid ? ` (${apiReason}).` : ` (mode lokal — tidak terhubung ke internet: ${apiReason}).`)
     : "";
   const head = materialBlock ? materialBlock + "\n\n" : "";
   showAiTools(head + `Penjabaran teks: Berikut penjabaran isi teksmu: ${r.text}` + suffix + materialNote);
