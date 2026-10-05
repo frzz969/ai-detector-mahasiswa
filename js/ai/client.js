@@ -192,6 +192,9 @@
     };
     return {
       text: body.result,
+      // sentences[] = kandidat ekstraktif verbatim (humanizer-rules P4). Client
+      // WAJIB memverifikasi tiap kalimat substring dari teks sebelum dipakai.
+      sentences: arr(body.sentences),
       confidence: conf,
       sourceFacts: arr(body.sourceFacts),
       contextualFacts: arr(body.contextualFacts),
@@ -283,7 +286,12 @@
         url: typeof m.url === "string" ? m.url.slice(0, 300) : "",
         citations: (typeof m.citations === "number" && isFinite(m.citations)) ? Math.round(m.citations) : null,
         tier: typeof m.tier === "string" ? m.tier.slice(0, 40) : "Umum",
-        source: typeof m.source === "string" ? m.source.slice(0, 40) : "Umum"
+        source: typeof m.source === "string" ? m.source.slice(0, 40) : "Umum",
+        // Relevance gate: server sudah menyaring. Field ini hanya audit/UI —
+        // client TIDAK memfilter ulang (server yang pegang ambang).
+        relevance: (typeof m.relevance === "number" && isFinite(m.relevance))
+          ? Math.max(0, Math.min(1, m.relevance)) : null,
+        relevanceReason: typeof m.relevanceReason === "string" ? m.relevanceReason.slice(0, 240) : ""
       };
     }).filter(Boolean);
     return {
@@ -291,6 +299,10 @@
       query: typeof body.query === "string" ? body.query.slice(0, 200) : "",
       warnings: arr(body.warnings),
       method: typeof body.method === "string" ? body.method.slice(0, 300) : "",
+      threshold: (typeof body.threshold === "number" && isFinite(body.threshold))
+        ? body.threshold : null,
+      topics: Array.isArray(body.topics)
+        ? body.topics.filter(function (t) { return typeof t === "string"; }).slice(0, 12) : [],
       modelId: typeof body.modelId === "string" ? body.modelId.slice(0, 120) : "",
       coverage: (typeof body.coverage === "number" && isFinite(body.coverage))
         ? Math.max(0, Math.min(1, body.coverage)) : null

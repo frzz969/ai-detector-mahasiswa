@@ -222,12 +222,93 @@ Burst ritme, TTR, n-gram diversity, frasa generik, konektor, pola 12–28 kata, 
 
 ### 15.9 Test Matrix Minimum
 - ID akademik formal, EN akademik formal, ID informal, EN informal, ID/EN mixed.
-- Teks <20 kata, 20–49 kata, 50–79 kata, 80+ kata; 1 kalimat, 2–3 kalimat.
+- Teks <20 kata, 20-49 kata, 50-79 kata, 80+ kata; 1 kalimat, 2-3 kalimat.
 - 30k karakter, >30k karakter; PDF teks, PDF scan, DOCX, DOC lama.
 - Referensi panjang; URL/DOI/sitasi; model lokal tersedia/gagal.
 - API timeout, 401/403, 429, 5xx, malformed response, hash mismatch.
 - Request lama datang setelah request baru; teks berubah setelah check.
 - Humanize WORSE/EQUIVALENT/BETTER; export stale.
+
+---
+
+## 16. REGRESSION CASE — EXPLAINER (retrieval materi)
+
+Input: teks 844 kata tentang kelinci.
+
+Observed incorrect output (ditolak): "Materi terkait" menampilkan sumber yang
+hanya cocok keyword, tanpa hubungan topik:
+- GASTRONOMI MAKANAN BETAWI SEBAGAI SALAH SATU IDENTITAS BUDAYA DAERAH
+- IbM Kelompok Usaha Wanita Budidaya Kelinci Pedaging
+- Perancangan Sistem Informasi Penjualan Hewan Peliharaan Kelinci
+- Bromo kian rawan banjir
+- dan sumber "kelinci" lainnya.
+
+Problem: keyword overlap dianggap cukup untuk menentukan relevansi. Sumber yang
+hanya memiliki overlap entitas, tetapi tidak mendukung isi utama teks, tetap
+ditampilkan. Root cause: `api/material.js` membentuk query dari 8 token
+frekuensi tertinggi dan mengurutkan hanya tier + sitasi + tahun, tanpa skor
+relevansi, lalu memaksa 10 hasil.
+
+Expected behavior:
+- Relevansi berbasis topik/isi, bukan keyword tunggal.
+- Sumber yang hanya overlap nama entitas tidak dianggap relevan.
+- Maksimal menampilkan sumber dengan relevansi kuat; tidak memaksa jumlah.
+- Jika tidak ada sumber yang cukup relevan, tampilkan: "Tidak ditemukan materi
+  yang cukup relevan dengan teks."
+- Setiap sumber memiliki alasan relevansi singkat.
+- Tidak menyatakan sumber mendukung isi teks sebelum diverifikasi.
+
+Implemented contract (`api/material.js`):
+- `buildProfile()` -> topics (freq + IDF ringan, min frekuensi 2), context
+  (ko-occurrence dengan topik jangkar, min 2 kalimat), entities (nama proper
+  non-sentence-initial, binomial latin, angka+satuan).
+- `buildQueries()` -> 2-3 query dari profil (bukan dump token).
+- `scoreCandidate()` -> relevance = semantic x 0.45 + topic x 0.25 +
+  context x 0.20 + entity x 0.10, dikali quality (tier). Komponen = rasio
+  jenuh: semantic = presisi isi judul terhadap teks, topic = BREADTH topik
+  berbeda yang tertutup, context = bobot ko-occurrence, entity = entitas cocok.
+- `MIN_SOURCE_RELEVANCE = 0.70`; di bawah ambang tidak ditampilkan.
+- Gerbang keras: wajib menutup >= 1 topik jangkar, presisi >= 0.34, dan
+  `relevanceReason` harus spesifik (menyebut term yang cocok).
+- Dedupe DOI/URL/judul ternormalisasi; `relevance` + `relevanceReason`
+  dibawa ke UI (`js/main.js`) dan ke audit `method`.
+- Empty result state jujur + hitungan kandidat yang ditolak.
+
+## 17. REGRESSION CASE — SUMMARIZER (ringkasan terlalu umum)
+
+Input: teks 844 kata tentang kelinci.
+
+Observed incorrect output (ditolak) — 5 kalimat generik:
+1. Kelinci memang menjadi salah satu hewan yang cukup dekat dengan manusia.
+2. Kelinci tidak hanya terdiri dari satu jenis saja.
+3. Salah satu hal yang paling mudah dikenali dari kelinci adalah telinganya.
+4. Karena itu, kelinci perlu sering mengunyah makanan berserat.
+5. Pada saat yang sama, kelinci juga menjadi makanan bagi hewan lain.
+
+Problem: ringkasan terlalu umum dan tidak mewakili informasi utama teks.
+Metode ekstraktif lama (frekuensi kata isi + bonus posisi/data) memilih kalimat
+yang mudah dianggap penting, tanpa memperhatikan distribusi topik, kepadatan
+informasi, dan kalimat generik.
+
+Expected behavior:
+- Tetap ekstraktif/verbatim.
+- Kalimat dipilih berdasarkan kepentingan informasi.
+- Ringkasan mencakup topik utama dan subtopik penting, proporsional.
+- Hindari kalimat yang hanya berisi fakta umum.
+- Tidak mengarang atau mengubah fakta.
+
+Implemented contract (`js/ai/summarizer.js`):
+- `scoreSentences()` -> parts { topic (tf-idf), density (porsi isi distinctive),
+  entity, position } - 0.34 * generic - penalty.
+- `genericness()` -> penanda pernyataan umum + bukti konkret (angka, nama
+  proper, istilah distinctive). Kalimat generik regression turun ke bawah.
+- Filter redundansi (Jaccard > 0.7) + sebar lintas paragraf (maks 1/paragraf).
+- `verifyExtractive(text, sentences)` -> WAJIB substring verbatim, tanpa
+  duplikat; dipakai `js/main.js` untuk menolak hasil AI yang tidak ekstraktif.
+- `api/summarize.js` prompt diubah ke mode ekstraktif mutlak + schema
+  `sentences[]`; tanpa `sentences[]` hasil AI DITOLAK (fallback lokal).
+
+Test: `node tests/tools-regression.js` (CASE A-E, tanpa jaringan, mock).
 
 ---
 

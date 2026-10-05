@@ -17,21 +17,23 @@ const {
 } = require('./config');
 
 const TASK_INSTRUCTION = [
-  'Tugas: ringkas naskah berikut secara setia dan cukup lengkap.',
-  'Prinsip: (1) hanya gunakan informasi dari teks input; (2) tanpa fakta, opini, atau contoh dari luar;',
-  '(3) makna dan maksud asli dipertahankan; (4) fakta penting, angka, nama, tanggal, istilah, dan',
-  'sebab-akibat dipertahankan bila relevan; (5) buang pengulangan, basa-basi, dan detail tak penting;',
-  '(6) jangan pangkas berlebihan — ringkasan harus cukup lengkap; (7) konteks antaride dan urutan',
-  'pembahasan dipertahankan bila penting; (8) gabungkan kalimat bermakna serupa secara efisien;',
-  '(9) gunakan bahasa Indonesia yang natural, jelas, dan mudah dibaca; (10) tingkat kepastian',
-  'pernyataan tidak diubah; (11) tanpa opini atau penilaian terhadap isi.',
-  'Kompresi SEDANG (panduan fleksibel, bukan kaku): teks pendek 20–40%, teks sedang 30–50%,',
-  'teks panjang 40–60%. Bila pemangkasan menghilangkan konteks penting, pertahankan konteks tersebut.',
-  'Contoh: input 5 kalimat tentang fotosintesis — TOLAK ringkasan terlalu padat seperti',
-  '"Fotosintesis adalah proses tumbuhan mengubah cahaya menjadi energi." karena informasi penting',
-  'hilang. TERIMA ringkasan sedang yang mempertahankan proses, tempat (kloroplas/klorofil), bahan',
-  '(CO2, air, cahaya), hasil (glukosa, oksigen), dan fungsi hasil tersebut.',
-  'Output: result = ringkasan utuh beberapa kalimat (bukan satu kalimat), dalam bahasa Indonesia natural.',
+  'Tugas: pilih kalimat-kalimat ASLI dari naskah berikut yang paling mewakili isi utamanya.',
+  'MODE EKSTRAKTIF WAJIB (regression case: ringkasan terlalu umum):',
+  '(1) setiap kalimat output HARUS disalin PERSIS dari teks input, kata demi kata, termasuk tanda baca di akhir -',
+  '    dilarang menulis ulang kalimat baru;',
+  '(2) DILARANG menggabungkan dua kalimat menjadi kalimat baru;',
+  '(3) DILARANG mengubah urutan kata, angka, istilah teknis, nama, atau klaim;',
+  '(4) DILARANG menambah fakta, opini, atau contoh dari luar teks;',
+  '(5) pilih kalimat yang membawa INFORMASI SUBSTANTIF (klasifikasi, data, proses, hasil, penyebab, angka,',
+  '    nama) - JANGAN pilih kalimat yang hanya pernyataan umum (contoh:',
+  '    "X merupakan salah satu Y yang sering dijumpai");',
+  '(6) bila teks punya beberapa subtopik, pilih kalimat yang mewakili tiap subtopik secara proporsional,',
+  '    bukan semuanya dari satu bagian;',
+  '(7) hindari kalimat yang isinya berulang-ulang (redundansi);',
+  '(8) jumlah kalimat: 3-5 kalimat, atau lebih sedikit bila teksnya pendek.',
+  'Pilih kalimat berdasarkan kepentingan informasi, bukan yang paling mudah atau paling awal saja.',
+  'CATATAN REGRESSION: ringkasan yang hanya berisi kalimat umum (mis. "X merupakan salah satu Y",',
+  '"salah satu hal yang paling mudah dikenali adalah Z") dianggap GAGAL - itu output lama yang ditolak.',
 ].join('\n');
 
 const CORE_RULES = [
@@ -39,8 +41,9 @@ const CORE_RULES = [
   '1. NO HALLUCINATION: dilarang menambah/mengarang fakta, statistik, nama, DOI, URL, atau kutipan baru.',
   '2. PRESERVE: angka, sitasi, istilah, makna, tingkat ketidakpastian (hedge), dan arah kausalitas WAJIB sama.',
   '3. RELEVANCE GATE: bila input kosong/tak relevan untuk diringkas, kembalikan result="" dan jelaskan di warnings; JANGAN mengarang.',
-  '4. Balas HANYA JSON valid tanpa markdown dengan skema:',
-  '{"result": string, "sourceFacts": string[], "contextualFacts": string[], "inferences": string[], "protectedElements": string[], "warnings": string[], "confidence": "<rendah|sedang|tinggi>"}',
+  '4. VERBATIM: sentences[] = potongan kalimat yang disalin PERSIS dari input (tanpa paraphrase, tanpa penggabungan).',
+  '5. Balas HANYA JSON valid tanpa markdown dengan skema:',
+  '{"result": string, "sentences": string[], "sourceFacts": string[], "contextualFacts": string[], "inferences": string[], "protectedElements": string[], "warnings": string[], "confidence": "<rendah|sedang|tinggi>"}',
 ].join('\n');
 
 function send(res, status, obj) {
@@ -96,6 +99,10 @@ function validateStructured(o) {
     !Array.isArray(o.protectedElements) || !Array.isArray(o.warnings)) {
     throw Object.assign(new Error('Skema provider tidak valid'), { code: 'PROVIDER_ERROR', status: 502 });
   }
+  // sentences[] opsional di sisi provider, tapi WAJIB string verbatim-utuh.
+  if (o.sentences == null) o.sentences = [];
+  if (!Array.isArray(o.sentences)) o.sentences = [];
+  o.sentences = o.sentences.filter(function (s) { return typeof s === 'string' && s.trim(); }).slice(0, 12);
   if (!['rendah', 'sedang', 'tinggi'].includes(o.confidence)) o.confidence = 'rendah';
   return o;
 }

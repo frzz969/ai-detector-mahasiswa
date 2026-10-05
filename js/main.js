@@ -214,21 +214,30 @@ function render(heu, localVal, refCut) {
     li.textContent = `${refCut} kata daftar pustaka dikecualikan dari skor (mengurangi false-positive).`;
     rs.appendChild(li);
   }
-  // Audit metode di <details> "Kenapa skor ini?" (collapsed) — untuk audit saja.
+  // Cara hitung versi manusia (tanpa matematika internal: bobot/selisih/
+  // cakupan membingungkan pembaca). Rincian audit mentah dipindah ke <details>
+  // "Detail teknis" (#stats) + laporan unduh/print — audit tetap ada
+  // (validation-rules §5), tapi tidak lagi bercampur dengan alasan.
   try {
-    if (method) {
-      const mli = document.createElement("li");
-      mli.textContent = `Rincian metode (audit): ${method}${refCut ? ` • ${refCut} kata pustaka dikecualikan` : ""}${heu.lang === "en" ? " • bahasa terdeteksi EN" : ""}`;
-      rs.appendChild(mli);
-    }
+    const mli = document.createElement("li");
+    const cara = [];
+    cara.push("pola tulisanmu diperiksa langsung di perangkat ini");
+    if (typeof localVal === "number") cara.push("model lokal menjadi pembanding kedua");
+    if (heu.combineNote && /gabungan/i.test(heu.combineNote)) cara.push("bantuan AI digabung dengan bobot kecil sesuai keyakinannya");
+    else if (heu.combineNote) cara.push("bantuan AI tidak dipakai; hasil lokal dipertahankan");
+    mli.textContent = `Cara hitung skor: ${cara.join(", ")}. Angka perhitungannya ada di “Detail teknis”.`;
+    rs.appendChild(mli);
   } catch (_) {}
 
-  // Detail teknis ringkas (audit, collapsed): angka statistik saja.
+  // Detail teknis (audit, collapsed): angka statistik + method mentah. Method
+  // audit TETAP utuh di sini (bobot/selisih/cakupan) karena panel ini untuk audit;
+  // yang tampil di "Kenapa skor ini?" kini versi manusia (lihat atas).
   $("stats").textContent =
     `kata dinilai: ${heu.detail.totalW} | kalimat: ${heu.sents.length} | ` +
     `TTR: ${heu.detail.ttr.toFixed(3)} | burst: ${heu.detail.burst.toFixed(3)} | ` +
     `kalimat: median ${heu.detail.sentMedian}% • sebar ±${heu.detail.sentSpread.toFixed(0)} | ` +
-    `skor mentah: ${heu.detail.rawScore !== undefined ? heu.detail.rawScore : heu.score} (audit; tampil ${final}/100)`;
+    `skor mentah: ${heu.detail.rawScore !== undefined ? heu.detail.rawScore : heu.score} (audit; tampil ${final}/100)\n` +
+    `metode: ${method}${refCut ? ` • ${refCut} kata pustaka dikecualikan` : ""}${heu.lang === "en" ? " • bahasa terdeteksi EN" : ""}`;
 
   $("resultEmpty").hidden = true;
   $("resultBox").hidden = false;
@@ -685,13 +694,26 @@ if ($("btnSummarize")) $("btnSummarize").onclick = async () => {
       const ar = await FarazAIClient.summarize(t, { v: 1 });
       if (ar && ar.text && ar.text.trim()) {
         const cand = ar.text.trim();
-        const vFail = validateAiOutput(t, cand);
+        // Ringkasan WAJIB ekstraktif (regression case summarizer): kalau AI
+        // mengirim sentences[], tiap kalimat harus substring verbatim dari teks.
+        // Kalau tidak ada sentences[], hasil AI ditolak karena tidak bisa
+        // diverifikasi sebagai ekstraktif (hasil paraphrase tidak terverifikasi).
+        let vFail = validateAiOutput(t, cand);
+        if (Array.isArray(ar.sentences) && ar.sentences.length) {
+          const ve = (typeof FarazSummarize !== "undefined" && FarazSummarize &&
+            typeof FarazSummarize.verifyExtractive === "function")
+            ? FarazSummarize.verifyExtractive(t, ar.sentences) : { check: "extractive", detail: "verifikator ekstraktif tidak termuat." };
+          if (ve) vFail = (vFail ? vFail + ", " : "") + "extractive: " + ve.detail;
+        } else {
+          vFail = (vFail ? vFail + ", " : "") + "extractive: AI tidak mengirim sentences[] (hasil bukan ekstraktif)";
+        }
         if (!vFail) {
-          showAiTools(`Ringkasan (via AI, confidence ${ar.confidence || "rendah"} — indikasi, bukan vonis): ${cand}`);
+          const sents = Array.isArray(ar.sentences) ? ar.sentences : [];
+          showAiTools(`Ringkasan ekstraktif (${sents.length} kalimat asli tanpa ubah fakta, confidence ${ar.confidence || "rendah"} — indikasi, bukan vonis): ${sents.join(" ")}`);
           return;
         }
         apiFailed = true; apiInvalid = true;
-        apiReason = "hasil AI tidak lolos validasi fakta (" + vFail + ") — dipakai ringkasan lokal";
+        apiReason = "hasil AI ditolak validasi (" + vFail + ") — dipakai ringkasan ekstraktif lokal";
       } else {
         apiFailed = true; apiReason = (ar && ar.reason) || "unavailable";
       }
@@ -728,19 +750,27 @@ if ($("btnExplain")) $("btnExplain").onclick = async () => {
       showAiTools("Mencari materi...");
       const mr = await FarazAIClient.material(t, { v: 1 });
       if (mr && Array.isArray(mr.materials) && mr.materials.length) {
+        const thr = (typeof mr.threshold === "number") ? mr.threshold : 0.7;
         const lines = mr.materials.slice(0, 10).map((m, i) => {
           const title = (m && m.title) || "Tanpa judul";
           const meta = [m.year, m.venue].filter(Boolean).join(", ");
           const tier = (m && m.tier) || "Umum";
           const link = (m && (m.url || m.doi)) || "-";
-          return `${i + 1}. ${title}${meta ? ` (${meta})` : ""} — ${tier} — ${link}`;
+          // Relevansi + alasan spesifik (relevance gate). Tanpa skor → jangan
+          // diklaim relevan (validation-rules §5).
+          const rel = (typeof m.relevance === "number") ? m.relevance.toFixed(2) : "-";
+          const why = m.relevanceReason ? ` — cocok: ${m.relevanceReason}` : " — alasan relevansi tidak tersedia, perlu ditinjau";
+          return `${i + 1}. ${title}${meta ? ` (${meta})` : ""} — relevansi ${rel} (ambang ${thr}) — ${tier} — ${link}${why}`;
         });
-        materialBlock = `Materi terkait (terindikasi relevan — perlu ditinjau):\n${lines.join("\n")}`;
+        materialBlock = `Materi terkait (relevansi terukur, bukan keyword match — tetap perlu ditinjau):\n${lines.join("\n")}`;
         if (mr.warnings && mr.warnings.length) materialBlock += `\nCatatan sumber: ${mr.warnings.join("; ")}`;
       } else if (mr && mr.reason) {
         materialNote = ` (pencarian materi dilewati: ${mr.reason}, lanjut ke penjelasan).`;
       } else {
-        materialNote = " (materi tidak ditemukan untuk kueri ini, lanjut ke penjelasan).";
+        // Empty result state jujur (regression case kelinci): lebih baik 0 sumber
+        // daripada 10 sumber yang hanya cocok kata kunci.
+        const warn = (mr && mr.warnings && mr.warnings.length) ? mr.warnings.join("; ") : "";
+        materialNote = ` Tidak ditemukan materi yang cukup relevan dengan teks.${warn ? ` (${warn})` : ""} Lanjut ke penjelasan isi teks.`;
       }
     }
   } catch (e) { console.warn(e); materialNote = " (pencarian materi tidak tersedia, lanjut ke penjelasan)."; }
