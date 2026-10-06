@@ -79,6 +79,20 @@ const REF_HEDGE_PATS = [
 const REF_ENUM_ID = ["pertama", "kedua", "ketiga", "keempat", "selanjutnya", "terakhir"];
 const REF_ENUM_EN = ["first", "second", "third", "fourth", "finally", "lastly"];
 
+// S1 ID-Scaffold Dispersion — leksikon union tambahan (detector-rules §2 sinyal
+// 2/6 + §4; ref-1 §3-§5 ciri template/repetisi; ref-7 kohesi formal). Union pakai
+// = AI_ID (core.js) + ACAD_NEUTRAL (core.js) + array ini; ordinal
+// pertama/kedua/ketiga di awal kalimat ditangani via regex posisi di detector
+// (bukan substring). "secara keseluruhan"/"perlu diingat"/"kesimpulannya" overlap
+// AI_ID — sengaja dicantumkan agar union terdokumentasi utuh; didedupe saat dipakai.
+const REF_ID_SCAFFOLD = [
+  "pada akhirnya",
+  "secara keseluruhan",
+  "perlu diingat",
+  "diingat bahwa",
+  "kesimpulannya",
+];
+
 // Istilah metodologi — academic convention, BUKAN bukti AI (detector-rules §4).
 // "bab [1-5]" fragmen regex agar satu entry.
 const REF_ACADEMIC_METH = [

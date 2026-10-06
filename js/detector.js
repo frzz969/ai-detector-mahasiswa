@@ -147,6 +147,58 @@ function academicContext(o) {
   return { level, citeD, techHits, secHits, formHits, numD };
 }
 
+// S1 ID-Scaffold Dispersion (detector-rules §2 sinyal 2/6 + §4; ref-1 §3-§5;
+// ref-7 kohesi): leksikon union = AI_ID + ACAD_NEUTRAL + REF_ID_SCAFFOLD
+// (+ ordinal pertama/kedua/ketiga di awal kalimat), word-boundary,
+// case-insensitive. FIRE bila totalW>=S1_MIN_W AND density(hits*100/totalW) >=
+// S1_MIN_DENSITY AND dispersi (kalimat/paragraf berbeda berisi hit) >=
+// S1_MIN_DISPERSION AND distinct>=S1_MIN_DISTINCT. SKIP bila strongAcad ATAU
+// kalimat hit berangka/sitasi/metode konkret dalam +-1 kalimat.
+function idScaffoldSignal(cleaned, low, sents, paras, totalW, strongAcad, acaMarkers) {
+  const none = { fire: false, hits: 0, distinct: 0, dispersion: 0, density: 0, sentHit: new Set() };
+  if (totalW < S1_MIN_W) return none;
+  const union = [...new Set([...AI_ID, ...ACAD_NEUTRAL, ...REF_ID_SCAFFOLD])]
+    .sort((a, b) => b.length - a.length);
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pat = "\\b(" + union.map(esc).join("|") + ")\\b";
+  const ORD_START = /^(pertama|kedua|ketiga)\b/i;
+  let hits = 0;
+  const distinct = new Set();
+  const sentHit = new Set();
+  sents.forEach((s, i) => {
+    let f = false;
+    const re = new RegExp(pat, "gi");
+    let m;
+    while ((m = re.exec(s)) !== null) { hits++; distinct.add(m[1].toLowerCase()); f = true; }
+    const om = s.trimStart().match(ORD_START);
+    if (om) { hits++; distinct.add(om[1].toLowerCase()); f = true; }
+    if (f) sentHit.add(i);
+  });
+  const paraHit = new Set();
+  paras.forEach((p, i) => {
+    if (new RegExp(pat, "i").test(p)) paraHit.add(i);
+    else if (splitSentences(p).some((s) => ORD_START.test(s.trimStart()))) paraHit.add(i);
+  });
+  const dispersion = Math.max(sentHit.size, paraHit.size);
+  const density = totalW ? (hits * 100) / totalW : 0;
+  const gated = density >= S1_MIN_DENSITY
+    && dispersion >= S1_MIN_DISPERSION
+    && distinct.size >= S1_MIN_DISTINCT;
+  const done = (fire) => ({ fire, hits, distinct: distinct.size, dispersion, density, sentHit });
+  if (!gated) return done(false);
+  if (strongAcad) return done(false);
+  // SKIP: kalimat hit berangka/sitasi/metode konkret dalam +-1 kalimat.
+  const methRe = new RegExp("\\b(" + REF_ACADEMIC_METH.join("|") + ")\\b", "i");
+  const citeRe = /\[\d+(\s*[-–,]\s*\d+)*\]|\([^()]{0,50}?\b(19|20)\d{2}[a-z]?\)|et al\.|\bdoi\b|https?:\/\//i;
+  const numRe = /\b\d+([.,]\d+)?\b/;
+  for (const i of sentHit) {
+    for (let k = Math.max(0, i - 1); k <= Math.min(sents.length - 1, i + 1); k++) {
+      if (numRe.test(sents[k]) || citeRe.test(sents[k]) || methRe.test(sents[k])) return done(false);
+    }
+  }
+  return done(true);
+}
+
 // Heuristik skor AI (offline). Semua pola berasal dari referensi.js (provenance
 // per grup di sana); detector hanya menyusun regex. Output 15–98 + skor per
 // kalimat + confidence (rendah/sedang/tinggi) + bahasa (id/en/mixed/unknown).
@@ -411,6 +463,16 @@ function heuristic(text) {
     reasons.push(`Frasa akademik dipakai berulang (${neutralHits}x) tanpa dukungan data/metodologi/sitasi — scaffolding khas teks generatif.`);
   }
 
+  // S1 ID-Scaffold Dispersion (detector-rules §2 sinyal 2/6 + §4; ref-1 §3-§5;
+  // ref-7): scaffolding ID yang TERSEBAR lintas kalimat/paragraf = kombinasi
+  // Frequency + Context + Combination (bukan keyword=AI). Masuk gTemplate
+  // (clamp TEMPLATE_MAX tetap); +1 posSig di bawah.
+  const s1 = idScaffoldSignal(clean, low, sents, paras, totalW, strongAcad, acaMarkers);
+  if (s1.fire) {
+    gTemplate += S1_TEMPLATE_PTS;
+    reasons.push(`Pola scaffolding ID tersebar (${s1.hits} kemunculan, ${s1.distinct} frasa berbeda di ${s1.dispersion} kalimat/paragraf, densitas ${s1.density.toFixed(1)}%) — kombinasi yang perlu ditinjau dalam konteksnya.`);
+  }
+
   // Contextual signal count (detector-rules §3: satu sinyal bukan bukti). Gerbang
   // diselaraskan dengan scoring di atas (hedge >= 1, TTR/LEX_MIN_W, n-gram/MED_MIN_W).
   const posSig = (sents.length >= 5 && burst < 0.45 ? 1 : 0)
@@ -424,7 +486,8 @@ function heuristic(text) {
     + (sents.length >= 6 && (new Set(openers).size / sents.length) < 0.6 ? 1 : 0)
     + (fluffyRate > 0.3 && totalW > MED_MIN_W ? 1 : 0)
     + (hedgeSents >= 1 && totalW >= HEDGE_MIN_W ? 1 : 0)
-    + (enumSents >= 2 || (neutralHits >= 2 && acaMarkers < 3) ? 1 : 0);
+    + (enumSents >= 2 || (neutralHits >= 2 && acaMarkers < 3) ? 1 : 0)
+    + (s1.fire ? 1 : 0);
   const singleSignal = totalW >= MIN_RELIABLE_W && posSig <= 1;
   if (singleSignal) {
     reasons.push(`Hanya satu pola terdeteksi — belum cukup untuk indikasi kuat (perlu multiple signals + konteks).`);
@@ -455,7 +518,7 @@ function heuristic(text) {
 
   // Skor tiap kalimat INDEPENDEN dari skor dokumen (anchor 30): generik naik,
   // personal/data turun. Dipakai highlight + deteksi teks campuran.
-  const rawSentScores = sents.map((s) => {
+  const rawSentScores = sents.map((s, i) => {
     const lw = s.toLowerCase();
     let sc = 30;
     AI_PHRASES.forEach((p) => { if (lw.includes(p)) sc += 30; });
@@ -466,7 +529,7 @@ function heuristic(text) {
     if (new RegExp("(" + REF_SENT_PERSONAL.join("|") + "|\\?|!)", "i").test(s)) sc -= 28;
     if (new RegExp("(" + REF_SENT_TEMPLATE.join("|") + ")", "i").test(s)) sc += 14;
     if (REF_HEDGE_PATS.some((p) => lw.includes(p))) sc += 14;          // manfaat generik
-    if (acaMarkers < 3 && ACAD_NEUTRAL.some((p) => lw.includes(p))) sc += 14; // konektor akademik tanpa substansi
+    if (acaMarkers < 3 && s1.sentHit.has(i)) sc += S1_SENT_PTS; // S1 union-hit tanpa substansi (detector-rules §2/§4)
     if (ENUM_START.test(s.trimStart())) sc += 10; // enumerasi kalimat
     if (/\b\d+([.,]\d+)?\b/.test(s) && (new RegExp("(19|20)\\d{2}|" + REF_SENT_DATA.join("|") + "|%|\\bsampel\\b", "i").test(s))) sc -= 8;
     const op = lw.split(/\s+/).slice(0, 3).join(" ");

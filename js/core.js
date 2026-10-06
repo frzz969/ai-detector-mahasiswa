@@ -114,6 +114,20 @@ const THR_STRONG_DOC = 75; // cermin ambang render: indikasi kuat
 const THR_MID_DOC = 50;    // cermin ambang render: batas biner
 const THR_HUMAN_DOC = 30;  // cermin ambang render: cenderung natural
 
+// S1 ID-Scaffold Dispersion (detector-rules §2/§4; ref-1 §3-§5; ref-7).
+// Gerbang FIRE: totalW>=S1_MIN_W AND density(hits*100/totalW)>=S1_MIN_DENSITY
+// AND dispersi>=S1_MIN_DISPERSION AND distinct>=S1_MIN_DISTINCT. SKIP bila
+// strongAcad ATAU kalimat hit berangka/sitasi/metode konkret dalam +-1 kalimat.
+// Bonus masuk gTemplate (clamp TEMPLATE_MAX tetap); +1 posSig; per-kalimat
+// S1_SENT_PTS hanya bila union-hit DAN acaMarkers<3. SINGLE_SIGNAL_CAP=60 dan
+// SHORT_TEXT_CAP=45 TIDAK diubah.
+const S1_MIN_W = 50;         // gerbang panjang
+const S1_MIN_DENSITY = 3.0;  // hits*100/totalW minimal
+const S1_MIN_DISPERSION = 2; // kalimat/paragraf berbeda berisi hit
+const S1_MIN_DISTINCT = 2;   // frasa union berbeda
+const S1_TEMPLATE_PTS = 8;   // bonus gTemplate bila FIRE
+const S1_SENT_PTS = 14;      // bonus per kalimat union-hit (acaMarkers<3)
+
 const escapeHtml = (s) =>
   String(s).replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
