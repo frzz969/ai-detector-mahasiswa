@@ -62,7 +62,7 @@ img{max-width:100%;height:auto}
 .sub{grid-area:sub;color:var(--mut);font-size:18px;margin:0 0 var(--sp-xl);max-width:48ch}
 .hero-cta{grid-area:cta;display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}
 .btn-hero{background:#111;color:#fff;font-weight:700;font-size:17px;text-decoration:none;padding:16px 32px;border-radius:var(--r-pill);border:1.5px solid #111;display:inline-flex;align-items:center;justify-content:center;min-height:var(--sp-4xl)}
-.btn-hero.ghost{background:transparent;color:var(--ink);border-color:var(--ink)}
+.btn-hero.ghost{background:transparent;color:var(--ink);border-color:var(--ink);padding:5px 5px;font-size:12px;line-height:1.55;min-height:40px;box-sizing:border-box;border-width:10px;white-space:nowrap;text-align:center;overflow-wrap:normal;}
 .trust-row{grid-area:trust;display:flex;gap:20px;flex-wrap:wrap;color:var(--mut);font-size:15px;font-weight:600;margin:0 0 24px}
 /* DESKTOP ≥1101px SAJA: judul turun 20px; CTA + trust-row selebar isi
    (terobos kolom teks ala "in front", tanpa ganggu grid di atasnya).
