@@ -23,3 +23,144 @@
 {"id":"oah-0038","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-06T09:14:00.126Z"}
 {"id":"wikih-0009","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-06T09:14:08.252Z"}
 {"id":"m4pr1h-0026","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-06T09:14:15.644Z"}
+{"id":"m4pr1m-0032","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:27:13.495Z","reviewer":"frz"}
+{"id":"m4m-0075","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:27:29.043Z","reviewer":"frz"}
+{"id":"m4pr1m-0055","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:27:37.476Z","reviewer":"frz"}
+{"id":"m4pr1m-0028","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:27:44.472Z","reviewer":"frz"}
+{"id":"m4pr1m-0043","verdict":"Human","confidence":"Low","note":"","reviewed_at":"2026-10-07T02:27:56.027Z","reviewer":"frz"}
+{"id":"m4m-0022","verdict":"Human","confidence":"High","note":"","reviewed_at":"2026-10-07T02:28:07.235Z","reviewer":"frz"}
+{"id":"m4pr1m-0005","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:28:13.926Z","reviewer":"frz"}
+{"id":"m4pr2m-0053","verdict":"Uncertain","confidence":"High","note":"","reviewed_at":"2026-10-07T02:28:22.895Z","reviewer":"frz"}
+{"id":"m4pr2m-0063","verdict":"Uncertain","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:28:26.466Z","reviewer":"frz"}
+{"id":"m4m-0055","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:28:32.293Z","reviewer":"frz"}
+{"id":"m4pr1m-0088","verdict":"AI","confidence":"Low","note":"","reviewed_at":"2026-10-07T02:28:38.712Z","reviewer":"frz"}
+{"id":"m4pr2m-0039","verdict":"Uncertain","confidence":"High","note":"","reviewed_at":"2026-10-07T02:28:42.701Z","reviewer":"frz"}
+{"id":"m4m-0041","verdict":"Human","confidence":"High","note":"","reviewed_at":"2026-10-07T02:28:50.583Z","reviewer":"frz"}
+{"id":"m4m-0032","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:28:50.583Z","reviewer":"frz"}
+{"id":"m4m-0044","verdict":"AI","confidence":"High","note":"","reviewed_at":"2026-10-07T02:29:03.666Z","reviewer":"frz"}
+{"id":"wikih-0190","verdict":"AI","confidence":"Low","note":"","reviewed_at":"2026-10-07T03:28:22.364Z","reviewer":"kink dawus"}
+{"id":"m4pr2h-0083","verdict":"Uncertain","confidence":"High","note":"","reviewed_at":"2026-10-07T03:28:29.004Z","reviewer":"kink dawus"}
+{"id":"oah-0053","verdict":"Human","confidence":"Low","note":"","reviewed_at":"2026-10-07T03:28:39.899Z","reviewer":"kink dawus"}
+{"id":"m4pr2h-0059","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:28:48.437Z","reviewer":"kink dawus"}
+{"id":"wikih-0040","verdict":"Human","confidence":"High","note":"","reviewed_at":"2026-10-07T03:28:57.263Z","reviewer":"kink dawus"}
+{"id":"oah-0081","verdict":"Human","confidence":"Low","note":"","reviewed_at":"2026-10-07T03:29:06.433Z","reviewer":"kink dawus"}
+{"id":"m4pr1h-0012","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:29:13.328Z","reviewer":"kink dawus"}
+{"id":"m4pr2h-0045","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:29:18.621Z","reviewer":"kink dawus"}
+{"id":"wikih-0138","verdict":"Human","confidence":"High","note":"","reviewed_at":"2026-10-07T03:29:24.090Z","reviewer":"kink dawus"}
+{"id":"m4pr2h-0066","verdict":"AI","confidence":"Low","note":"","reviewed_at":"2026-10-07T03:29:29.900Z","reviewer":"kink dawus"}
+{"id":"m4pr1h-0018","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:29:37.203Z","reviewer":"kink dawus"}
+{"id":"m4pr2h-0020","verdict":"Human","confidence":"Low","note":"","reviewed_at":"2026-10-07T03:29:44.673Z","reviewer":"kink dawus"}
+{"id":"m4pr1h-0056","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:29:48.613Z","reviewer":"kink dawus"}
+{"id":"oah-0056","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:29:52.715Z","reviewer":"kink dawus"}
+{"id":"m4m-0011","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:29:56.558Z","reviewer":"kink dawus"}
+{"id":"wikih-0177","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:19:56.335Z","reviewer":"maisya"}
+{"id":"m4pr1h-0053","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:20:43.167Z","reviewer":"maisya"}
+{"id":"oah-0061","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:20:56.979Z","reviewer":"maisya"}
+{"id":"wikih-0060","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:21:18.907Z","reviewer":"maisya"}
+{"id":"wikih-0192","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:21:33.137Z","reviewer":"maisya"}
+{"id":"m4h-0035","verdict":"AI","confidence":"Low","note":"","reviewed_at":"2026-10-07T02:21:54.514Z","reviewer":"maisya"}
+{"id":"oah-0001","verdict":"AI","confidence":"Low","note":"","reviewed_at":"2026-10-07T02:21:56.657Z","reviewer":"maisya"}
+{"id":"oah-0018","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:22:21.308Z","reviewer":"maisya"}
+{"id":"oah-0051","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:22:33.302Z","reviewer":"maisya"}
+{"id":"oah-0096","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:22:46.857Z","reviewer":"maisya"}
+{"id":"m4pr2h-0077","verdict":"Uncertain","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:22:56.047Z","reviewer":"maisya"}
+{"id":"oah-0075","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:23:12.142Z","reviewer":"maisya"}
+{"id":"m4pr1h-0054","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:23:25.803Z","reviewer":"maisya"}
+{"id":"oah-0099","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:23:37.296Z","reviewer":"maisya"}
+{"id":"oah-0098","verdict":"AI","confidence":"Low","note":"","reviewed_at":"2026-10-07T02:23:51.959Z","reviewer":"maisya"}
+{"id":"wikih-0177","verdict":"AI","confidence":"High","note":"karena bahasa terlalu tertata untuk dibaca.","reviewed_at":"2026-10-07T02:44:53.055Z","reviewer":"zhu"}
+{"id":"m4pr1h-0053","verdict":"Uncertain","confidence":"Med","note":"Dalam point point terlalu banyak penjelasan yang membuat ragu apakah ini terbentuk oleh AI atau bukan.","reviewed_at":"2026-10-07T02:46:39.735Z","reviewer":"zhu"}
+{"id":"oah-0061","verdict":"Human","confidence":"Med","note":"Dalam per kalimat terdapat suatu kata kata tidak teratur, sebab itulah termasuk kategori buatan manusia.","reviewed_at":"2026-10-07T02:50:25.516Z","reviewer":"zhu"}
+{"id":"wikih-0060","verdict":"AI","confidence":"Med","note":"informasi yang setengah setengah","reviewed_at":"2026-10-07T02:50:54.968Z","reviewer":"zhu"}
+{"id":"wikih-0192","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:55:05.786Z","reviewer":"zhu"}
+{"id":"m4h-0035","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:55:25.013Z","reviewer":"zhu"}
+{"id":"oah-0001","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:55:34.727Z","reviewer":"zhu"}
+{"id":"oah-0018","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:55:49.532Z","reviewer":"zhu"}
+{"id":"oah-0051","verdict":"Uncertain","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:56:06.574Z","reviewer":"zhu"}
+{"id":"oah-0096","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:56:15.686Z","reviewer":"zhu"}
+{"id":"m4pr2h-0077","verdict":"Uncertain","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:56:32.345Z","reviewer":"zhu"}
+{"id":"oah-0075","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:56:37.126Z","reviewer":"zhu"}
+{"id":"m4pr1h-0054","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:56:42.682Z","reviewer":"zhu"}
+{"id":"oah-0099","verdict":"Uncertain","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:56:57.246Z","reviewer":"zhu"}
+{"id":"oah-0098","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T02:57:09.070Z","reviewer":"zhu"}
+{"id":"m4m-0024","verdict":"Human","confidence":"Med","note":"karena seperti artikel","reviewed_at":"2026-10-07T03:07:18.168Z","reviewer":"zhu"}
+{"id":"m4pr1m-0001","verdict":"AI","confidence":"High","note":"","reviewed_at":"2026-10-07T03:07:27.540Z","reviewer":"zhu"}
+{"id":"m4pr1m-0040","verdict":"AI","confidence":"Med","note":"terlihat seperti sangat AI","reviewed_at":"2026-10-07T03:07:53.082Z","reviewer":"zhu"}
+{"id":"m4pr1m-0096","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:08:44.871Z","reviewer":"zhu"}
+{"id":"m4pr2m-0054","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:08:51.967Z","reviewer":"zhu"}
+{"id":"m4pr1m-0022","verdict":"Human","confidence":"High","note":"","reviewed_at":"2026-10-07T03:09:03.797Z","reviewer":"zhu"}
+{"id":"m4m-0052","verdict":"Human","confidence":"Med","note":"artikel","reviewed_at":"2026-10-07T03:09:25.278Z","reviewer":"zhu"}
+{"id":"m4m-0076","verdict":"Human","confidence":"Med","note":"artikel","reviewed_at":"2026-10-07T03:09:38.490Z","reviewer":"zhu"}
+{"id":"m4pr2m-0010","verdict":"AI","confidence":"Med","note":"ada colon","reviewed_at":"2026-10-07T03:10:16.830Z","reviewer":"zhu"}
+{"id":"m4pr2m-0045","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:10:58.498Z","reviewer":"zhu"}
+{"id":"m4m-0056","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:11:15.041Z","reviewer":"zhu"}
+{"id":"m4pr1m-0041","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:11:26.870Z","reviewer":"zhu"}
+{"id":"m4pr2m-0017","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:11:39.808Z","reviewer":"zhu"}
+{"id":"m4pr1m-0097","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:11:45.414Z","reviewer":"zhu"}
+{"id":"m4m-0063","verdict":"Human","confidence":"Med","note":"artikel","reviewed_at":"2026-10-07T03:11:54.477Z","reviewer":"zhu"}
+{"id":"m4pr2m-0022","verdict":"AI","confidence":"High","note":"terlihat seperti promt AI","reviewed_at":"2026-10-07T03:14:01.197Z","reviewer":"zhu"}
+{"id":"m4m-0059","verdict":"Human","confidence":"Med","note":"artikel","reviewed_at":"2026-10-07T03:14:10.831Z","reviewer":"zhu"}
+{"id":"m4pr1m-0017","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:14:18.977Z","reviewer":"zhu"}
+{"id":"m4m-0058","verdict":"Human","confidence":"Med","note":"artikel","reviewed_at":"2026-10-07T03:14:28.325Z","reviewer":"zhu"}
+{"id":"m4pr2m-0055","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:14:45.592Z","reviewer":"zhu"}
+{"id":"m4pr2m-0080","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:14:52.039Z","reviewer":"zhu"}
+{"id":"m4pr1m-0054","verdict":"Uncertain","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:14:56.754Z","reviewer":"zhu"}
+{"id":"m4pr1m-0062","verdict":"Uncertain","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:14:56.754Z","reviewer":"zhu"}
+{"id":"m4pr2m-0005","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:15:09.274Z","reviewer":"zhu"}
+{"id":"m4m-0034","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:15:15.020Z","reviewer":"zhu"}
+{"id":"m4m-0078","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:15:19.063Z","reviewer":"zhu"}
+{"id":"m4m-0069","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:15:23.185Z","reviewer":"zhu"}
+{"id":"m4pr2m-0049","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:15:32.019Z","reviewer":"zhu"}
+{"id":"m4pr2m-0083","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:15:35.940Z","reviewer":"zhu"}
+{"id":"m4m-0035","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:15:39.647Z","reviewer":"zhu"}
+{"id":"wikih-0190","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:31:02.249Z","reviewer":"zhu"}
+{"id":"m4pr2h-0083","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:31:07.850Z","reviewer":"zhu"}
+{"id":"oah-0053","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:31:12.107Z","reviewer":"zhu"}
+{"id":"m4pr2h-0059","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:31:20.570Z","reviewer":"zhu"}
+{"id":"wikih-0040","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:31:30.728Z","reviewer":"zhu"}
+{"id":"oah-0081","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:32:01.728Z","reviewer":"zhu"}
+{"id":"m4pr1h-0012","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:32:09.298Z","reviewer":"zhu"}
+{"id":"m4pr2h-0045","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:32:20.415Z","reviewer":"zhu"}
+{"id":"wikih-0138","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:32:36.136Z","reviewer":"zhu"}
+{"id":"m4pr2h-0066","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:32:45.237Z","reviewer":"zhu"}
+{"id":"m4pr1h-0018","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:32:54.275Z","reviewer":"zhu"}
+{"id":"m4pr2h-0020","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:33:05.666Z","reviewer":"zhu"}
+{"id":"m4pr1h-0056","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:33:28.293Z","reviewer":"zhu"}
+{"id":"oah-0056","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:33:32.830Z","reviewer":"zhu"}
+{"id":"m4m-0011","verdict":"Human","confidence":"High","note":"","reviewed_at":"2026-10-07T03:33:37.840Z","reviewer":"zhu"}
+{"id":"m4pr1m-0032","verdict":"Human","confidence":"Med","note":"karena ini termasuk dalam analisis yang berdasarkan pikiran manusia","reviewed_at":"2026-10-07T03:36:59.133Z","reviewer":"zhu"}
+{"id":"m4m-0075","verdict":"Human","confidence":"Med","note":"artikel","reviewed_at":"2026-10-07T03:37:08.602Z","reviewer":"zhu"}
+{"id":"m4pr1m-0055","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:37:15.391Z","reviewer":"zhu"}
+{"id":"m4pr1m-0028","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:37:28.616Z","reviewer":"zhu"}
+{"id":"m4m-0043","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:37:37.116Z","reviewer":"zhu"}
+{"id":"m4m-0022","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:37:46.111Z","reviewer":"zhu"}
+{"id":"m4pr1m-0005","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:37:58.495Z","reviewer":"zhu"}
+{"id":"m4pr2m-0053","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:38:02.284Z","reviewer":"zhu"}
+{"id":"m4pr2m-0063","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:38:05.862Z","reviewer":"zhu"}
+{"id":"m4m-0055","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:38:16.818Z","reviewer":"zhu"}
+{"id":"m4pr1m-0088","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:38:29.396Z","reviewer":"zhu"}
+{"id":"m4pr2m-0039","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-07T03:38:32.717Z","reviewer":"zhu"}
+{"id":"m4m-0041","verdict":"Human","confidence":"Med","note":"artikel","reviewed_at":"2026-10-07T03:38:44.041Z","reviewer":"zhu"}
+{"id":"m4m-0032","verdict":"Human","confidence":"Med","note":"artikel","reviewed_at":"2026-10-07T03:38:54.891Z","reviewer":"zhu"}
+{"id":"m4pr2m-0044","verdict":"AI","confidence":"Med","note":"kaya promt","reviewed_at":"2026-10-07T03:39:08.040Z","reviewer":"zhu"}
+{"id":"m4pr1h-0053","verdict":"Uncertain","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.052Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"maisya:AI"}
+{"id":"wikih-0060","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.060Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"maisya:Human"}
+{"id":"m4h-0035","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.064Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"maisya:AI"}
+{"id":"oah-0018","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.067Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"maisya:Human"}
+{"id":"oah-0051","verdict":"Uncertain","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.072Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"maisya:AI"}
+{"id":"oah-0075","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.075Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"maisya:AI"}
+{"id":"m4pr1h-0054","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.079Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"maisya:Human"}
+{"id":"oah-0099","verdict":"Uncertain","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.082Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"maisya:Human"}
+{"id":"oah-0098","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.086Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"maisya:AI"}
+{"id":"wikih-0190","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.090Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"kink dawus:AI"}
+{"id":"m4pr2h-0083","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.093Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"kink dawus:Uncertain"}
+{"id":"m4pr2h-0066","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.097Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"kink dawus:AI"}
+{"id":"m4pr1h-0018","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.101Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"kink dawus:AI"}
+{"id":"m4pr1h-0056","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.105Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"kink dawus:AI"}
+{"id":"m4pr1m-0032","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.109Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"frz:AI"}
+{"id":"m4pr1m-0055","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.113Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"frz:AI"}
+{"id":"m4pr1m-0028","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.117Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"frz:AI"}
+{"id":"m4pr2m-0053","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.120Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"frz:Uncertain"}
+{"id":"m4pr2m-0063","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.124Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"frz:Uncertain"}
+{"id":"m4pr1m-0088","verdict":"Human","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.127Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"frz:AI"}
+{"id":"m4pr2m-0039","verdict":"AI","confidence":"Med","note":"","reviewed_at":"2026-10-06T20:55:00.131Z","reviewer":"wasit","wasit_ikut":"zhu","wasit_lawan":"frz:Uncertain"}
