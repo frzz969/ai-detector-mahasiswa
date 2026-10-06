@@ -5,327 +5,395 @@
    tidak saling ikut. */
 
 /* TABLET ≤1100px */
-@media(max-width:1100px){
-.sidekick:not(.kick-hero):not(.kick-foot-r){display:none}
-.foot-mascots{display:block;padding:0;margin:0;pointer-events:none}
-/* kick-foot-r 861-1100px: bottom 76px = duduk 2px di atas .fab (top ±78px)
-   dan 2px di atas CTA (top ±74px); padding 96px footer tidak disentuh. */
-.foot-mascots .kick-foot-r{display:block;position:fixed;right:14px;bottom:76px;width:160px;height:auto;aspect-ratio:auto;object-fit:contain;background:transparent;border-radius:0;padding:0;margin:0;transform:rotate(-4deg);z-index:39;pointer-events:none;filter:drop-shadow(0 8px 16px rgba(11,46,75,.3))}
-.wrap,.nav-inner{padding-left:24px;padding-right:24px}
-/* FOOTER-CLEARANCE tablet 861-1100px: .mobile-cta fixed ±62px + bottom 12px
-   = ±74px menutup viewport bawah; padding 64px desktop kurang → 96px
-   (+22 napas). ≤860/≤600px ditimpa aturan bawah yang lebih besar. */
-.wrap{padding-bottom:96px}
-.hero{gap:var(--sp-2xl);padding:var(--sp-2xl)}
-.feat-grid{grid-template-columns:repeat(2,1fr)}
-.mindmap{grid-template-columns:repeat(3,1fr)}
-.fitur-sec .feat-grid{grid-template-columns:repeat(3,1fr)}
-.content-sec{padding:var(--sp-3xl) var(--sp-2xl)}
-.content-sec h2{font-size:32px}
-#mulai{grid-template-columns:1fr;text-align:center}
-#mulai .hero-cta{justify-content:center}
-/* Output Summarize/Explain di #hasil: rapat + anti-luber di semua lebar ≤1100px
-   (termasuk window 861–1100px tempat viewport desktop-site ±980px mendarat). */
-.ai-tools-result{padding:12px 16px;min-width:0;max-width:100%;overflow-x:clip}
-.ai-tools-result h3{font-size:16px}
-.ai-tools-result #aiToolsOut{font-size:15px;line-height:1.75;overflow-wrap:anywhere;white-space:pre-wrap;min-width:0;max-width:100%}
-/* Accordion + motion polish */
-.det summary{list-style:none}
-.det summary::-webkit-details-marker{display:none}
-.det summary::after{content:"+";margin-left:auto;font-weight:800;color:var(--mut)}
-.det[open] summary::after{content:"–"}
-.det summary{display:flex;align-items:center;gap:12px}
+@media (max-width: 1100px) {
+  .sidekick:not(.kick-hero):not(.kick-foot-r) { display: none }
+  .foot-mascots { display: block; padding: 0; margin: 0; pointer-events: none }
+  /* kick-foot-r 861-1100px: bottom 76px = duduk 2px di atas .fab (top ±78px)
+     dan 2px di atas CTA (top ±74px); padding 96px footer tidak disentuh. */
+  .foot-mascots .kick-foot-r {
+    display: block; position: fixed; right: 14px; bottom: 76px; width: 160px; height: auto; aspect-ratio: auto;
+    object-fit: contain; background: transparent; border-radius: 0; padding: 0; margin: 0; transform: rotate(-4deg);
+    z-index: 39; pointer-events: none; filter: drop-shadow(0 8px 16px rgba(11, 46, 75, .3))
+  }
+  .wrap, .nav-inner { padding-left: 24px; padding-right: 24px }
+  /* FOOTER-CLEARANCE tablet 861-1100px: .mobile-cta fixed ±62px + bottom 12px
+     = ±74px menutup viewport bawah; padding 64px desktop kurang → 96px
+     (+22 napas). ≤860/≤600px ditimpa aturan bawah yang lebih besar. */
+  .wrap { padding-bottom: 96px }
+  .hero { gap: var(--sp-2xl); padding: var(--sp-2xl) }
+  .feat-grid { grid-template-columns: repeat(2, 1fr) }
+  .mindmap { grid-template-columns: repeat(3, 1fr) }
+  .fitur-sec .feat-grid { grid-template-columns: repeat(3, 1fr) }
+  .content-sec { padding: var(--sp-3xl) var(--sp-2xl) }
+  .content-sec h2 { font-size: 32px }
+  #mulai { grid-template-columns: 1fr; text-align: center }
+  #mulai .hero-cta { justify-content: center }
+  /* Output Summarize/Explain di #hasil: rapat + anti-luber di semua lebar ≤1100px
+     (termasuk window 861–1100px tempat viewport desktop-site ±980px mendarat). */
+  .ai-tools-result { padding: 12px 16px; min-width: 0; max-width: 100%; overflow-x: clip }
+  .ai-tools-result h3 { font-size: 16px }
+  .ai-tools-result #aiToolsOut {
+    font-size: 15px; line-height: 1.75; overflow-wrap: anywhere; white-space: pre-wrap; min-width: 0; max-width: 100%
+  }
+  /* Accordion + motion polish */
+  .det summary { list-style: none }
+  .det summary::-webkit-details-marker { display: none }
+  .det summary::after { content: "+"; margin-left: auto; font-weight: 800; color: var(--mut) }
+  .det[open] summary::after { content: "–" }
+  .det summary { display: flex; align-items: center; gap: 12px }
 }
 
 /* SMALL TABLET ≤860px */
-@media(max-width:860px){
-html,body{overflow-x:clip;max-width:100vw}
-/* FOOTER-CLEARANCE: CTA ±62px + 12px + safe-area 34px = ±108px worst-case. */
-.wrap{padding:0 16px 118px;max-width:100vw;overflow-x:clip}
-.nav-inner{padding:8px 16px;position:relative}
-.nav-links{display:none}
-.nav-links.open{display:flex;position:absolute;top:calc(100% + 8px);left:12px;right:12px;background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:8px;flex-direction:column;gap:2px;box-shadow:var(--sh-lg);z-index:50}
-.nav-links.open a{padding:16px;font-size:16px;min-height:48px;display:flex;align-items:center;border-radius:var(--r-md)}
-.nav-toggle{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;min-height:44px;min-width:44px;padding:0;font-size:20px;line-height:1;border-radius:var(--r-md);margin-left:0;order:2}
-.logo{font-size:18px}
-.nav-cta{padding:10px 16px;font-size:14px;min-height:44px;margin-left:auto;order:1}
-.hero{grid-template-columns:1fr;padding:var(--sp-lg) 16px;gap:var(--sp-base);margin:12px 0;overflow-x:clip}
-.hero-main{min-height:0;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;column-gap:16px;row-gap:0}
-.hero-text{display:contents}
-.hero-text h1{grid-column:1;grid-row:1;min-width:0}
-/* ALIGN HERO CHARACTER (mobile): gambar "icon heading.png" 552x914 punya
-   ~53px (5.8%) pita transparan di atas, jadi artwork terlihat turun ~13px
-   dari top h1 (padding-top 4px + 8.7px pita). padding-top dihapus dan
-   diganti margin-top negatif agar puncak artwork sejajar baris atas h1
-   (cap-height). Desktop >1100px & style.css tidak disentuh. */
-.hero-character{position:relative;left:auto;top:auto;bottom:auto;z-index:2;grid-column:2;grid-row:1;justify-self:end;align-self:start;display:block;width:auto;margin:-8px 0 0;padding-top:0}
-.hero-text .sub{grid-column:1/-1;grid-row:2}
-.hero-text .hero-cta{grid-column:1/-1}
-/* GUARANTEE hero atas sejajar (≤860px): row + wrap + tombol auto. Hero-only
-   (.hero-text, bukan #mulai). Aturan ≤600px di bawah (baris 338-341, lebih
-   belakangan + spesifisitas setara/lebih tinggi) tetap menang per-properti,
-   jadi gaya mungil 360px tidak berubah. */
-.hero-text .hero-cta{flex-direction:row;flex-wrap:wrap;align-items:center;gap:12px}
-.hero-text .hero-cta .btn-hero{width:auto;flex:0 1 auto;min-width:0;max-width:50%}
-.hero-text .trust-row{grid-column:1/-1}
-.hero-character img{width:96px;max-height:150px;height:auto}
-.hero h1{font-size:30px;line-height:1.25}
-.sub{font-size:16px}
-.hero-cards{grid-template-columns:1fr;gap:12px;margin:0 -16px}
-.hc{align-items:center;padding:16px}
-.hc>div{min-width:0}
-.hc:not(:last-child)::after{display:none}
-.layout{grid-template-columns:1fr;grid-template-areas:"editor" "rail" "hasil";padding:16px}
-.rail{position:static;grid-template-columns:1fr 1fr}
-.toggles{grid-template-columns:1fr}
-#inputText{min-height:260px;font-size:16px}
-#cara{padding:24px 20px}
-#cara h2{font-size:28px}
-.steps-big{grid-template-columns:1fr}
-.steps-big li{margin:0}
-.steps-big li:not(:last-child){margin-bottom:24px}
-.steps-big li:not(:last-child)::after{content:"↓";right:50%;top:auto;bottom:-24px;transform:translateX(50%)}
-.mindmap{grid-template-columns:1fr 1fr}
-.faq-list{grid-template-columns:1fr}
-.fitur-sec .feat-grid{grid-template-columns:1fr}
-.fitur-sec .feat-full{margin-top:0}
-.fitur-sec .fitur-head{grid-template-columns:minmax(0,1fr) 80px;gap:0 12px;text-align:left;align-items:center}
-.fitur-sec .fitur-head>*{min-width:0}
-.fitur-sec .fitur-head .kicker{font-size:12px;padding:6px 12px;margin:0 0 4px}
-.fitur-sec .fitur-head h2{font-size:21px;line-height:1.25;margin:0 0 4px;max-width:100%;overflow-wrap:break-word;text-wrap:balance;padding-left:16px}
-.fitur-sec .fitur-desc{margin:0;font-size:14px;line-height:1.6;max-width:100%;padding-left:16px}
-.fitur-sec .fitur-title{min-width:0;text-align:left}
-.fitur-sec .mascot-fitur{width:80px;height:80px;padding:6px;margin:0;justify-self:end;align-self:start}
-.foot-inner{grid-template-columns:1fr 1fr;padding:24px 24px}
-.mobile-cta{display:block;position:fixed;left:12px;right:12px;bottom:12px;z-index:40}
-.mobile-cta a{display:block;text-align:center;background:#111;color:#fff;font-weight:800;font-size:17px;text-decoration:none;padding:16px;border-radius:var(--r-md)}
-.fab{bottom:78px;right:12px;padding:12px 20px;font-size:14px}
-.foot-mascots .kick-foot-r{right:10px;bottom:124px;width:112px}
-#mulai{grid-template-columns:1fr;text-align:center}
-#mulai .hero-cta{justify-content:center}
-.cta-imgs{order:-1}
-.cta-imgs .mascot-cta,.cta-imgs .kick-cta{width:132px}
-/* FIX HP/tablet (≤860px): .samples sejajar kanan-kiri + rail grid 2 kolom.
-   Murni CSS reorder (display:contents/grid/order); HTML, ID, class, atribut tidak diubah. */
-.samples{display:flex;flex-wrap:wrap;align-items:center}
-.samples .muted{flex:1 1 100%;min-width:0}
-.samples #btnSampleID,.samples #btnSampleEN{flex:1 1 0;min-width:0;width:auto}
-aside.rail{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-aside.rail .rail-card:has(#fileInput){grid-column:1/-1;order:-1}
-aside.rail .rail-card:not(:has(#fileInput)){display:contents}
-aside.rail .rail-card:not(:has(#fileInput)) h3{display:none}
-aside.rail .rail-card button,aside.rail .rail-card .file,aside.rail .rail-card #btnCheck{margin-top:0;margin-bottom:0;width:100%;min-width:0;font-size:16px;padding:12px 20px;min-height:48px}
-/* POLISH MENU/ACTION (≤860px): hierarchy primary > secondary > utility.
-   Warna/font-family/radius/border/logic disabled tidak diubah. */
-aside.rail{gap:10px;margin-bottom:8px}
-aside.rail .rail-card:has(#fileInput){margin-bottom:2px}
-aside.rail .rail-card #btnCheck{grid-column:1/-1;order:1;min-height:54px;font-size:17px;font-weight:800;padding:12px 20px}
-aside.rail #btnApplyHumanize{order:3;font-size:14px;line-height:1.35;padding:10px 12px;min-height:48px;white-space:normal;overflow-wrap:break-word}
-aside.rail #btnHumanize{order:4;font-size:15px;line-height:1.35;padding:10px 12px;min-height:48px;white-space:normal;overflow-wrap:break-word}
-aside.rail #btnSummarize{order:6;font-size:15px;line-height:1.35;padding:10px 12px;min-height:48px;white-space:normal;overflow-wrap:break-word}
-aside.rail #btnExplain{order:7;font-size:15px;line-height:1.35;padding:10px 12px;min-height:48px;white-space:normal;overflow-wrap:break-word}
-aside.rail .rail-card:has(#btnSummarize) p.muted{grid-column:1/-1;min-width:0;order:6}
-aside.rail #btnClear{order:8;font-size:15px;line-height:1.35;padding:10px 12px;min-height:48px;white-space:normal;overflow-wrap:break-word}
-aside.rail #btnPrint{order:9;font-size:14px;line-height:1.35;padding:10px 12px;min-height:48px;white-space:normal;overflow-wrap:break-word}
-aside.rail .rail-card button:disabled{opacity:.8}
-/* MOCKUP MENU (≤860px): kicker label via ::before card display:contents
-   (::before terpromosi jadi grid item; HTML tidak diubah). */
-aside.rail .rail-card:has(#btnCheck)::before{content:"MAIN ACTIONS";display:block;grid-column:1/-1;order:2;min-width:0;font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);margin:8px 0 0}
-aside.rail .rail-card:has(#btnHumanize)::before{content:"TOOLS / RESULT";display:block;grid-column:1/-1;order:5;min-width:0;font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);margin:8px 0 0}
-aside.rail #btnDownload{display:none}
+@media (max-width: 860px) {
+  html, body { overflow-x: clip; max-width: 100vw }
+  /* FOOTER-CLEARANCE: CTA ±62px + 12px + safe-area 34px = ±108px worst-case. */
+  .wrap { padding: 0 16px 118px; max-width: 100vw; overflow-x: clip }
+  .nav-inner { padding: 8px 16px; position: relative }
+  .nav-links { display: none }
+  .nav-links.open {
+    display: flex; position: absolute; top: calc(100% + 8px); left: 12px; right: 12px; background: #fff;
+    border: 1px solid var(--line); border-radius: var(--r-lg); padding: 8px; flex-direction: column; gap: 2px;
+    box-shadow: var(--sh-lg); z-index: 50
+  }
+  .nav-links.open a { padding: 16px; font-size: 16px; min-height: 48px; display: flex; align-items: center; border-radius: var(--r-md) }
+  .nav-toggle {
+    display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; min-height: 44px;
+    min-width: 44px; padding: 0; font-size: 20px; line-height: 1; border-radius: var(--r-md); margin-left: 0; order: 2
+  }
+  .logo { font-size: 18px }
+  .nav-cta { padding: 10px 16px; font-size: 14px; min-height: 44px; margin-left: auto; order: 1 }
+  .hero { grid-template-columns: 1fr; padding: var(--sp-lg) 16px; gap: var(--sp-base); margin: 12px 0; overflow-x: clip }
+  .hero-main { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; column-gap: 16px; row-gap: 0 }
+  .hero-text { display: contents }
+  .hero-text h1 { grid-column: 1; grid-row: 1; min-width: 0 }
+  /* ALIGN HERO CHARACTER (mobile): gambar "icon heading.png" 552x914 punya
+     ~53px (5.8%) pita transparan di atas, jadi artwork terlihat turun ~13px
+     dari top h1 (padding-top 4px + 8.7px pita). padding-top dihapus dan
+     diganti margin-top negatif agar puncak artwork sejajar baris atas h1
+     (cap-height). Desktop >1100px & style.css tidak disentuh. */
+  .hero-character {
+    position: relative; left: auto; top: auto; bottom: auto; z-index: 2; grid-column: 2; grid-row: 1; justify-self: end;
+    align-self: start; display: block; width: auto; margin: -8px 0 0; padding-top: 0
+  }
+  .hero-text .sub { grid-column: 1/-1; grid-row: 2 }
+  .hero-text .hero-cta { grid-column: 1/-1 }
+  /* GUARANTEE hero atas sejajar (≤860px): row + wrap + tombol auto. Hero-only
+     (.hero-text, bukan #mulai). Aturan ≤600px di bawah (baris 338-341, lebih
+     belakangan + spesifisitas setara/lebih tinggi) tetap menang per-properti,
+     jadi gaya mungil 360px tidak berubah. */
+  .hero-text .hero-cta { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px }
+  .hero-text .hero-cta .btn-hero { width: auto; flex: 0 1 auto; min-width: 0; max-width: 50% }
+  .hero-text .trust-row { grid-column: 1/-1 }
+  .hero-character img { width: 96px; max-height: 150px; height: auto }
+  .hero h1 { font-size: 30px; line-height: 1.25 }
+  .sub { font-size: 16px }
+  .hero-cards { grid-template-columns: 1fr; gap: 12px; margin: 0 -16px }
+  .hc { align-items: center; padding: 16px }
+  .hc>div { min-width: 0 }
+  .hc:not(:last-child)::after { display: none }
+  .layout { grid-template-columns: 1fr; grid-template-areas: "editor" "rail" "hasil"; padding: 16px }
+  .rail { position: static; grid-template-columns: 1fr 1fr }
+  .toggles { grid-template-columns: 1fr }
+  #inputText { min-height: 260px; font-size: 16px }
+  #cara { padding: 24px 20px }
+  #cara h2 { font-size: 28px }
+  .steps-big { grid-template-columns: 1fr }
+  .steps-big li { margin: 0 }
+  .steps-big li:not(:last-child) { margin-bottom: 24px }
+  .steps-big li:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -24px; transform: translateX(50%) }
+  .mindmap { grid-template-columns: 1fr 1fr }
+  .faq-list { grid-template-columns: 1fr }
+  .fitur-sec .feat-grid { grid-template-columns: 1fr }
+  .fitur-sec .feat-full { margin-top: 0 }
+  .fitur-sec .fitur-head { grid-template-columns: minmax(0, 1fr) 80px; gap: 0 12px; text-align: left; align-items: center }
+  .fitur-sec .fitur-head>* { min-width: 0 }
+  .fitur-sec .fitur-head .kicker { font-size: 12px; padding: 6px 12px; margin: 0 0 4px }
+  .fitur-sec .fitur-head h2 {
+    font-size: 21px; line-height: 1.25; margin: 0 0 4px; max-width: 100%; overflow-wrap: break-word; text-wrap: balance;
+    padding-left: 16px
+  }
+  .fitur-sec .fitur-desc { margin: 0; font-size: 14px; line-height: 1.6; max-width: 100%; padding-left: 16px }
+  .fitur-sec .fitur-title { min-width: 0; text-align: left }
+  .fitur-sec .mascot-fitur { width: 80px; height: 80px; padding: 6px; margin: 0; justify-self: end; align-self: start }
+  .foot-inner { grid-template-columns: 1fr 1fr; padding: 24px 24px }
+  .mobile-cta { display: block; position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 40 }
+  .mobile-cta a {
+    display: block; text-align: center; background: #111; color: #fff; font-weight: 800; font-size: 17px;
+    text-decoration: none; padding: 16px; border-radius: var(--r-md)
+  }
+  .fab { bottom: 78px; right: 12px; padding: 12px 20px; font-size: 14px }
+  .foot-mascots .kick-foot-r { right: 10px; bottom: 124px; width: 112px }
+  #mulai { grid-template-columns: 1fr; text-align: center }
+  #mulai .hero-cta { justify-content: center }
+  .cta-imgs { order: -1 }
+  .cta-imgs .mascot-cta, .cta-imgs .kick-cta { width: 132px }
+  /* FIX HP/tablet (≤860px): .samples sejajar kanan-kiri + rail grid 2 kolom.
+     Murni CSS reorder (display:contents/grid/order); HTML, ID, class, atribut tidak diubah. */
+  .samples { display: flex; flex-wrap: wrap; align-items: center }
+  .samples .muted { flex: 1 1 100%; min-width: 0 }
+  .samples #btnSampleID, .samples #btnSampleEN { flex: 1 1 0; min-width: 0; width: auto }
+  aside.rail { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+  aside.rail .rail-card:has(#fileInput) { grid-column: 1/-1; order: -1 }
+  aside.rail .rail-card:not(:has(#fileInput)) { display: contents }
+  aside.rail .rail-card:not(:has(#fileInput)) h3 { display: none }
+  aside.rail .rail-card button, aside.rail .rail-card .file, aside.rail .rail-card #btnCheck {
+    margin-top: 0; margin-bottom: 0; width: 100%; min-width: 0; font-size: 16px; padding: 12px 20px; min-height: 48px
+  }
+  /* POLISH MENU/ACTION (≤860px): hierarchy primary > secondary > utility.
+     Warna/font-family/radius/border/logic disabled tidak diubah. */
+  aside.rail { gap: 10px; margin-bottom: 8px }
+  aside.rail .rail-card:has(#fileInput) { margin-bottom: 2px }
+  aside.rail .rail-card #btnCheck { grid-column: 1/-1; order: 1; min-height: 54px; font-size: 17px; font-weight: 800; padding: 12px 20px }
+  aside.rail #btnApplyHumanize {
+    order: 3; font-size: 14px; line-height: 1.35; padding: 10px 12px; min-height: 48px; white-space: normal;
+    overflow-wrap: break-word
+  }
+  aside.rail #btnHumanize {
+    order: 4; font-size: 15px; line-height: 1.35; padding: 10px 12px; min-height: 48px; white-space: normal;
+    overflow-wrap: break-word
+  }
+  aside.rail #btnSummarize {
+    order: 6; font-size: 15px; line-height: 1.35; padding: 10px 12px; min-height: 48px; white-space: normal;
+    overflow-wrap: break-word
+  }
+  aside.rail #btnExplain {
+    order: 7; font-size: 15px; line-height: 1.35; padding: 10px 12px; min-height: 48px; white-space: normal;
+    overflow-wrap: break-word
+  }
+  aside.rail .rail-card:has(#btnSummarize) p.muted { grid-column: 1/-1; min-width: 0; order: 6 }
+  aside.rail #btnClear {
+    order: 8; font-size: 15px; line-height: 1.35; padding: 10px 12px; min-height: 48px; white-space: normal;
+    overflow-wrap: break-word
+  }
+  aside.rail #btnPrint {
+    order: 9; font-size: 14px; line-height: 1.35; padding: 10px 12px; min-height: 48px; white-space: normal;
+    overflow-wrap: break-word
+  }
+  aside.rail .rail-card button:disabled { opacity: .8 }
+  /* MOCKUP MENU (≤860px): kicker label via ::before card display:contents
+     (::before terpromosi jadi grid item; HTML tidak diubah). */
+  aside.rail .rail-card:has(#btnCheck)::before {
+    content: "MAIN ACTIONS"; display: block; grid-column: 1/-1; order: 2; min-width: 0; font-size: 11px;
+    font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--mut); margin: 8px 0 0
+  }
+  aside.rail .rail-card:has(#btnHumanize)::before {
+    content: "TOOLS / RESULT"; display: block; grid-column: 1/-1; order: 5; min-width: 0; font-size: 11px;
+    font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--mut); margin: 8px 0 0
+  }
+  aside.rail #btnDownload { display: none }
 }
 
 /* PHONE ≤600px */
-@media(max-width:600px){
-html,body{overflow-x:clip;max-width:100vw}
-img{max-width:100%;height:auto}
-body{font-size:16px;line-height:1.65}
-/* FOOTER-CLEARANCE 360px: CTA 44px + 10px + safe-area 34px = 88px
-   (110px bila teks membesar 2 baris) → 128px, napas ±18px. */
-.wrap{padding:0 12px 128px}
-.nav-inner{padding:8px 12px;gap:12px}
-.logo{font-size:17px;gap:6px}
-.logo-mascot{width:30px;height:30px}
-.nav-cta{padding:8px 16px;font-size:14px;min-height:44px}
-.hero{padding:8px 16px var(--sp-base);gap:var(--sp-base);margin:8px 0 12px;border-radius:var(--r-xl)}
-.hero-main{padding:0;min-width:0}
-/* HERO-ATAS rapat (≤600px): padding-top 16→8px potong ruang kosong;
-   h1 + maskot sama-sama margin-top 8px agar duduk sejajar (timpa -8px
-   maskot yang bikin melayang). Total tinggi hero ± tetap. */
-.hero-character{margin-top:8px}
-.hero h1{font-size:27px;line-height:1.25;letter-spacing:-.4px;margin:8px 0 12px;max-width:100%;padding-left:12px}
-.sub{font-size:16px;margin:0 0 var(--sp-base);line-height:1.65;padding-left:12px}
-/* h1 + sub indent 12px = segaris tombol/trust-row/demo (40px). padding
-   inside-box: maskot (grid item terpisah) + font/vertikal tak tersentuh. */
-.hero-cta{flex-direction:column;align-items:stretch;gap:12px;margin-bottom:16px}
-.btn-hero{width:100%;min-height:48px;font-size:16px;padding:12px 20px}
-.trust-row{font-size:13px;gap:8px 16px;margin:0 0 var(--sp-base)}
-.hero-cards{grid-template-columns:1fr;gap:var(--sp-sm)}
-.hc{padding:12px 16px;align-items:center}
-.hc b{flex:0 0 32px;width:32px;height:32px;font-size:14px}
-.hc strong{font-size:14px}
-.hc small{font-size:13px}
-.hero-side{padding:12px;border-radius:var(--r-lg)}
-.demo{padding:16px}
-.demo-kicker{font-size:11px}
-.demo-tabs{gap:4px;margin-bottom:10px;padding:3px}
-.demo-tab{font-size:13px;font-weight:700;padding:8px 10px;min-height:40px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.demo-score b{font-size:28px}
-.demo-score small{font-size:13px}
-.demo-bar{margin:12px 0}
-.demo-text{font-size:14px;line-height:1.75;max-height:112px}
-.demo-note{font-size:13px}
-.layout{padding:12px;gap:12px;border-radius:var(--r-xl)}
-.rail-card,.panel{padding:16px;border-radius:var(--r-lg)}
-.panel-head h2{font-size:19px}
-.wc{font-size:12px;padding:8px 12px}
-button{min-height:48px;font-size:16px;padding:12px 20px}
-#inputText{min-height:200px;font-size:16px;padding:16px;line-height:1.75}
-.samples{font-size:14px;gap:8px;display:flex;flex-wrap:wrap;align-items:center}
-.samples .muted{flex:1 1 100%;min-width:0}
-.samples #btnSampleID,.samples #btnSampleEN{flex:1 1 0;min-width:0;width:auto}
-.toggles{gap:8px;margin-top:12px}
-.tg{font-size:14px;padding:12px}
-.status{font-size:14px;padding:12px 16px;margin:12px 0 0}
-.score-hero{gap:8px;margin:12px 0}
-.score-main strong{font-size:36px}
-.score-sub{font-size:14px}
-.stat-grid{gap:8px}
-.stat{padding:12px 8px}
-.stat strong{font-size:22px}
-.stat span{font-size:11px}
-#highlight{font-size:15px;line-height:2;padding:12px}
-.det summary{font-size:16px;padding:12px 16px;min-height:48px}
-.reasons{font-size:15px;line-height:1.7}
-pre{font-size:12px;padding:12px;max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere}
-.verdict{font-size:16px;padding:12px 16px}
-.humanize{padding:16px}
-.humanize-head h3{font-size:18px}
-#humanizeOut{font-size:15px;min-height:140px}
-.feat-grid,.mindmap{grid-template-columns:1fr}
-.fitur-sec .fitur-head{grid-template-columns:minmax(0,1fr) 72px;gap:0 10px;text-align:left;align-items:center}
-.fitur-sec .fitur-desc{max-width:100%;font-size:13px;line-height:1.55;margin:0}
-.fitur-sec .fitur-head h2{font-size:20px;line-height:1.25;margin:0 0 4px;max-width:100%;overflow-wrap:break-word;text-wrap:balance}
-.fitur-sec .feat-full-inner{flex-direction:column;text-align:center}
-.fitur-sec .feat-full-badge{align-self:center}
-.fitur-sec .feat b{font-size:18px}
-.fitur-sec .feat span{font-size:14px}
-.mind-txt{padding:12px}
-.mind-txt b{font-size:15px}
-.mind-txt span{font-size:14px}
-.mind-center{padding:12px;grid-row:auto}
-.mind-center b{font-size:28px}
-.rail{grid-template-columns:1fr 1fr;gap:10px}
-aside.rail .rail-card:has(#fileInput){grid-column:1/-1}
-aside.rail .rail-card button,aside.rail .rail-card .file,aside.rail .rail-card #btnCheck{font-size:16px;padding:12px 20px;min-height:48px}
-.content-sec{padding:24px 16px;margin-top:12px;border-radius:var(--r-xl)}
-.content-sec h2{font-size:22px;margin:0 0 12px;line-height:1.2}
-.content-sec p,.content-sec li{font-size:14px}
-/* FAQ-HEAD kompak (≤600px): pola .fitur-head — teks kiri + maskot kanan
-   88px center vertikal; img anak pertama sehingga perlu grid-column:2 eksplisit. */
-.faq-head{grid-template-columns:minmax(0,1fr) 88px;gap:0 12px;align-items:center;text-align:left;margin-bottom:12px;padding-left:6px}
-.faq-head>*{min-width:0}
-.faq-head .mascot-faq{grid-column:2;grid-row:1/4;width:88px;max-width:88px;margin:0;justify-self:end;align-self:center}
-.faq-head .kicker{grid-column:1;font-size:12px;padding:6px 12px;margin:0 0 4px;justify-self:start}
-.faq-head h2{grid-column:1;font-size:20px;line-height:1.25;margin:0 0 4px;max-width:100%;overflow-wrap:break-word;text-wrap:balance}
-.faq-head .muted{grid-column:1;font-size:13px;line-height:1.55;margin:0;max-width:100%;overflow-wrap:break-word}
-.feat b{font-size:16px;padding:16px 16px 0}
-.feat span{font-size:14px;padding:4px 16px 16px}
-.feat::before{min-height:80px;font-size:28px}
-.steps-big li{font-size:14px;line-height:1.6;padding:16px}
-.steps-big .step-num{margin-bottom:6px;font-size:13px;letter-spacing:1.6px}
-.steps-big .step-ico{margin:0 0 8px}
-.steps-big li>b:first-of-type{margin:0 0 4px;font-size:14px}
-.cta-band{padding:var(--sp-xl) 16px;border-radius:var(--r-xl);margin-top:12px}
-.cta-band h2{font-size:24px}
-.cta-band p{font-size:15px;margin:0 0 var(--sp-base)}
-.cta-band .hero-cta{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:stretch;gap:12px}
-.foot-inner{grid-template-columns:1fr 1fr;padding:24px 16px;gap:16px}
-.foot-brand{grid-column:1/-1}
-.foot-brand b{font-size:18px}
-.foot-brand small{font-size:14px}
-.foot-links a{font-size:14px}
-.foot-links[aria-label="Aplikasi"]{order:1}
-.foot-links[aria-label="Konten"]{order:2}
-.foot-links[aria-label="Bantuan"]{grid-column:1/-1;order:3}
-.foot-base{padding:12px 16px;font-size:13px}
-.mobile-cta{left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom))}
-.mobile-cta a{font-size:14px;padding:10px 16px;min-height:44px;border-radius:var(--r-md)}
-.fab{bottom:72px;right:10px;padding:10px 16px;font-size:13px}
-.foot-mascots .kick-foot-r{right:10px;bottom:112px;width:96px}
-.empty{padding:24px 16px}
-.empty b{font-size:18px}
-.empty p{font-size:14px}
-.fitur-sec .fitur-head{margin-bottom:12px}
-.fitur-sec .mascot-fitur{width:72px;height:72px;padding:6px;margin:0;justify-self:end;align-self:start}
-.feat-full{padding:var(--sp-base) var(--sp-lg)}
+@media (max-width: 600px) {
+  html, body { overflow-x: clip; max-width: 100vw }
+  img { max-width: 100%; height: auto }
+  body { font-size: 16px; line-height: 1.65 }
+  /* FOOTER-CLEARANCE 360px: CTA 44px + 10px + safe-area 34px = 88px
+     (110px bila teks membesar 2 baris) → 128px, napas ±18px. */
+  .wrap { padding: 0 12px 128px }
+  .nav-inner { padding: 8px 12px; gap: 12px }
+  .logo { font-size: 17px; gap: 6px }
+  .logo-mascot { width: 30px; height: 30px }
+  .nav-cta { padding: 8px 16px; font-size: 14px; min-height: 44px }
+  .hero { padding: 8px 16px var(--sp-base); gap: var(--sp-base); margin: 8px 0 12px; border-radius: var(--r-xl) }
+  .hero-main { padding: 0; min-width: 0 }
+  /* HERO-ATAS rapat (≤600px): padding-top 16→8px potong ruang kosong;
+     h1 + maskot sama-sama margin-top 8px agar duduk sejajar (timpa -8px
+     maskot yang bikin melayang). Total tinggi hero ± tetap. */
+  .hero-character { margin-top: 8px }
+  .hero h1 { font-size: 27px; line-height: 1.25; letter-spacing: -.4px; margin: 8px 0 12px; max-width: 100%; padding-left: 12px }
+  .sub { font-size: 16px; margin: 0 0 var(--sp-base); line-height: 1.65; padding-left: 12px }
+  /* h1 + sub indent 12px = segaris tombol/trust-row/demo (40px). padding
+     inside-box: maskot (grid item terpisah) + font/vertikal tak tersentuh. */
+  .hero-cta { flex-direction: column; align-items: stretch; gap: 12px; margin-bottom: 16px }
+  .btn-hero { width: 100%; min-height: 48px; font-size: 16px; padding: 12px 20px }
+  .trust-row { font-size: 13px; gap: 8px 16px; margin: 0 0 var(--sp-base) }
+  .hero-cards { grid-template-columns: 1fr; gap: var(--sp-sm) }
+  .hc { padding: 12px 16px; align-items: center }
+  .hc b { flex: 0 0 32px; width: 32px; height: 32px; font-size: 14px }
+  .hc strong { font-size: 14px }
+  .hc small { font-size: 13px }
+  .hero-side { padding: 12px; border-radius: var(--r-lg) }
+  .demo { padding: 16px }
+  .demo-kicker { font-size: 11px }
+  .demo-tabs { gap: 4px; margin-bottom: 10px; padding: 3px }
+  .demo-tab {
+    font-size: 13px; font-weight: 700; padding: 8px 10px; min-height: 40px; line-height: 1.3; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; max-width: 100%
+  }
+  .demo-score b { font-size: 28px }
+  .demo-score small { font-size: 13px }
+  .demo-bar { margin: 12px 0 }
+  .demo-text { font-size: 14px; line-height: 1.75; max-height: 112px }
+  .demo-note { font-size: 13px }
+  .layout { padding: 12px; gap: 12px; border-radius: var(--r-xl) }
+  .rail-card, .panel { padding: 16px; border-radius: var(--r-lg) }
+  .panel-head h2 { font-size: 19px }
+  .wc { font-size: 12px; padding: 8px 12px }
+  button { min-height: 48px; font-size: 16px; padding: 12px 20px }
+  #inputText { min-height: 200px; font-size: 16px; padding: 16px; line-height: 1.75 }
+  .samples { font-size: 14px; gap: 8px; display: flex; flex-wrap: wrap; align-items: center }
+  .samples .muted { flex: 1 1 100%; min-width: 0 }
+  .samples #btnSampleID, .samples #btnSampleEN { flex: 1 1 0; min-width: 0; width: auto }
+  .toggles { gap: 8px; margin-top: 12px }
+  .tg { font-size: 14px; padding: 12px }
+  .status { font-size: 14px; padding: 12px 16px; margin: 12px 0 0 }
+  .score-hero { gap: 8px; margin: 12px 0 }
+  .score-main strong { font-size: 36px }
+  .score-sub { font-size: 14px }
+  .stat-grid { gap: 8px }
+  .stat { padding: 12px 8px }
+  .stat strong { font-size: 22px }
+  .stat span { font-size: 11px }
+  #highlight { font-size: 15px; line-height: 2; padding: 12px }
+  .det summary { font-size: 16px; padding: 12px 16px; min-height: 48px }
+  .reasons { font-size: 15px; line-height: 1.7 }
+  pre { font-size: 12px; padding: 12px; max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere }
+  .verdict { font-size: 16px; padding: 12px 16px }
+  .humanize { padding: 16px }
+  .humanize-head h3 { font-size: 18px }
+  #humanizeOut { font-size: 15px; min-height: 140px }
+  .feat-grid, .mindmap { grid-template-columns: 1fr }
+  .fitur-sec .fitur-head { grid-template-columns: minmax(0, 1fr) 72px; gap: 0 10px; text-align: left; align-items: center }
+  .fitur-sec .fitur-desc { max-width: 100%; font-size: 13px; line-height: 1.55; margin: 0 }
+  .fitur-sec .fitur-head h2 {
+    font-size: 20px; line-height: 1.25; margin: 0 0 4px; max-width: 100%; overflow-wrap: break-word; text-wrap: balance
+  }
+  .fitur-sec .feat-full-inner { flex-direction: column; text-align: center }
+  .fitur-sec .feat-full-badge { align-self: center }
+  .fitur-sec .feat b { font-size: 18px }
+  .fitur-sec .feat span { font-size: 14px }
+  .mind-txt { padding: 12px }
+  .mind-txt b { font-size: 15px }
+  .mind-txt span { font-size: 14px }
+  .mind-center { padding: 12px; grid-row: auto }
+  .mind-center b { font-size: 28px }
+  .rail { grid-template-columns: 1fr 1fr; gap: 10px }
+  aside.rail .rail-card:has(#fileInput) { grid-column: 1/-1 }
+  aside.rail .rail-card button, aside.rail .rail-card .file, aside.rail .rail-card #btnCheck {
+    font-size: 16px; padding: 12px 20px; min-height: 48px
+  }
+  .content-sec { padding: 24px 16px; margin-top: 12px; border-radius: var(--r-xl) }
+  .content-sec h2 { font-size: 22px; margin: 0 0 12px; line-height: 1.2 }
+  .content-sec p, .content-sec li { font-size: 14px }
+  /* FAQ-HEAD kompak (≤600px): pola .fitur-head — teks kiri + maskot kanan
+     88px center vertikal; img anak pertama sehingga perlu grid-column:2 eksplisit. */
+  .faq-head {
+    grid-template-columns: minmax(0, 1fr) 88px; gap: 0 12px; align-items: center; text-align: left; margin-bottom: 12px;
+    padding-left: 6px
+  }
+  .faq-head>* { min-width: 0 }
+  .faq-head .mascot-faq { grid-column: 2; grid-row: 1/4; width: 88px; max-width: 88px; margin: 0; justify-self: end; align-self: center }
+  .faq-head .kicker { grid-column: 1; font-size: 12px; padding: 6px 12px; margin: 0 0 4px; justify-self: start }
+  .faq-head h2 {
+    grid-column: 1; font-size: 20px; line-height: 1.25; margin: 0 0 4px; max-width: 100%; overflow-wrap: break-word;
+    text-wrap: balance
+  }
+  .faq-head .muted { grid-column: 1; font-size: 13px; line-height: 1.55; margin: 0; max-width: 100%; overflow-wrap: break-word }
+  .feat b { font-size: 16px; padding: 16px 16px 0 }
+  .feat span { font-size: 14px; padding: 4px 16px 16px }
+  .feat::before { min-height: 80px; font-size: 28px }
+  .steps-big li { font-size: 14px; line-height: 1.6; padding: 16px }
+  .steps-big .step-num { margin-bottom: 6px; font-size: 13px; letter-spacing: 1.6px }
+  .steps-big .step-ico { margin: 0 0 8px }
+  .steps-big li>b:first-of-type { margin: 0 0 4px; font-size: 14px }
+  .cta-band { padding: var(--sp-xl) 16px; border-radius: var(--r-xl); margin-top: 12px }
+  .cta-band h2 { font-size: 24px }
+  .cta-band p { font-size: 15px; margin: 0 0 var(--sp-base) }
+  .cta-band .hero-cta { flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: stretch; gap: 12px }
+  .foot-inner { grid-template-columns: 1fr 1fr; padding: 24px 16px; gap: 16px }
+  .foot-brand { grid-column: 1/-1 }
+  .foot-brand b { font-size: 18px }
+  .foot-brand small { font-size: 14px }
+  .foot-links a { font-size: 14px }
+  .foot-links[aria-label="Aplikasi"] { order: 1 }
+  .foot-links[aria-label="Konten"] { order: 2 }
+  .foot-links[aria-label="Bantuan"] { grid-column: 1/-1; order: 3 }
+  .foot-base { padding: 12px 16px; font-size: 13px }
+  .mobile-cta { left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)) }
+  .mobile-cta a { font-size: 14px; padding: 10px 16px; min-height: 44px; border-radius: var(--r-md) }
+  .fab { bottom: 72px; right: 10px; padding: 10px 16px; font-size: 13px }
+  .foot-mascots .kick-foot-r { right: 10px; bottom: 112px; width: 96px }
+  .empty { padding: 24px 16px }
+  .empty b { font-size: 18px }
+  .empty p { font-size: 14px }
+  .fitur-sec .fitur-head { margin-bottom: 12px }
+  .fitur-sec .mascot-fitur { width: 72px; height: 72px; padding: 6px; margin: 0; justify-self: end; align-self: start }
+  .feat-full { padding: var(--sp-base) var(--sp-lg) }
 }
 
 /* MASCOT ADJUSTMENTS ≤640px */
-@media(max-width:640px){
-.faq-head .mascot-faq{width:88px;max-width:88px}
-.kick-hero{display:block;width:96px;max-height:150px;align-self:center;filter:drop-shadow(0 4px 8px rgba(11,46,75,.25))}
-.hero-main{column-gap:var(--sp-sm)}
-.mascot-hero{width:64px;height:64px}
-.demo-top{gap:8px}
-.step-ico img{height:40px}
-.mascot-empty{width:120px}
-.mascot-faq{width:88px;max-width:88px}
-.foot-mascots{padding:0 16px}
+@media (max-width: 640px) {
+  .faq-head .mascot-faq { width: 88px; max-width: 88px }
+  .kick-hero { display: block; width: 96px; max-height: 150px; align-self: center; filter: drop-shadow(0 4px 8px rgba(11, 46, 75, .25)) }
+  .hero-main { column-gap: var(--sp-sm) }
+  .mascot-hero { width: 64px; height: 64px }
+  .demo-top { gap: 8px }
+  .step-ico img { height: 40px }
+  .mascot-empty { width: 120px }
+  .mascot-faq { width: 88px; max-width: 88px }
+  .foot-mascots { padding: 0 16px }
 }
 
 /* VERY SMALL PHONES 320-380px */
-@media(max-width:380px){
-.hero h1{font-size:24px}
-.nav-cta{padding:8px 16px;font-size:14px}
-.content-sec{padding:16px}
-.stat strong{font-size:19px}
-.stat span{font-size:10px}
-.foot-inner{grid-template-columns:1fr}
-.demo-tabs{grid-template-columns:1fr 1fr}
-/* 320px aman: rapatkan gap + padding horizontal tombol agar label panjang wrap tanpa overflow. */
-/* FIX 320-380px: maskot 96→80px agar tidak desak h1 24px; CTA gap 8→6px +
-   tombol 10px 8px font 13px (ukuran awal) sehingga muat 240px di 320px;
-   trust-row font 12px + span nowrap = wrap 2 baris kiri yang seimbang. */
-aside.rail{gap:8px}
-aside.rail #btnClear,aside.rail #btnHumanize,aside.rail #btnApplyHumanize,aside.rail #btnPrint,aside.rail #btnDownload{padding-left:8px;padding-right:8px}
-.hero-character img{width:80px;max-height:126px}
-.hero-text .hero-cta{gap:6px}
-.hero .hero-text .hero-cta .btn-hero{padding:10px 8px;font-size:13px}
-.hero-text .trust-row{font-size:12px;gap:6px 10px}
+@media (max-width: 380px) {
+  .hero h1 { font-size: 24px }
+  .nav-cta { padding: 8px 16px; font-size: 14px }
+  .content-sec { padding: 16px }
+  .stat strong { font-size: 19px }
+  .stat span { font-size: 10px }
+  .foot-inner { grid-template-columns: 1fr }
+  .demo-tabs { grid-template-columns: 1fr 1fr }
+  /* 320px aman: rapatkan gap + padding horizontal tombol agar label panjang wrap tanpa overflow. */
+  /* FIX 320-380px: maskot 96→80px agar tidak desak h1 24px; CTA gap 8→6px +
+     tombol 10px 8px font 13px (ukuran awal) sehingga muat 240px di 320px;
+     trust-row font 12px + span nowrap = wrap 2 baris kiri yang seimbang. */
+  aside.rail { gap: 8px }
+  aside.rail #btnClear, aside.rail #btnHumanize, aside.rail #btnApplyHumanize, aside.rail #btnPrint, aside.rail #btnDownload {
+    padding-left: 8px; padding-right: 8px
+  }
+  .hero-character img { width: 80px; max-height: 126px }
+  .hero-text .hero-cta { gap: 6px }
+  .hero .hero-text .hero-cta .btn-hero { padding: 10px 8px; font-size: 13px }
+  .hero-text .trust-row { font-size: 12px; gap: 6px 10px }
 }
 
 /* HERO-CTA hero atas + #mulai: berdampingan di semua lebar (601px+ row+wrap,
    <=600px hero mungil & #mulai row+wrap basis 140px). */
-@media(max-width:860px) and (min-width:601px){
-.hero-text .hero-cta{flex-direction:row;flex-wrap:wrap;align-items:center}
-.hero-text .hero-cta .btn-hero{width:auto;flex:0 1 auto;min-width:0}
+@media (max-width: 860px) and (min-width: 601px) {
+  .hero-text .hero-cta { flex-direction: row; flex-wrap: wrap; align-items: center }
+  .hero-text .hero-cta .btn-hero { width: auto; flex: 0 1 auto; min-width: 0 }
 }
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.mobile-cta a,.fab{transition:none}}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto }
+  .mobile-cta a, .fab { transition: none }
+}
 
 /* FIX: .hero-cta hero ("Cek tulisan sekarang" + "Cara kerja") tembus ke
    atas di mobile. Root cause:
    1) Tablet 861-1100px masih pakai hero desktop: .hero-character
-      absolute 300px (left:55%, top:-17px) sehingga menutupi area teks/CTA.
+   absolute 300px (left:55%, top:-17px) sehingga menutupi area teks/CTA.
    2) <=860px .hero-text{display:contents} menjadikan .hero-cta grid item
-      TANPA grid-row eksplisit + sisa grid-area:cta dari desktop, sehingga
-      penempatan otomatis grid bisa menempel/overlap ke baris atas.
+   TANPA grid-row eksplisit + sisa grid-area:cta dari desktop, sehingga
+   penempatan otomatis grid bisa menempel/overlap ke baris atas.
    3) CTA kalah z-index dari gambar hero sehingga terlihat tertimpa dan
-      susah diklik.
+   susah diklik.
    Perbaikan di bawah hanya berlaku <=1100px: kunci CTA di baris bawah,
    angkat z-index di atas gambar, kecilkan gambar di tablet. Desktop
    (>1100px), ID, copy tombol, dan *.js tidak disentuh. */
-@media(max-width:1100px){
-.hero{height:auto;min-height:0}
-.hero .hero-text .hero-cta{grid-area:auto;position:relative;z-index:5;min-width:0;overflow:visible}
-.hero .hero-text .hero-cta .btn-hero{position:relative;z-index:6;min-width:0;max-width:100%;white-space:normal;text-align:center}
+@media (max-width: 1100px) {
+  .hero { height: auto; min-height: 0 }
+  .hero .hero-text .hero-cta { grid-area: auto; position: relative; z-index: 5; min-width: 0; overflow: visible }
+  .hero .hero-text .hero-cta .btn-hero {
+    position: relative; z-index: 6; min-width: 0; max-width: 100%; white-space: normal; text-align: center
+  }
 }
 /* Tablet 861-1100px: hero masih mirip desktop; rapatkan gambar ke kanan
    dan kecilkan agar tidak menutupi teks/CTA. */
-@media(max-width:1100px) and (min-width:861px){
-.hero-text{width:62%;max-width:100%}
-.hero-character{left:auto;right:0;top:-8px;width:200px}
-.hero-character img{width:200px}
+@media (max-width: 1100px) and (min-width: 861px) {
+  .hero-text { width: 62%; max-width: 100% }
+  .hero-character { left: auto; right: 0; top: -8px; width: 200px }
+  .hero-character img { width: 200px }
 }
 /* FIX: HP Chrome "Desktop site" ≈980px layout viewport (meta viewport
    diabaikan browser) — hanya @media ≤1100px yang kepicu, guard ≤860px
@@ -337,21 +405,24 @@ aside.rail #btnClear,aside.rail #btnHumanize,aside.rail #btnApplyHumanize,aside.
    hasilnya band overflow/viewport geser saat diskala ke layar HP.
    Blok ini hanya 861–1100px: kunci wrap + shrink intrinsik.
    Desktop (>1100px), index.html, dan *.js tidak disentuh. */
-@media(max-width:1100px) and (min-width:861px){
-#mulai{gap:20px;align-items:center;justify-items:center;max-width:100%;overflow-x:clip}
-.cta-text{min-width:0;max-width:100%;width:100%}
-#mulai .cta-text p{margin-left:auto;margin-right:auto;max-width:100%}
-.cta-imgs{width:100%;max-width:100%;min-width:0;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:16px}
-.cta-imgs img{max-width:100%;height:auto;flex:0 1 auto;min-width:0}
-.cta-imgs .mascot-cta,.cta-imgs .kick-cta{width:132px;max-width:38vw}
-#mulai .hero-cta{max-width:100%;min-width:0;flex-wrap:wrap;justify-content:center}
-#mulai .hero-cta .btn-hero{min-width:0;max-width:100%;white-space:normal;text-align:center;overflow-wrap:anywhere}
-.cta-band h2{overflow-wrap:anywhere}
+@media (max-width: 1100px) and (min-width: 861px) {
+  #mulai { gap: 20px; align-items: center; justify-items: center; max-width: 100%; overflow-x: clip }
+  .cta-text { min-width: 0; max-width: 100%; width: 100% }
+  #mulai .cta-text p { margin-left: auto; margin-right: auto; max-width: 100% }
+  .cta-imgs {
+    width: 100%; max-width: 100%; min-width: 0; display: flex; flex-wrap: wrap; justify-content: center;
+    align-items: center; gap: 16px
+  }
+  .cta-imgs img { max-width: 100%; height: auto; flex: 0 1 auto; min-width: 0 }
+  .cta-imgs .mascot-cta, .cta-imgs .kick-cta { width: 132px; max-width: 38vw }
+  #mulai .hero-cta { max-width: 100%; min-width: 0; flex-wrap: wrap; justify-content: center }
+  #mulai .hero-cta .btn-hero { min-width: 0; max-width: 100%; white-space: normal; text-align: center; overflow-wrap: anywhere }
+  .cta-band h2 { overflow-wrap: anywhere }
 }
 /* <=860px (cek 768px): kunci CTA di baris 3 di bawah sub, trust-row baris 4. */
-@media(max-width:860px){
-.hero-text .hero-cta{grid-column:1/-1;grid-row:3;grid-area:auto;position:relative;z-index:5}
-.hero-text .trust-row{grid-column:1/-1;grid-row:4}
+@media (max-width: 860px) {
+  .hero-text .hero-cta { grid-column: 1/-1; grid-row: 3; grid-area: auto; position: relative; z-index: 5 }
+  .hero-text .trust-row { grid-column: 1/-1; grid-row: 4 }
 }
 /* <=600px (cek 360-390px): hero atas berdampingan mungil, #mulai tetap menumpuk.
    FIX Infinix 360px: (1) maskot vs h1 sejajar vertikal — margin-top 8px
@@ -363,17 +434,26 @@ aside.rail #btnClear,aside.rail #btnHumanize,aside.rail #btnApplyHumanize,aside.
    white-space:nowrap di KEDUA tombol (teks tidak turun), rasio 2:1/1:1
    basis 0 + stretch wadah → tinggi box sama; row nowrap dipertahankan;
    (3) trust-row padding simetris + wrap kiri rapi, span nowrap per item. */
-@media(max-width:600px){
-.hero-main{column-gap:12px}
-.hero-character{margin-top:0;align-self:start}
-.hero-character img{display:block}
-.hero-text .hero-cta{display:flex;min-width:0;max-width:100%;box-sizing:border-box;flex-direction:row;flex-wrap:nowrap;gap:8px;align-items:stretch;justify-content:center;padding:0 12px;overflow:visible}
-.hero .hero-text .hero-cta .btn-hero{width:auto;min-width:0;max-width:100%;padding:5px 5px;font-size:12px;line-height:1.25;min-height:40px;box-sizing:border-box;border-width:1px;white-space:nowrap;text-align:center;overflow-wrap:normal}
-.hero .hero-text .hero-cta .btn-hero:first-child{flex:1 1 auto;min-width:0}
-.hero .hero-text .hero-cta .btn-hero:last-child{flex:1 1 auto;min-width:0}
-.hero-text .trust-row{min-width:0;max-width:100%;box-sizing:border-box;padding:0 12px;display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:center;align-content:flex-start;gap:6px 12px}
-.hero-text .trust-row span{white-space:nowrap}
-.hero-text h1{min-width:0;max-width:100%;overflow-wrap:break-word}
+@media (max-width: 600px) {
+  .hero-main { column-gap: 12px }
+  .hero-character { margin-top: 0; align-self: start }
+  .hero-character img { display: block }
+  .hero-text .hero-cta {
+    display: flex; min-width: 0; max-width: 100%; box-sizing: border-box; flex-direction: row; flex-wrap: nowrap;
+    gap: 8px; align-items: stretch; justify-content: center; padding: 0 12px; overflow: visible
+  }
+  .hero .hero-text .hero-cta .btn-hero {
+    width: auto; min-width: 0; max-width: 100%; padding: 5px 5px; font-size: 12px; line-height: 1.25; min-height: 40px;
+    box-sizing: border-box; border-width: 1px; white-space: nowrap; text-align: center; overflow-wrap: normal
+  }
+  .hero .hero-text .hero-cta .btn-hero:first-child { flex: 1 1 auto; min-width: 0 }
+  .hero .hero-text .hero-cta .btn-hero:last-child { flex: 1 1 auto; min-width: 0 }
+  .hero-text .trust-row {
+    min-width: 0; max-width: 100%; box-sizing: border-box; padding: 0 12px; display: flex; flex-wrap: wrap;
+    justify-content: flex-start; align-items: center; align-content: flex-start; gap: 6px 12px
+  }
+  .hero-text .trust-row span { white-space: nowrap }
+  .hero-text h1 { min-width: 0; max-width: 100%; overflow-wrap: break-word }
 }
 /* CTA hero ≤600px: 1 baris kanan-kiri, tinggi sama, ikut isi (adaptasi pola
    usulan user ke selector asli .hero-text .hero-cta .btn-hero).
@@ -393,55 +473,61 @@ aside.rail #btnClear,aside.rail #btnHumanize,aside.rail #btnApplyHumanize,aside.
 /* FIX: .cta-band#mulai berantakan di HP kecil (360-480px).
    Diagnosis (desktop di style.css vs mobile saat ini):
    1) #mulai desktop 2 kolom (1.05fr/.95fr, gap 32px, padding 40px 32px).
-      Mobile hanya ubah ke 1fr + text-center tanpa rapatkan gap/padding,
-      tanpa min-width:0 dan overflow guard -> konten sempit, grid blowout.
+   Mobile hanya ubah ke 1fr + text-center tanpa rapatkan gap/padding,
+   tanpa min-width:0 dan overflow guard -> konten sempit, grid blowout.
    2) .cta-imgs tetap flex-row tanpa wrap/max-width. Gambar clamp min
-      130px x2 + gap 20px = ~280px, mepet dengan konten ~300px di 360px
-      bila kedua gambar tampil -> overflow. Tanpa margin bawah, gambar
-      (order:-1) menempel ke teks.
+   130px x2 + gap 20px = ~280px, mepet dengan konten ~300px di 360px
+   bila kedua gambar tampil -> overflow. Tanpa margin bawah, gambar
+   (order:-1) menempel ke teks.
    3) .hero-cta di dalam #mulai ikut gaya hero: baris 601-860px masih
-      flex-row berdampingan, dua tombol panjang tidak muat 360px ->
-      wrap canggung / kepotong. <600px sudah column tapi tanpa
-      width:100%/gap/max-width eksplisit per tombol.
+   flex-row berdampingan, dua tombol panjang tidak muat 360px ->
+   wrap canggung / kepotong. <600px sudah column tapi tanpa
+   width:100%/gap/max-width eksplisit per tombol.
    Perbaikan di bawah hanya <=860/600/380px: stack vertikal + center,
    gambar responsif, tombol full-width, anti overflow-x. Desktop
    (>1100px), ID/class, dan file lain tidak disentuh. */
-@media(max-width:860px){
-#mulai{gap:20px;align-items:center;justify-items:center;max-width:100%;overflow-x:clip}
-.cta-text{min-width:0;max-width:100%;width:100%}
-#mulai .cta-text p{margin-left:auto;margin-right:auto}
-.cta-imgs{order:-1;width:100%;max-width:100%;min-width:0;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:16px;margin:0 auto}
-.cta-imgs img{max-width:100%;height:auto;flex:0 1 auto;min-width:0}
-.cta-imgs .mascot-cta,.cta-imgs .kick-cta{width:132px;max-width:38vw}
-#mulai .hero-cta{width:100%;max-width:100%;min-width:0;flex-wrap:wrap;justify-content:center}
+@media (max-width: 860px) {
+  #mulai { gap: 20px; align-items: center; justify-items: center; max-width: 100%; overflow-x: clip }
+  .cta-text { min-width: 0; max-width: 100%; width: 100% }
+  #mulai .cta-text p { margin-left: auto; margin-right: auto }
+  .cta-imgs {
+    order: -1; width: 100%; max-width: 100%; min-width: 0; display: flex; flex-wrap: wrap; justify-content: center;
+    align-items: center; gap: 16px; margin: 0 auto
+  }
+  .cta-imgs img { max-width: 100%; height: auto; flex: 0 1 auto; min-width: 0 }
+  .cta-imgs .mascot-cta, .cta-imgs .kick-cta { width: 132px; max-width: 38vw }
+  #mulai .hero-cta { width: 100%; max-width: 100%; min-width: 0; flex-wrap: wrap; justify-content: center }
 }
-@media(max-width:600px){
-.cta-band{max-width:100%;overflow-x:clip;padding:24px 16px}
-.cta-band h2{overflow-wrap:anywhere}
-.cta-band p{max-width:100%}
-#mulai .hero-cta{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:stretch;gap:12px}
-#mulai .hero-cta .btn-hero{width:auto;flex:1 1 140px;max-width:100%;min-width:0;white-space:normal;text-align:center;overflow-wrap:anywhere}
-.cta-imgs{gap:12px}
-.cta-imgs .mascot-cta,.cta-imgs .kick-cta{width:120px;max-width:40vw}
+@media (max-width: 600px) {
+  .cta-band { max-width: 100%; overflow-x: clip; padding: 24px 16px }
+  .cta-band h2 { overflow-wrap: anywhere }
+  .cta-band p { max-width: 100% }
+  #mulai .hero-cta { flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: stretch; gap: 12px }
+  #mulai .hero-cta .btn-hero {
+    width: auto; flex: 1 1 140px; max-width: 100%; min-width: 0; white-space: normal; text-align: center;
+    overflow-wrap: anywhere
+  }
+  .cta-imgs { gap: 12px }
+  .cta-imgs .mascot-cta, .cta-imgs .kick-cta { width: 120px; max-width: 40vw }
 }
-@media(max-width:380px){
-#mulai{gap:16px}
-.cta-band{padding:20px 14px}
-.cta-imgs .mascot-cta,.cta-imgs .kick-cta{width:104px;max-width:42vw}
-#mulai .hero-cta .btn-hero{font-size:15px;padding:12px 16px}
-/* 341-380px: satu baris nowrap (basis auto = jatah ≥ isi, pil membungkus teks).
-   DARURAT ≤340px di blok paling bawah menimpa jadi stack. */
-.hero .hero-text .hero-cta .btn-hero{white-space:nowrap}
+@media (max-width: 380px) {
+  #mulai { gap: 16px }
+  .cta-band { padding: 20px 14px }
+  .cta-imgs .mascot-cta, .cta-imgs .kick-cta { width: 104px; max-width: 42vw }
+  #mulai .hero-cta .btn-hero { font-size: 15px; padding: 12px 16px }
+  /* 341-380px: satu baris nowrap (basis auto = jatah ≥ isi, pil membungkus teks).
+     DARURAT ≤340px di blok paling bawah menimpa jadi stack. */
+  .hero .hero-text .hero-cta .btn-hero { white-space: nowrap }
 }
 /* 341-600px: SATU BARIS kanan-kiri — nowrap + flex-basis auto (jatah ≥ isi,
    sisa ruang dibagi rata via grow); min-width:0 tidak memicu susut karena
    kontainer surplus di rentang ini (lihat hitungan di atas). */
-@media(max-width:600px) and (min-width:341px){
-.hero .hero-text .hero-cta .btn-hero{white-space:nowrap}
+@media (max-width: 600px) and (min-width: 341px) {
+  .hero .hero-text .hero-cta .btn-hero { white-space: nowrap }
 }
 /* DARURAT ≤340px SAJA: wadah terlalu sempit untuk 1 baris → stack vertikal
    full-width, teks wrap di dalam pil. Tidak berlaku di 341px ke atas. */
-@media(max-width:340px){
-.hero-text .hero-cta{flex-wrap:wrap}
-.hero .hero-text .hero-cta .btn-hero{flex:1 1 100%;white-space:normal;text-wrap:balance;overflow-wrap:anywhere}
+@media (max-width: 340px) {
+  .hero-text .hero-cta { flex-wrap: wrap }
+  .hero .hero-text .hero-cta .btn-hero { flex: 1 1 100%; white-space: normal; text-wrap: balance; overflow-wrap: anywhere }
 }
