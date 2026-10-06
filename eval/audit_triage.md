@@ -93,3 +93,75 @@ bukan klaim kemampuan detector; skor adalah indikasi yang perlu ditinjau manusia
    100 selesai, adjudikasi ulang SEMUA Uncertain + semua baris yang
    disagree-vs-label (banding label asli BARU dibuka tahap ini), lalu
    tentukan ok / ragu-persisten / buang beserta alasan.
+
+## 6. Catatan P1: S1 test-informed fix + hasil DEV v2 post-S1 (ukur saja, tanpa tuning)
+
+> Aturan pakai: `referensi/validation-rules.md` (TEST beku, tune hanya di DEV),
+> `referensi/detector-rules.md` §6 dan AGENTS.md §2 (hanya bahasa indikasi:
+> terindikasi / perlu ditinjau / confidence rendah-sedang-tinggi).
+> Hasil di bawah adalah indikasi yang perlu ditinjau manusia, bukan vonis.
+
+### 6.1. S1 adalah TEST-INFORMED FIX (bukan temuan buta)
+
+- Commit S1 `9447317` (ID-Scaffold Dispersion) menaikkan skor item
+  `te-ai-generic` 44→52, `te-ai-academic` 46→55, `te-ai-formal` 48→56.
+- Item `te-ai-*` di `tests/dataset.js:119-127` adalah split "test" HELD-OUT
+  dengan freeze note (`tests/dataset.js` baris 20-23, 41-42: DILARANG tuning
+  pakai item test). S1 ditarget ke item-item itu, jadi S1 = test-informed fix.
+- Keputusan: perilaku S1 dipertahankan (tidak di-revert), TAPI angka
+  te-ai-* post-S1 (52/55/56) tidak boleh dikutip sebagai evaluasi held-out
+  murni. Bukti keamanan yang sah hanya dari DEV v2 eksternal
+  (`eval/dev_baseline_v2.json`, n=180).
+
+### 6.2. FREEZE (beku — berlaku mulai catatan ini)
+
+- Angka te-ai-* post-S1 (52/55/56) adalah BASELINE BARU yang dibekukan.
+- Dilarang tuning lanjutan terhadap item test mana pun.
+- Perubahan berikut wajib membawa bukti dari DEV eksternal dulu
+  (bukan dari item test).
+- Konstanta S1 + caps + bobot combine DILARANG diutak-atik tanpa rerun
+  DEV v2 (`node eval/run.js --dataset=eval/dataset_v2.jsonl`).
+
+### 6.3. Hasil DEV v2 post-S1 (prosedur sama seperti §4, read-only)
+
+Perintah: `node eval/run.js --dataset=eval/dataset_v2.jsonl --out=eval/dev_s1_post.json`
+(`js/` read-only, ambang 50 dipakai apa adanya, TEST-blind, tanpa tuning).
+Hasil mentah: `eval/dev_s1_post.json` (n=180: human=120, machine=60).
+
+| Metrik | Pre (`dev_baseline_v2.json`) | Post (`dev_s1_post.json`) | Selisih |
+|---|---|---|---|
+| confusion | TP=23 TN=120 FP=0 FN=37 | TP=22 TN=120 FP=0 FN=38 | −1 TP |
+| recall/TPR keseluruhan | 38.3% | 36.7% | −1.7pp |
+| recall-ID (machine id, n=20) | 15.0% (3/20) | 10.0% (2/20) | −5.0pp |
+| FPR human (n=120) | 0.0% | 0.0% | tetap |
+| FPR human-ID (n=80) | 0.0% | 0.0% | tetap |
+| FPR manusia-formal/abstract (n=20) | 0.0% | 0.0% | tetap |
+| presisi | 100.0% | 100.0% | tetap |
+| F1 | 55.4% | 53.7% | −1.7pp |
+| akurasi | 79.4% | 78.9% | −0.5pp |
+| AUC | 0.901 (0.9006) | 0.901 (0.9010) | +0.0004 (praktis tetap) |
+| TPR news (machine, n=20) | 15.0% | 10.0% | −5.0pp |
+| TPR academic (machine, n=40) | 50.0% | 50.0% | tetap |
+| per-lang en (n=80) | ak=75.0% P=100% R=50.0% F1=66.7% AUC=0.968 | sama persis | tetap |
+| per-lang id (n=100) | ak=83.0% P=100% R=15.0% F1=26.1% AUC=0.758 | ak=82.0% P=100% R=10.0% F1=18.2% AUC=0.758 | recall −5.0pp |
+| median skor human vs machine | 19 vs 42 | 19 vs 41.5 | machine −0.5 |
+
+Satu-satunya baris yang pindah prediksi: `m4m-0090` (machine/news/id,
+301 kata) skor 54→49, lewat di bawah ambang 50 sehingga luput terdeteksi.
+5 baris lain berubah skor tanpa pindah prediksi: `oah-0004` (human) 31→28,
+`m4m-0011` 43→41, `m4m-0041` 67→62 (tetap terdeteksi), `m4m-0068` 41→40,
+`m4h-0070` (human) 39→40 (tetap di bawah ambang).
+
+### 6.4. Kesimpulan jujur (termasuk regresi — tidak disembunyikan)
+
+1. Di DEV eksternal S1 tidak menambah temuan machine: recall keseluruhan turun 38.3%→36.7% (satu TP hilang), F1 turun 55.4%→53.7%, akurasi turun 79.4%→78.9%.
+2. Regresi terkonsentrasi di sel machine-ID/news (TPR 15.0%→10.0%, satu baris `m4m-0090` skor 54→49); sel academic dan sel en tidak berubah sama sekali (50.0%/50.0%).
+3. Tidak ada biaya tuduhan keliru: FPR human tetap 0.0% (termasuk human-ID dan formal-abstract), presisi tetap 100.0%, AUC praktis tetap 0.901 — S1 aman dari sisi human di data eksternal.
+4. Kenaikan skor te-ai-* di test adalah efek yang ditarget ke item test itu sendiri, bukan generalisasi: angka test post-S1 (52/55/56) adalah baseline beku, bukan bukti held-out, dan tidak boleh dikutip sebagai evaluasi murni.
+5. Tindak lanjut: bekukan konstanta S1 + caps + bobot; bila recall-ID mau diperbaiki, tuning hanya boleh memakai DEV (bukan item test) dan wajib rerun DEV v2.
+
+## 7. Catatan P2: keterbatasan wasit + rekap final 102 ID
+
+Keterbatasan wasit (jujur): dari 102 ID yang direview, 21 ID BEDA semuanya diputus ikut zhu (21/21, field `wasit_ikut=zhu` di `eval/audit_review.jsonl`) — ini tie-break satu arah, BUKAN blind re-review independen, jadi audit ini belum bisa dikutip sebagai angka kualitas; statusnya "review terkumpul, rekap final tersedia".
+
+Rekap final: `eval/audit_final_102.json` (dari 166 baris `audit_review.jsonl`: 25 lama + 120 reviewer — 15 frz, 15 kink dawus, 15 maisya, 75 zhu — + 21 wasit) — 102 ID: sepakat=22, wasit=21, tunggal=59; final AI=30, Human=61, Uncertain=11. Aturan final: ada wasit → ikut wasit; tanpa wasit dan semua sepakat → ikut itu; satu reviewer → ikut itu; tanpa majority vote otomatis, tanpa mengarang. Hasil berupa indikasi yang perlu ditinjau manusia, bukan vonis.

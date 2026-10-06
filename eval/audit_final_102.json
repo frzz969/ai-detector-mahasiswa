@@ -1,0 +1,1559 @@
+{
+  "note": "Rekap final audit 102 ID dari eval/audit_review.jsonl (166 baris). Aturan: ada wasit -> ikut wasit; tanpa wasit dan semua sepakat -> ikut sepakat; satu reviewer -> ikut tunggal. Tanpa majority vote otomatis, tanpa mengarang. Wasit 21/21 ikut zhu (tie-break satu arah, bukan blind re-review independen) — lihat eval/audit_triage.md. Hasil berupa indikasi yang perlu ditinjau, bukan vonis.",
+  "source": "eval/audit_review.jsonl",
+  "rows": [
+    {
+      "id": "m4h-0007",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Human",
+          "confidence": "High"
+        }
+      ]
+    },
+    {
+      "id": "m4h-0019",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Human",
+          "confidence": "High"
+        }
+      ]
+    },
+    {
+      "id": "m4h-0035",
+      "final": "Human",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "maisya",
+          "verdict": "AI",
+          "confidence": "Low"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4h-0060",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Human",
+          "confidence": "High"
+        }
+      ]
+    },
+    {
+      "id": "m4h-0065",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4h-0076",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0011",
+      "final": "Human",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "kink dawus",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "High"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0022",
+      "final": "Human",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "frz",
+          "verdict": "Human",
+          "confidence": "High"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0024",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0032",
+      "final": "Human",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "frz",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0034",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0035",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0041",
+      "final": "Human",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "frz",
+          "verdict": "Human",
+          "confidence": "High"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0043",
+      "final": "AI",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0044",
+      "final": "AI",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "frz",
+          "verdict": "AI",
+          "confidence": "High"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0052",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0055",
+      "final": "Human",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "frz",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0056",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0058",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0059",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0063",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0068",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Human",
+          "confidence": "High"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0069",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0075",
+      "final": "Human",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "frz",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0076",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4m-0078",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1h-0012",
+      "final": "AI",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "kink dawus",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1h-0018",
+      "final": "Human",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "kink dawus",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1h-0026",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1h-0036",
+      "final": "Uncertain",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Uncertain",
+          "confidence": "Low"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1h-0047",
+      "final": "Uncertain",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Uncertain",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1h-0053",
+      "final": "Uncertain",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "maisya",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Uncertain",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "Uncertain",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1h-0054",
+      "final": "AI",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "maisya",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1h-0056",
+      "final": "Human",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "kink dawus",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1h-0063",
+      "final": "Uncertain",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Uncertain",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1h-0086",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1m-0001",
+      "final": "AI",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "High"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1m-0005",
+      "final": "Human",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "frz",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1m-0017",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1m-0022",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "High"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1m-0028",
+      "final": "Human",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "frz",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1m-0032",
+      "final": "Human",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "frz",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1m-0040",
+      "final": "AI",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1m-0041",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1m-0043",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "frz",
+          "verdict": "Human",
+          "confidence": "Low"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1m-0054",
+      "final": "Uncertain",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Uncertain",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1m-0055",
+      "final": "Human",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "frz",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1m-0062",
+      "final": "Uncertain",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Uncertain",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1m-0085",
+      "final": "Uncertain",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Uncertain",
+          "confidence": "High"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1m-0088",
+      "final": "Human",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "frz",
+          "verdict": "AI",
+          "confidence": "Low"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1m-0096",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr1m-0097",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2h-0020",
+      "final": "Human",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "kink dawus",
+          "verdict": "Human",
+          "confidence": "Low"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2h-0032",
+      "final": "AI",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "AI",
+          "confidence": "Low"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2h-0045",
+      "final": "Human",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "kink dawus",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2h-0059",
+      "final": "AI",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "kink dawus",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2h-0060",
+      "final": "AI",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2h-0066",
+      "final": "Human",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "kink dawus",
+          "verdict": "AI",
+          "confidence": "Low"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2h-0073",
+      "final": "AI",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "AI",
+          "confidence": "Low"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2h-0077",
+      "final": "Uncertain",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "maisya",
+          "verdict": "Uncertain",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Uncertain",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2h-0083",
+      "final": "AI",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "kink dawus",
+          "verdict": "Uncertain",
+          "confidence": "High"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2m-0005",
+      "final": "AI",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2m-0010",
+      "final": "AI",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2m-0017",
+      "final": "AI",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2m-0022",
+      "final": "AI",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "High"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2m-0039",
+      "final": "AI",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "frz",
+          "verdict": "Uncertain",
+          "confidence": "High"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2m-0044",
+      "final": "AI",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2m-0045",
+      "final": "AI",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2m-0049",
+      "final": "AI",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2m-0053",
+      "final": "AI",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "frz",
+          "verdict": "Uncertain",
+          "confidence": "High"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2m-0054",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2m-0055",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2m-0063",
+      "final": "AI",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "frz",
+          "verdict": "Uncertain",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2m-0078",
+      "final": "AI",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2m-0080",
+      "final": "AI",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2m-0083",
+      "final": "AI",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "m4pr2m-0100",
+      "final": "Uncertain",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Uncertain",
+          "confidence": "High"
+        }
+      ]
+    },
+    {
+      "id": "oah-0001",
+      "final": "AI",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "maisya",
+          "verdict": "AI",
+          "confidence": "Low"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "oah-0018",
+      "final": "AI",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "maisya",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "oah-0027",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "oah-0038",
+      "final": "AI",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "oah-0051",
+      "final": "Uncertain",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "maisya",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Uncertain",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "Uncertain",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "oah-0053",
+      "final": "Human",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "kink dawus",
+          "verdict": "Human",
+          "confidence": "Low"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "oah-0055",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Human",
+          "confidence": "Low"
+        }
+      ]
+    },
+    {
+      "id": "oah-0056",
+      "final": "Human",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "kink dawus",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "oah-0061",
+      "final": "Human",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "maisya",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "oah-0075",
+      "final": "Human",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "maisya",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "oah-0081",
+      "final": "Human",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "kink dawus",
+          "verdict": "Human",
+          "confidence": "Low"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "oah-0096",
+      "final": "AI",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "maisya",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "oah-0098",
+      "final": "Human",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "maisya",
+          "verdict": "AI",
+          "confidence": "Low"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "oah-0099",
+      "final": "Uncertain",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "maisya",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Uncertain",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "Uncertain",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "wikih-0009",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "wikih-0040",
+      "final": "Human",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "kink dawus",
+          "verdict": "Human",
+          "confidence": "High"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "wikih-0060",
+      "final": "AI",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "maisya",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "AI",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "wikih-0102",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Human",
+          "confidence": "High"
+        }
+      ]
+    },
+    {
+      "id": "wikih-0126",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Human",
+          "confidence": "High"
+        }
+      ]
+    },
+    {
+      "id": "wikih-0138",
+      "final": "Human",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "kink dawus",
+          "verdict": "Human",
+          "confidence": "High"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "wikih-0141",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Human",
+          "confidence": "Low"
+        }
+      ]
+    },
+    {
+      "id": "wikih-0164",
+      "final": "Human",
+      "basis": "tunggal",
+      "reviewers": [
+        {
+          "reviewer": "lama",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "wikih-0177",
+      "final": "AI",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "maisya",
+          "verdict": "AI",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "AI",
+          "confidence": "High"
+        }
+      ]
+    },
+    {
+      "id": "wikih-0190",
+      "final": "Human",
+      "basis": "wasit",
+      "reviewers": [
+        {
+          "reviewer": "kink dawus",
+          "verdict": "AI",
+          "confidence": "Low"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "wasit",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    },
+    {
+      "id": "wikih-0192",
+      "final": "Human",
+      "basis": "sepakat",
+      "reviewers": [
+        {
+          "reviewer": "maisya",
+          "verdict": "Human",
+          "confidence": "Med"
+        },
+        {
+          "reviewer": "zhu",
+          "verdict": "Human",
+          "confidence": "Med"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_ids": 102,
+    "sepakat": 22,
+    "wasit": 21,
+    "tunggal": 59,
+    "final_AI": 30,
+    "final_Human": 61,
+    "final_Uncertain": 11
+  }
+}
