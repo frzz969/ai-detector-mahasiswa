@@ -64,6 +64,14 @@ img{max-width:100%;height:auto}
 .btn-hero{background:#111;color:#fff;font-weight:700;font-size:17px;text-decoration:none;padding:16px 32px;border-radius:var(--r-pill);border:1.5px solid #111;display:inline-flex;align-items:center;justify-content:center;min-height:var(--sp-4xl)}
 .btn-hero.ghost{background:transparent;color:var(--ink);border-color:var(--ink)}
 .trust-row{grid-area:trust;display:flex;gap:20px;flex-wrap:wrap;color:var(--mut);font-size:15px;font-weight:600;margin:0 0 24px}
+/* DESKTOP ≥1101px SAJA: judul turun 20px; CTA + trust-row selebar isi
+   (terobos kolom teks ala "in front", tanpa ganggu grid di atasnya).
+   Dikunci min-1101 agar tablet/HP pakai aturan normal (aman, anti-luber). */
+@media(min-width:1101px){
+.hero h1{margin-top:20px}
+.hero-cta{margin-top:72px;width:max-content;max-width:none;position:relative;z-index:11}
+.trust-row{margin-left:16px;width:max-content;max-width:none}
+}
 .hero-cards{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:0;padding:0;position:relative;z-index:10}
 .hc{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:16px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;min-width:0;position:relative}
 .hc b{flex:0 0 36px;width:36px;height:36px;border-radius:50%;background:var(--img);color:var(--ink);font-size:16px;display:grid;place-items:center}
@@ -233,6 +241,9 @@ pre{background:#111;color:#EEE;padding:16px;border-radius:var(--r-md);font-size:
 .fitur-sec .fitur-head{display:grid;grid-template-columns:1fr auto;gap:var(--sp-lg);align-items:start;margin-bottom:var(--sp-2xl)}
 .fitur-sec .fitur-head .kicker{margin-bottom:var(--sp-sm)}
 .fitur-sec .fitur-head h2{margin:0 0 var(--sp-sm)}
+/* Indent h2 + desc 16px: segaris ritme teks kartu (.fitur-sec .feat padding
+   24px); kicker pil + maskot + grid tidak tersentuh. */
+.fitur-sec .fitur-title h2,.fitur-sec .fitur-desc{padding-left:16px}
 .fitur-desc{color:var(--mut);font-size:16px;max-width:48ch;line-height:1.7}
 .mascot-fitur{width:130px;height:130px;object-fit:contain;flex:0 0 auto;background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:8px;filter:drop-shadow(0 6px 14px rgba(11,46,75,.18));margin-top:var(--sp-lg)}
 .fitur-sec .feat-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:var(--sp-base);margin-bottom:var(--sp-base)}
@@ -330,7 +341,7 @@ nav,.mobile-cta,.fab{display:none!important}
 .faq-head .muted{margin:0}
 .foot-mascots{display:block;padding:0;margin:0;pointer-events:none}
 .foot-mascots .sidekick{position:static;width:clamp(120px,15vw,160px);aspect-ratio:1/1;object-fit:cover;background:#fff;border-radius:50%;padding:4px}
-.foot-mascots .kick-foot-r{position:fixed;right:24px;bottom:60px;width:clamp(160px,18vw,280px);height:auto;aspect-ratio:auto;object-fit:contain;background:transparent;border-radius:0;padding:0;margin:0;transform:rotate(-4deg);z-index:39;pointer-events:none;filter:drop-shadow(0 12px 24px rgba(11,46,75,.35))}
+.foot-mascots .kick-foot-r{position:fixed;right:18px;bottom:58px;width:clamp(160px,18vw,280px);height:auto;aspect-ratio:auto;object-fit:contain;background:transparent;border-radius:0;padding:0;margin:0;transform:rotate(-4deg);z-index:39;pointer-events:none;filter:drop-shadow(0 12px 24px rgba(11,46,75,.35))}
 /* Aturan #mulai + faq mobile pindah ke mobile.css */
 .mascot-hero{position:static;width:84px;height:84px;object-fit:contain;margin:0;flex:0 0 auto}
 .kick-hero{position:static;grid-area:mascot;justify-self:end;align-self:center;width:clamp(170px,20vw,240px);max-height:380px;object-fit:contain;transform:rotate(2deg);background:transparent;padding:0;border:none;border-radius:0;overflow:visible;filter:drop-shadow(0 8px 18px rgba(11,46,75,.25))}

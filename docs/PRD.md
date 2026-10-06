@@ -468,4 +468,85 @@ Ditulis ke `render()` (`method`) dan ke status akhir `doCheck()`, muncul di
   (10 teks manusia ID dapat +25 poin palsu).
 - **Jangan turunkan standar test** supaya CI hijau.
 
+---
+
+## 20. CASE SEMANTIC — semantic sinyal utama
+
+Sinyal utama relevansi materi adalah semantic similarity embedding dokumen ↔
+(judul + abstrak); keyword-overlap != relevansi (sumber keyword-only seperti
+"Sistem Informasi … Kelinci" atau "Bromo" tetap ditolak; paper relevan beda
+istilah seperti "Diagnosis Kanker Paru … Data Klinis" tetap lolos).
+
+Ambang yang berlaku sekarang (baca dari `api/material.js`, jangan diubah di sini):
+- Tampil/tolak: `MIN_SOURCE_RELEVANCE = 0.70` (di bawah ambang tidak tampil).
+- Semantic: `SEM_HIGH = 0.72` (semantic saja sah) dan `SEM_GATE = 0.62`
+  (semantic sedang sah bila ada dukungan lexical topik/konteks).
+- Mode embedding: `relevance = semantic*0.55 + lexical*0.25 + context*0.20`,
+  dikali quality tier; mode fallback leksikal dilaporkan via `semanticMode`.
+
+Test matrix: `tests/faraztest.js` (S6–S7), `tests/tools-regression.js`
+(CASE A/C/E + CASE 1–6 semantic injeksi, CASE F/G validator/summarizer),
+`tests/domain-independence.js` (4 domain), `tests/material-live.js`
+(embedding nyata + gate live). Evaluasi berlabel manual:
+`eval/retrieval-benchmark.jsonl` + `tests/retrieval-eval.js` (offline).
+
+---
+
+## 21. Pilot benchmark retrieval (30 query)
+
+Struktur pilot di `eval/retrieval-benchmark.jsonl` — TANPA label asli
+(semua baris TEMPLATE, semua URL `example.invalid`, semua teks diawali
+"CONTOH TEMPLATE"):
+
+- Komposisi: 10 kelinci + 10 perpajakan + 8 ML kesehatan + 2 literasi
+  digital = 30 query (`query_id` `<slug>-q<nn>`).
+- 10 kandidat per query; tiap query memuat minimal 2 `hard_negative:true`
+  (keyword cocok tapi konteks salah, relevance 0) + 1 kandidat off-domain.
+- Label manual 0/1/2 (0 = tidak relevan, 1–2 = relevan) — diisi manusia,
+  bukan oleh file ini.
+- Metrik via `tests/retrieval-eval.js` (offline): P@3 / P@10 / recall /
+  off-domain count + info hard-negative (tidak memengaruhi exit code).
+- `BASELINE_PRECISION_AT_10 = 0` sampai label manual ada dan baseline
+  ditetapkan; bila P@10 di bawah baseline → exit 1 (regresi).
+- Status: template saja — `node tests/retrieval-eval.js` exit 0 dengan pesan
+  BUTUH LABEL MANUAL (30 template dilewati).
+
+## 22. Protokol audit blind 1-reviewer
+
+Cermin dari `eval/audit_triage.md` §5 (sumber kebenaran operasional ada di
+file tersebut):
+
+- Blind + acak: reviewer hanya melihat ID + teks dari `dataset_v2.jsonl`
+  (label/source/generator disembunyikan); urutan 100 sampel diacak.
+- Form per sampel: ID | bahasa (id/en) | domain
+  (news/encyclopedia/abstract/academic) | verdict (AI / Human / Uncertain) |
+  confidence (Low / Med / High) | catatan.
+- Uncertain wajib dipakai bila ragu — keraguan adalah data.
+- Metadata (`pub_date`/lisensi/panjang kata) = data-quality issue, bukan
+  dasar verdict.
+- Kerjakan 15 sampel prioritas (`audit_triage.md` §2) dulu; adjudikasi semua
+  Uncertain + disagree-vs-label setelah label asli dibuka.
+- Status: `reviewer_verdict` 0/100 terisi (belum mulai).
+
+## 23. Status validasi (Okt 2026)
+
+| Lini | Lampu | Arti |
+|---|---|---|
+| Engineering (fitur + harness) | 🟢 | Jalan, regression hijau |
+| Regression (faraztest, tools-regression, domain, material-live) | 🟢 | Hijau |
+| Retrieval benchmark | 🟡 | Struktur pilot siap, BELUM berlabel |
+| Audit manual | 🟡 | Berjalan (triase siap, verdict 0/100) |
+| Validasi ID | 🟠 | Temuan terbuka: reproduksi baseline DEV mencatat F1 ID 26,1% vs EN 66,7% — temuan yang harus ditindaklanjuti, bukan aib |
+| Klaim "tervalidasi esai ID" | 🔴 | Belum waktunya — dilarang sampai urutan di bawah tuntas |
+
+Urutan wajib: label manual → audit blind → perkuat set ID → mixed →
+ablation → untouched test → CI → klaim. Larangan: tanpa tuning ambang agar
+cocok data, tanpa klaim kemampuan dari `dataset/`, metrik selalu dipisah
+per-bahasa (id/en tidak dicampur).
+
+UI Okt 2026: penyesuaian hero/CTA/maskot/FAQ/fitur/footer untuk mobile +
+desktop dilakukan tanpa mengubah logika deteksi; `mobile.css` mengatur
+≤1100px, `style.css` khusus desktop, dengan kunci min-1101 untuk trik
+tampilan desktop.
+
 *Dokumen ini adalah PRD produk, bukan vonis akademik. Semua skor adalah indikasi yang perlu ditinjau manusia.*

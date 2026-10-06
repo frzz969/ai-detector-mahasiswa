@@ -1,0 +1,167 @@
+TODO - Faraz Detector AI (untuk besok, biar cepat)
+
+STATUS SAAT INI (sudah deployed & terverifikasi live di Vercel)
+- Fix Summarizer: 100% ekstraktif/verbatim (no paraphrase). DONE
+  Catatan 2026-10-05: summarize AI sekarang abstractive-terjaga (boleh gabung/
+  padat kalimat, fakta/angka/istilah/negasi wajib utuh). Ekstraktif 100% tetap
+  ada sebagai FALLBACK lokal (offline / hasil AI ditolak). Test: tools-regression
+  CASE F (validator) + CASE G (kalimat bergantung).
+- Fix "Rincian metode (audit)" di panel hasil -> "Cara hitung skor". DONE
+- Fix relevance gate: anti keyword-only. DONE
+- Semantic similarity (embedding gemini-embedding-001) jadi sinyal UTAMA. DONE
+- Ambang: semantic 0.72 (penuh) / 0.62 + dukungan leksikal. Amang TIDAK diubah.
+- Test suite + GitHub Actions (.github/workflows/ci.yml). DONE
+- Key API: sudah ada di .env lokal DAN di Vercel. Jangan dimatikan.
+
+YANG SUDAH DIUKUR (acuan, jangan diulang)
+- Dokumen kelinci vs judul relevan 0.74-0.80, vs tidak relevan 0.51-0.57
+- Produksi: 27/30 hasil nyambung (kelinci 8/10, paru 10/10, pajak 10/10)
+  sebelumnya ~30% nyambung (PUEBI, Pemilihan Umum, Bromo, pohon johar)
+- Latensi /api/material produksi: 1.2-1.9 detik
+- AI SKOR deteksi (Gemini/Groq): manusia median 78 vs machine median 85
+  -> TIDAK bisa bedakan. Bobot tetap konservatif (0.15 utk ID). JANGAN dinaikkan.
+
+=========================================================================
+=========================================================================
+HASIL EVALUASI DETEKTOR (2026-10-05, sesi ringkasan + STEP 1-6)
+Semua diukur heuristic() lokal, ambang 50, tanpa tuning. Skor 0-100 BUKAN
+probability (kalibrasi tidak diuji). Detail: eval/report.md.
+=========================================================================
+
+BASELINE LAMA (dataset.jsonl, 500 baris, semua lang=id):
+  n DEV=100 | AUC=0.743 | akurasi=81.0% | presisi=100% | recall=5.0%
+  F1=9.5% | FPR=0.0% | FNR=95.0%
+  -> baseline tebak-semua-human = 80%, selisih detektor cuma +1.0 poin
+  -> "akurasi 81%" MENYESATKAN; F1 9.5% yang jujur. Presisi 100% artefak
+     (hanya 1 klaim AI, kebetulan benar).
+
+STEP 2 - dataset_v2.jsonl (900 baris) + sel academic M4 PeerRead:
+  n DEV=180 | AUC=0.901 | akurasi=79.4% | recall=38.3% | F1=55.4% | FPR=0.0%
+  PER BAHASA (jangan dicampur - sel EN beda bahasa dari sel ID):
+    id: n=100 F1=26.1% recall=15.0% FPR=0.0% AUC=0.757
+    en: n=80  F1=66.7% recall=50.0% FPR=0.0% AUC=0.968
+  TEMUAN PENTING: recall 5% di dataset lama BUKAN "detektor lemah" - itu
+  DOMAIN EFFECT. Di academic F1 66.7% vs 26.1% di news ID.
+  Konfound PeerRead (bullet manusia vs mengalir machine) SUDAH diuji: buang
+  marker tetap median 15 / 0 baris >=50. Jadi FPR 0% bukan artefak format.
+
+STEP 5 - LOCAL vs AI (tests/ai-live-eval.js, coverage 79/79 = 100%):
+                LOCAL      AI
+  precision    100.0%   66.7%
+  recall        38.5%   82.1%
+  f1            55.6%   73.6%
+  fpr            0.0%   40.0%   <- AI MASUKKAN 16 FALSE POSITIVE DARI 40
+  auc           0.872   0.788   <- AI LEBIH BURUK SEBAGAI RANKER
+
+STEP 6 - KEPUTUSAN: JANGAN naikkan AI weight. Tiga bukti:
+  1) AUC AI (0.788) < LOCAL (0.872) -> F1 AI lebih tinggi hanya EFEK AMBANG,
+     bukan kemampuan. Kalau ambang digeser, AI degrade lebih cepat.
+  2) FPR 0% -> 40%. Untuk aplikasi mahasiswa itu kerugian nyata.
+  3) Verdict gate = "SEBAGIAN", bukan "DAPAT DIPERCAYA".
+  Guard lokal yang dianggap "terlalu konservatif" justru berguna: FPR 0%.
+
+STEP 4 - Mixed (teks sebagian AI), eval/build_mixed.py + mixed-probe.js:
+  porsi AI 30%/50%/70% -> median 27/36/46, >=50 = 1.7%/8.3%/26.7%
+  monotonik: YA. Detector respon porsi AI dan TIDAK over-flag campuran.
+  BUG yang sudah difix: versi pertama label ai_fraction=0.3 tapi komposisi
+  sebenarnya 0.59-0.67 (label bohong). plan_counts() sekarang hitung beneran.
+  KONFOUND: sentence-interleave = batas kalimat artificial. Angka ini
+  "respons skor terhadap porsi AI", BUKAN "akurasi deteksi mixture".
+
+=========================================================================
+P0 - STEP 3: CELL ACADEMIC BAHASA INDONESIA (TERBLOKIR, butuh keputusan)
+=========================================================================
+  MASALAH: M4 Indonesia hanya punya `id-newspaper`. Korpus esai mahasiswa
+  Indonesia BERLISENSI nyaris tidak ada di sumber publik (Turnitin/iThenticate
+  proprietary). Jadi sel academic sekarang CUMA lang=en.
+  ARTinya: domain aplikasi utama BELUM TERUKUR. Yang terukur academic =
+  English peer review, bukan esai mahasiswa Indonesia.
+
+  3 kandidat (pilih satu):
+  (a) Terima English-only untuk baseline, tulis di UI/PRD bahwa evaluation
+      hanya cakupan English. PENTING: jangan tampilkan skor deteksi ke user
+      seolah sudah tervalidasi untuk esai ID.
+  (b) Indonesian journal OJS (ejournal.*) berlisensi CC BY-SA - perlu
+      scraping + verifikasi lisensi per artikel. Kerja nyata, bukan semalam.
+  (c) Fundasi/annotasi sendiri: kumpulkan ~100 esai mahasiswa dengan izin
+      jelas (kampus/lolos), label human. Paling akurat tapi butuh kerja manusia.
+
+  EFEK (b)/(c): tanpa ini, klaim "akurasi" hanya berlaku untuk academic English.
+
+=========================================================================
+P0 - AUDIT MANUAL SEL BARU (sudah disiapkan, belum dikerjakan)
+=========================================================================
+  eval/audit_sample_v2.jsonl: 50 human + 50 machine SUDAH DIAMBIL, kolom
+  `reviewer_verdict` masih KOSONG. Yang wajib dicek manual:
+  - apakah label human/machine di PeerRead benar? (review makalah sungguhan)
+  - adakah teks PeerRead yang sebenarnya machine tapi dilabeli human?
+  - sel mixed: apakah komposisi 0.3/0.5/0.7 benar-benar terpisah?
+  Sel mixed ditandai `construction: sentence-interleave` + `ai_fraction_actual`.
+  Jangan skip - ini satu-satunya verifikasi ground truth yang nyata.
+
+=========================================================================
+P1 - BENCHMARK RETRIEVAL BERLABEL (ini yang paling penting besok)
+  Tujuan: bikin "AI lebih dipercaya" jadi TERBUKTI, bukan feeling.
+  1. Bikin 100-150 teks (ID, topik beragam: kelinci, ML kesehatan, perpajakan,
+     WRITE, Advantages,uncateCambridge,WAY,Benefits,WAY,hub, sosmed, energi)
+     + 5-10 kandidat sumber per teks, DIBERI PENILAIAN relevansi manual (0/1/2).
+     Ground truth = penilaian manusia, BUKAN skor Gemini.
+  2. Skor jadi precision@10, precision@3, recall, dan jumlah "off-domain".
+  3. Simpan di eval/retrieval-benchmark.jsonl (jangan commit .env/secret).
+  4. Tulis tests/retrieval-eval.js: hitung metrik, exit 1 kalau precision@10
+     turun dari baseline yang tercatat.
+  5. Baseline sekarang: tulis angkanya di README/PRSupaya bisa dibandingkan
+     setelah prompt/ambang diubah.
+
+P1 - JALANKAN TEST SEBELUM DEPLOY (30 detik, jangan skip)
+  node tests/faraztest.js
+  node tests/tools-regression.js
+  node tests/domain-independence.js
+  node tests/material-live.js
+  node tests/ai-live-eval.js 6      <- boleh merah, itu memang belum dipercaya
+  Kalau 4 pertama merah: JANGAN deploy.
+
+P2 - RERANK LLM UNTUK KASUS YANG SUSAH DIPISAHKAN
+  Masalah nyata: "Perancangan Sistem Informasi ... Kelinci" (sem 0.711) vs
+  "Rabbit Haemorrhagic Disease pada Kelinci" (sem 0.744). Selisih 0.03, di
+  bawah noise embedding. Threshold tidak bisa memisahkannya.
+  Solusi: tanya Gemini "apakah sumber ini membahas <topik teks>?" untuk 5-10
+  kandidat teratas saja (hemat token). Ganti rumus pakai hasilnya.
+
+P2 - GITHUB SECRETS (supaya CI bisa uji jalur provider)
+  Settings > Secrets and variables > Actions > New repository secret:
+    GEMINI_API_KEY, GROQ_API_KEY
+  Tanpa ini: material-live di CI otomatis SKIP (hijau, tapi tidak menguji).
+
+P2 - DOKUMENTASI
+  docs/PRD.md belum punya regression case SEMANTIC (CASE 1-6 baru).
+  Tambahkan singkat: aturan main "semantic = sinyal utama", ambang, dan
+  catatan "keyword overlap != relevansi" supaya tidak dibatalkan orang lain.
+
+P3 - KALIBRASI ULANG AMBANG
+  Hanya setelah P1 selesai. Jangan sentuh SEM_GATE/SEM_HIGH sebelum ada
+  benchmark, kalau tidak = menebak.
+
+=========================================================================
+JANGAN DILAKUKAN (sudah terbukti detrimental)
+- Jangan naikkan bobot AI di js/ai/combine.js. Data membuktikan itu merusak:
+  (a) 10 teks manusia ID dapat +25 poin palsu, dan
+  (b) 2026-10-05 benchmark (coverage 100%): FPR 0% -> 40% + AUC AI lebih buruk
+      dari lokal (0.788 vs 0.872). Guard lokal justru yang jaga FPR rendah.
+- Jangan hidupkan lagi aturan "wajib cocok topik utama". Sudah diuji: menolak
+  paper yang relevan ("Diagnosis Kanker Paru-paru Berbasis Data Klinis").
+- Jangan ubah style.css / mobile.css / index.html untuk fitur ini.
+- Jangan lowers standar test supaya CI hijau.
+- Jangan pakai angka dari dataset/ untuk klaim akurasi. Hanya dari eval/.
+- Jangan panggil provider tanpa jeda: 429 RATE_LIMITED bikin 26% sampel hilang
+  (ai-live-eval sudah punya GAP_MS, jangan dihapus).
+- Jangan gabung hasil benchmark antar bahasa tanpa pisah per lang. Sel academic
+  (en) dan sel lama (id) metriknya beda jauh (F1 66.7% vs 26.1%).
+- Jangan klaim sel mixed sebagai "akurasi deteksi mixture" - itu konstruksi
+  sentence-interleave, hanya respons skor terhadap porsi AI.
+
+=========================================================================
+CARA CEK APAKAH DEPLOY SUDAH JALAN
+  node -e "fetch('https://ai-detector-mahasiswa.vercel.app/api/material',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({v:1,hash:require('crypto').createHash('sha256').update('Kelinci termasuk hewan herbivora. Klasifikasi yang paling umum adalah Oryctolagus cuniculus. Sistem pencernaan kelinci bergantung pada fermentasi selulosa di usus besar caecum. Kebutuhan nutrisi kelinci dipenuhi hijauan dan Timothy hay. Penyakit yang umum adalah pasteurellosis dan coccidiosis. Produksi daging kelinci masih terbatas.','utf8').digest('hex'),canonicalText:'Kelinci termasuk hewan herbivora. Klasifikasi yang paling umum adalah Oryctolagus cuniculus. Sistem pencernaan kelinci bergantung pada fermentasi selulosa di usus besar caecum. Kebutuhan nutrisi kelinci dipenuhi hijauan dan Timothy hay. Penyakit yang umum adalah pasteurellosis dan coccidiosis. Produksi daging kelinci masih terbatas.'})}).then(r=>r.json()).then(j=>console.log(j.semanticMode, j.retrievalConfidence, (j.materials||[]).length))"
+  HarUS: "embedding tinggi 10"
+  Kalau "fallback": embedding mati/timeout -> cek EMBEDDING_ENABLED + quota.
