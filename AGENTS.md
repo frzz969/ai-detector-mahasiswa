@@ -58,3 +58,15 @@ agar bisa diaudit balik. Dilarang asal angka, asal klaim, asal rewrite.
    di-cap, formal akademik tidak overflag, humanize tidak regresi.
 3. `grep` klaim terlarang (`100% AI|pasti AI|dijamin|bebas AI|khas AI`)
    pada output user-facing (komentar kode internal dikecualikan).
+
+## 4. Aturan commit (LOCAL SAJA — jangan commit/push file ini untuk §4)
+
+- Pesan commit: Bahasa Indonesia, huruf kecil, sederhana, sesuai file +
+  isi update. Contoh: "update detektor S1 scaffold ID",
+  "audit 100 sampel + tools audit dan sweep".
+- Dilarang: pesan Inggris kaku, format `feat:/fix:` konvensional,
+  bullet panjang, emoji, kalimat kayak template AI.
+- Pisah commit per topik (mesin vs data/tools), jangan campur.
+- Hanya commit/push bila user eksplisit minta. Sebelum commit cek
+  `git status` + `git diff`; JANGAN pernah commit `.env` / `ARSIP.txt`
+  (keduanya untracked by design).

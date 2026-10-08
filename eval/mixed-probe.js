@@ -43,7 +43,8 @@ const code = files.map((f) => fs.readFileSync(path.join(ROOT, f), 'utf8')).join(
 const api = new Function('document', 'window', 'navigator',
   code + '\n;return {heuristic};')(doc, {}, {});
 
-const dataArg = (process.argv.slice(2).find((x) => x.indexOf('--data=') === 0) || '').split('=').slice(1).join('=');
+const dataArg = (process.argv.slice(2).find((x) => x.indexOf('--data=') === 0)
+  || '').split('=').slice(1).join('=');
 const DATA = dataArg ? path.resolve(ROOT, dataArg) : path.join(ROOT, 'eval', 'raw_mixed.jsonl');
 
 let rows;
@@ -55,7 +56,8 @@ try {
 }
 if (!rows.length) { console.error('GAGAL: tidak ada baris.'); process.exit(2); }
 
-const med = (a) => { const s = [...a].sort((x, y) => x - y); return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2; };
+const med = (a) => { const s = [...a].sort((x,
+  y) => x - y); return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2; };
 const pct = (x) => (x === null || x === undefined ? 'n/a' : (x * 100).toFixed(1) + '%');
 
 const buckets = {};

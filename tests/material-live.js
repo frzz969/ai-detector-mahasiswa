@@ -93,8 +93,10 @@ async function run(key, doc, isAnimal) {
       'materi punya skor+alasan', String(m.relevance));
   });
   if (!isAnimal) {
-    const leak = (b.materials || []).filter((m) => OFFTOPIC.test(m.title + ' ' + m.relevanceReason));
-    ok(leak.length === 0, 'tidak ada kebocoran domain hewan pada dokumen non-hewan', leak.length + ' kebocoran');
+    const leak = (b.materials
+      || []).filter((m) => OFFTOPIC.test(m.title + ' ' + m.relevanceReason));
+    ok(leak.length === 0, 'tidak ada kebocoran domain hewan pada dokumen non-hewan',
+      leak.length + ' kebocoran');
   }
   return b;
 }
@@ -111,8 +113,10 @@ async function run(key, doc, isAnimal) {
   }
   // Kontrak error harus tetap berlaku.
   let r = mkRes();
-  await MATERIAL({ method: 'POST', body: { v: 1, hash: sha('beda'), canonicalText: DOC_RABBIT } }, r);
-  ok(r.code === 400 && r.body.code === 'HASH_MISMATCH', 'hash tidak cocok ditolak', r.code + '/' + r.body.code);
+  await MATERIAL({ method: 'POST', body: { v: 1, hash: sha('beda'), canonicalText: DOC_RABBIT } },
+    r);
+  ok(r.code === 400 && r.body.code === 'HASH_MISMATCH', 'hash tidak cocok ditolak',
+    r.code + '/' + r.body.code);
   r = mkRes();
   await MATERIAL({ method: 'GET', body: null }, r);
   ok(r.code === 405, 'GET ditolak', String(r.code));
@@ -120,27 +124,31 @@ async function run(key, doc, isAnimal) {
   await run('kelinci', DOC_RABBIT, true);
   await run('perpajakan', DOC_TAX, false);
 
-  // ---- SEMANTIC: embedding sungguhan (bukan skor diinjeksi) ----
+  // SEMANTIC: embedding sungguhan (bukan skor diinjeksi)
   // Lewati kalau tidak ada key / EMBEDDING_ENABLED=false: semantic yang
   // tidak aktif harus dilaporkan, bukan dianggap lulus diam-diam.
   console.log('\n=== 3. semantic similarity (embedding nyata) ===');
-  if (!process.env.GEMINI_API_KEY || String(process.env.EMBEDDING_ENABLED || 'true').toLowerCase() === 'false') {
+  if (!process.env.GEMINI_API_KEY || String(process.env.EMBEDDING_ENABLED
+    || 'true').toLowerCase() === 'false') {
     console.log('  DILEWATI: tidak ada GEMINI_API_KEY atau EMBEDDING_ENABLED=false.');
     console.log('  Di produksi, api/material.js mengirim semanticMode; kalau fallback,');
     console.log('  user melihat warning bahwa relevansi hanya dari pencocokan kata.');
   } else {
     const rmk = mkRes();
-    await MATERIAL({ method: 'POST', body: { v: 1, hash: sha(DOC_LUNG), canonicalText: DOC_LUNG } }, rmk);
+    await MATERIAL({ method: 'POST', body: { v: 1, hash: sha(DOC_LUNG), canonicalText: DOC_LUNG } },
+      rmk);
     const bmk = rmk.body || {};
     console.log('  semanticMode   : ' + bmk.semanticMode + (bmk.embeddingModel ? ' (' + bmk.embeddingModel + ')' : ''));
     console.log('  confidence     : ' + bmk.retrievalConfidence);
-    ok(bmk.semanticMode === 'embedding', 'semantic AKTIF (bukan fallback)', String(bmk.semanticMode));
+    ok(bmk.semanticMode === 'embedding', 'semantic AKTIF (bukan fallback)',
+      String(bmk.semanticMode));
     (bmk.materials || []).slice(0, 4).forEach((m) => {
       console.log('   - rel=' + m.relevance + ' conf=' + m.confidence +
         ' sem=' + (m.signals && m.signals.semantic) + ' | ' + String(m.title).slice(0, 56));
     });
     // CASE 2 sungguhan: judul tanpa kata "model" tetap boleh lolos.
-    const paru = (bmk.materials || []).filter((m) => /paru|toraks|rontgen|tuberculosis/i.test(m.title));
+    const paru = (bmk.materials
+      || []).filter((m) => /paru|toraks|rontgen|tuberculosis/i.test(m.title));
     ok(paru.length > 0, 'CASE 2 (nyata): paper paru lolos walau judul tanpa kata model',
       paru.length + ' dari ' + (bmk.materials || []).length);
     // CASE 1 sungguhan: tidak boleh ada materi yang cuma menyinggung topik.

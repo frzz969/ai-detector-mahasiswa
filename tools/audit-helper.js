@@ -183,7 +183,8 @@ async function main() {
           const b = String(await ask('Lanjut benchmark? (y/n): ')).trim().toLowerCase();
           if (b === 'y' || b === 'ya') {
             rl.close();
-            require('child_process').spawnSync(process.execPath, [path.join(ROOT, 'tools', 'benchmark-helper.js')], { stdio: 'inherit' });
+            require('child_process').spawnSync(process.execPath, [path.join(ROOT, 'tools',
+              'benchmark-helper.js')], { stdio: 'inherit' });
             process.exit(0);
             return;
           }
@@ -211,7 +212,8 @@ async function main() {
       console.log('  pilih l / m / h.');
     }
     const note = String(await ask('  note (opsional, Enter lewati): ')).trim();
-    const rec = { id: r.id, verdict: verdict, confidence: confidence, note: note, reviewed_at: new Date().toISOString() };
+    const rec = { id: r.id, verdict: verdict, confidence: confidence, note: note,
+      reviewed_at: new Date().toISOString() };
     fs.appendFileSync(REVIEW, JSON.stringify(rec) + '\n');
     sessionIds.add(String(r.id));
     wrote++;

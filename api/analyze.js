@@ -1,5 +1,4 @@
 'use strict';
-// ============================================================
 // api/analyze.js — Vercel Function (CommonJS, vanilla Node)
 // Kontrak: POST { v, hash, canonicalText }
 //   -> sukses: { score, confidence, modelId, coverage, hash, v }
@@ -11,7 +10,6 @@
 // Bahasa hasil: indikasi saja ("terindikasi / perlu ditinjau /
 //   cenderung natural" + confidence rendah/sedang/tinggi).
 // Secret: hanya process.env (GEMINI_API_KEY / GROQ_API_KEY).
-// ============================================================
 
 const crypto = require('crypto');
 const {
@@ -77,7 +75,8 @@ function chunkForProvider(canonicalText) {
   const coverage = total.length
     ? Math.max(0, Math.min(1, usedText.length / total.length))
     : 0;
-  return { usedText, coverage: Math.round(coverage * 100) / 100, parts: { n: use.length, of: chunks.length } };
+  return { usedText, coverage: Math.round(coverage * 100) / 100, parts: { n: use.length,
+    of: chunks.length } };
 }
 
 async function fetchWithTimeout(url, options, timeoutMs) {
@@ -114,13 +113,16 @@ function buildAnalyzePrompt(excerpt, coverage, parts) {
 
 function parseScoreConfidence(text) {
   const m = String(text || '').match(/\{[\s\S]*\}/);
-  if (!m) throw Object.assign(new Error('Respons provider bukan JSON'), { code: 'PROVIDER_ERROR', status: 502 });
+  if (!m) throw Object.assign(new Error('Respons provider bukan JSON'), { code: 'PROVIDER_ERROR',
+    status: 502 });
   let o;
   try { o = JSON.parse(m[0]); } catch (_) {
-    throw Object.assign(new Error('Respons provider tidak dapat diparse'), { code: 'PROVIDER_ERROR', status: 502 });
+    throw Object.assign(new Error('Respons provider tidak dapat diparse'), { code: 'PROVIDER_ERROR',
+      status: 502 });
   }
   let score = Number(o.score);
-  if (!Number.isFinite(score)) throw Object.assign(new Error('Skor provider tidak valid'), { code: 'PROVIDER_ERROR', status: 502 });
+  if (!Number.isFinite(score)) throw Object.assign(new Error('Skor provider tidak valid'),
+    { code: 'PROVIDER_ERROR', status: 502 });
   score = Math.max(15, Math.min(98, Math.round(score)));
   const conf = ['rendah', 'sedang', 'tinggi'].includes(o.confidence) ? o.confidence : 'rendah';
   return { score, confidence: conf };
@@ -131,12 +133,14 @@ function classifyHttpError(status, text) {
     return { status: 401, code: 'UNAUTHORIZED', error: 'Kunci provider tidak valid / tanpa izin.' };
   }
   if (status === 429) {
-    return { status: 429, code: 'RATE_LIMITED', error: 'Provider membatasi laju (429). Coba lagi nanti.' };
+    return { status: 429, code: 'RATE_LIMITED',
+      error: 'Provider membatasi laju (429). Coba lagi nanti.' };
   }
   if (status >= 500) {
     return { status: 502, code: 'PROVIDER_ERROR', error: 'Provider gagal (' + status + ').' };
   }
-  return { status: 502, code: 'PROVIDER_ERROR', error: 'Provider menolak permintaan (' + status + '). ' + String(text || '').slice(0, 200) };
+  return { status: 502, code: 'PROVIDER_ERROR',
+    error: 'Provider menolak permintaan (' + status + '). ' + String(text || '').slice(0, 200) };
 }
 
 async function callGemini(apiKey, model, prompt) {
@@ -152,13 +156,15 @@ async function callGemini(apiKey, model, prompt) {
       if (!r.ok) {
         const t = await r.text().catch(() => '');
         const mapped = classifyHttpError(r.status, t);
-        if ((r.status === 429 || r.status >= 500) && attempt < MAX_RETRY) { lastErr = mapped; continue; }
+        if ((r.status === 429 || r.status >= 500)
+          && attempt < MAX_RETRY) { lastErr = mapped; continue; }
         const err = new Error(mapped.error);
         err.code = mapped.code; err.status = mapped.status;
         throw err;
       }
       const j = await r.json();
-      const text = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts || [])
+      const text = (j.candidates && j.candidates[0] && j.candidates[0].content
+        && j.candidates[0].content.parts || [])
         .map((p) => p.text || '').join('\n');
       return parseScoreConfidence(text);
     } catch (e) {
@@ -166,7 +172,8 @@ async function callGemini(apiKey, model, prompt) {
       throw e;
     }
   }
-  throw lastErr || Object.assign(new Error('Gemini gagal'), { code: 'PROVIDER_ERROR', status: 502 });
+  throw lastErr || Object.assign(new Error('Gemini gagal'), { code: 'PROVIDER_ERROR',
+    status: 502 });
 }
 
 async function callGroq(apiKey, model, prompt) {
@@ -180,7 +187,8 @@ async function callGroq(apiKey, model, prompt) {
         body: JSON.stringify({
           model,
           messages: [
-            { role: 'system', content: 'Balas HANYA JSON valid {"score": <15-98>, "confidence": "<rendah|sedang|tinggi>"}.' },
+            { role: 'system',
+              content: 'Balas HANYA JSON valid {"score": <15-98>, "confidence": "<rendah|sedang|tinggi>"}.' },
             { role: 'user', content: prompt },
           ],
           temperature: 0,
@@ -190,13 +198,15 @@ async function callGroq(apiKey, model, prompt) {
       if (!r.ok) {
         const t = await r.text().catch(() => '');
         const mapped = classifyHttpError(r.status, t);
-        if ((r.status === 429 || r.status >= 500) && attempt < MAX_RETRY) { lastErr = mapped; continue; }
+        if ((r.status === 429 || r.status >= 500)
+          && attempt < MAX_RETRY) { lastErr = mapped; continue; }
         const err = new Error(mapped.error);
         err.code = mapped.code; err.status = mapped.status;
         throw err;
       }
       const j = await r.json();
-      const text = j.choices && j.choices[0] && j.choices[0].message ? j.choices[0].message.content : '';
+      const text = j.choices && j.choices[0]
+        && j.choices[0].message ? j.choices[0].message.content : '';
       return parseScoreConfidence(text);
     } catch (e) {
       if (e && (e.code === 'TIMEOUT') && attempt < MAX_RETRY) { lastErr = e; continue; }
@@ -208,11 +218,16 @@ async function callGroq(apiKey, model, prompt) {
 
 function errorFromProviderFailure(primaryErr, fallbackErr) {
   const e = fallbackErr || primaryErr;
-  if (e && e.code === 'TIMEOUT') return { status: 504, body: { error: 'Provider timeout. Coba lagi.', code: 'TIMEOUT' } };
-  if (e && e.code === 'RATE_LIMITED') return { status: 429, body: { error: 'Provider membatasi laju (429). Coba lagi nanti.', code: 'RATE_LIMITED' } };
-  if (e && e.code === 'UNAUTHORIZED') return { status: 401, body: { error: 'Kunci provider tidak valid / tanpa izin.', code: 'UNAUTHORIZED' } };
-  if (e && e.status && e.code) return { status: e.status, body: { error: e.message || 'Provider gagal.', code: e.code } };
-  return { status: 502, body: { error: 'Semua provider gagal. Coba lagi.', code: 'PROVIDER_ERROR' } };
+  if (e && e.code === 'TIMEOUT') return { status: 504,
+    body: { error: 'Provider timeout. Coba lagi.', code: 'TIMEOUT' } };
+  if (e && e.code === 'RATE_LIMITED') return { status: 429,
+    body: { error: 'Provider membatasi laju (429). Coba lagi nanti.', code: 'RATE_LIMITED' } };
+  if (e && e.code === 'UNAUTHORIZED') return { status: 401,
+    body: { error: 'Kunci provider tidak valid / tanpa izin.', code: 'UNAUTHORIZED' } };
+  if (e && e.status && e.code) return { status: e.status, body: { error: e.message
+    || 'Provider gagal.', code: e.code } };
+  return { status: 502, body: { error: 'Semua provider gagal. Coba lagi.',
+    code: 'PROVIDER_ERROR' } };
 }
 
 module.exports = async function handler(req, res) {
@@ -220,22 +235,28 @@ module.exports = async function handler(req, res) {
     return send(res, 405, { error: 'Gunakan POST.', code: 'METHOD_NOT_ALLOWED' });
   }
   const body = readBody(req);
-  if (!body || typeof body.v === 'undefined' || typeof body.hash !== 'string' || typeof body.canonicalText !== 'string') {
-    return send(res, 400, { error: 'Body harus JSON {v, hash, canonicalText}.', code: 'MALFORMED' });
+  if (!body || typeof body.v === 'undefined' || typeof body.hash !== 'string'
+    || typeof body.canonicalText !== 'string') {
+    return send(res, 400, { error: 'Body harus JSON {v, hash, canonicalText}.',
+      code: 'MALFORMED' });
   }
   const { v, hash, canonicalText } = body;
   if (!SUPPORTED_V.includes(v)) {
-    return send(res, 400, { error: 'Versi tidak didukung. Didukung: ' + SUPPORTED_V.join(','), code: 'UNSUPPORTED_VERSION' });
+    return send(res, 400, { error: 'Versi tidak didukung. Didukung: ' + SUPPORTED_V.join(','),
+      code: 'UNSUPPORTED_VERSION' });
   }
   if (!canonicalText.trim() || canonicalText.length > MAX_CHARS) {
-    return send(res, 400, { error: 'canonicalText kosong atau melebihi ' + MAX_CHARS + ' karakter.', code: 'MALFORMED' });
+    return send(res, 400, { error: 'canonicalText kosong atau melebihi ' + MAX_CHARS + ' karakter.',
+      code: 'MALFORMED' });
   }
   if (!/^[a-f0-9]{64}$/i.test(hash)) {
-    return send(res, 400, { error: 'hash harus SHA-256 hex dari canonicalText.', code: 'MALFORMED' });
+    return send(res, 400, { error: 'hash harus SHA-256 hex dari canonicalText.',
+      code: 'MALFORMED' });
   }
   const actual = sha256Hex(canonicalText);
   if (actual.toLowerCase() !== hash.toLowerCase()) {
-    return send(res, 400, { error: 'hash tidak cocok dengan canonicalText.', code: 'HASH_MISMATCH' });
+    return send(res, 400, { error: 'hash tidak cocok dengan canonicalText.',
+      code: 'HASH_MISMATCH' });
   }
 
   const { usedText, coverage, parts } = chunkForProvider(canonicalText);
@@ -247,20 +268,25 @@ module.exports = async function handler(req, res) {
   if (keys.gemini) {
     try {
       const out = await callGemini(keys.gemini, GEMINI_MODEL, prompt);
-      return send(res, 200, { score: out.score, confidence: out.confidence, modelId: 'gemini:' + GEMINI_MODEL, coverage, hash: actual.toLowerCase(), v });
+      return send(res, 200, { score: out.score, confidence: out.confidence,
+        modelId: 'gemini:' + GEMINI_MODEL, coverage, hash: actual.toLowerCase(), v });
     } catch (e) { primaryErr = e; }
   } else {
-    primaryErr = Object.assign(new Error('GEMINI_API_KEY belum diset'), { code: 'PROVIDER_MISCONFIGURED', status: 500 });
+    primaryErr = Object.assign(new Error('GEMINI_API_KEY belum diset'),
+      { code: 'PROVIDER_MISCONFIGURED', status: 500 });
   }
 
   if (keys.groq) {
     try {
       const out = await callGroq(keys.groq, GROQ_MODEL, prompt);
-      return send(res, 200, { score: out.score, confidence: out.confidence, modelId: 'groq:' + GROQ_MODEL, coverage, hash: actual.toLowerCase(), v });
+      return send(res, 200, { score: out.score, confidence: out.confidence,
+        modelId: 'groq:' + GROQ_MODEL, coverage, hash: actual.toLowerCase(), v });
     } catch (e) {
       const mapped = errorFromProviderFailure(primaryErr, e);
       if (mapped.body.code === 'PROVIDER_MISCONFIGURED') {
-        return send(res, 500, { error: 'Provider belum dikonfigurasi (set GEMINI_API_KEY / GROQ_API_KEY).', code: 'PROVIDER_MISCONFIGURED' });
+        return send(res, 500,
+          { error: 'Provider belum dikonfigurasi (set GEMINI_API_KEY / GROQ_API_KEY).',
+            code: 'PROVIDER_MISCONFIGURED' });
       }
       return send(res, mapped.status, mapped.body);
     }
@@ -268,7 +294,9 @@ module.exports = async function handler(req, res) {
 
   // Tanpa fallback tersedia -> petakan error primer apa adanya.
   if (primaryErr && primaryErr.code === 'PROVIDER_MISCONFIGURED') {
-    return send(res, 500, { error: 'Provider belum dikonfigurasi (set GEMINI_API_KEY / GROQ_API_KEY).', code: 'PROVIDER_MISCONFIGURED' });
+    return send(res, 500,
+      { error: 'Provider belum dikonfigurasi (set GEMINI_API_KEY / GROQ_API_KEY).',
+        code: 'PROVIDER_MISCONFIGURED' });
   }
   const mapped = errorFromProviderFailure(primaryErr, null);
   return send(res, mapped.status, mapped.body);

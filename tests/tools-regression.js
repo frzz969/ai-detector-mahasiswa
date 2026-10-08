@@ -19,7 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 
-// ---------- Harness DOM (ringkas, sama pola tests/faraztest.js) ----------
+// Harness DOM (ringkas, sama pola tests/faraztest.js)
 function makeEl() {
   return {
     value: '', textContent: '', innerHTML: '', hidden: false, disabled: false, checked: false,
@@ -50,7 +50,7 @@ function loadValidate() {
 
 const MATERIAL = require(path.join(ROOT, 'api', 'material.js'));
 
-// ---------- Data regression (teks ~40 kalimat, multi-topik, multi-paragraf) ----------
+// Data regression (teks ~40 kalimat, multi-topik, multi-paragraf)
 const RABBIT = [
   'Kelinci termasuk hewan herbivora yang telah lama domesticated di Indonesia.',
   'Klasifikasi yang paling umum adalah Oryctolagus cuniculus, kelinci rumah.',
@@ -75,15 +75,21 @@ const RABBIT = [
 ].join(' ');
 
 const MATERIAL_CANDIDATES = [
-  { id: 'ontopic', title: 'Klasifikasi dan kebutuhan nutrisi kelinci rumah (Oryctolagus cuniculus)', venue: 'Jurnal Ternak', doi: '10.1/a', tier: 'Jurnal/paper', citations: 12, year: 2020, source: 'OpenAlex' },
-  { id: 'betawi', title: 'GASTRONOMI MAKANAN BETAWI SEBAGAI SALAH SATU IDENTITAS BUDAYA DAERAH', venue: 'Jurnalraryawan', doi: '10.1/b', tier: 'Jurnal/paper', citations: 40, year: 2018, source: 'Crossref' },
-  { id: 'ibm', title: 'IbM Kelompok Usaha Wanita Budidaya Kelinci Pedaging', venue: 'Jurnal pengmas', doi: '10.1/c', tier: 'Jurnal/paper', citations: 5, year: 2022, source: 'Crossref' },
-  { id: 'sistem', title: 'Perancangan Sistem Informasi Penjualan Hewan Peliharaan Kelinci Berbasis Web', venue: 'Jurnal tiulik', doi: '10.1/d', tier: 'Jurnal/paper', citations: 8, year: 2023, source: 'OpenAlex' },
-  { id: 'bromo', title: 'Bromo kian rawan banjir, warga diminta segera mengungsi', venue: 'Berita', doi: '10.1/e', tier: 'Umum', citations: 9999, year: 2024, source: 'Crossref' },
-  { id: 'dupe', title: 'Klasifikasi dan kebutuhan nutrisi kelinci rumah (Oryctolagus cuniculus)', venue: 'Jurnal Ternak', doi: '10.1/a', tier: 'Jurnal/paper', citations: 12, year: 2020, source: 'Semantic Scholar' },
+  { id: 'ontopic', title: 'Klasifikasi dan kebutuhan nutrisi kelinci rumah (Oryctolagus cuniculus)',
+    venue: 'Jurnal Ternak', doi: '10.1/a', tier: 'Jurnal/paper', citations: 12, year: 2020, source: 'OpenAlex' },
+  { id: 'betawi', title: 'GASTRONOMI MAKANAN BETAWI SEBAGAI SALAH SATU IDENTITAS BUDAYA DAERAH',
+    venue: 'Jurnalraryawan', doi: '10.1/b', tier: 'Jurnal/paper', citations: 40, year: 2018, source: 'Crossref' },
+  { id: 'ibm', title: 'IbM Kelompok Usaha Wanita Budidaya Kelinci Pedaging',
+    venue: 'Jurnal pengmas', doi: '10.1/c', tier: 'Jurnal/paper', citations: 5, year: 2022, source: 'Crossref' },
+  { id: 'sistem',
+    title: 'Perancangan Sistem Informasi Penjualan Hewan Peliharaan Kelinci Berbasis Web', venue: 'Jurnal tiulik', doi: '10.1/d', tier: 'Jurnal/paper', citations: 8, year: 2023, source: 'OpenAlex' },
+  { id: 'bromo', title: 'Bromo kian rawan banjir, warga diminta segera mengungsi', venue: 'Berita',
+    doi: '10.1/e', tier: 'Umum', citations: 9999, year: 2024, source: 'Crossref' },
+  { id: 'dupe', title: 'Klasifikasi dan kebutuhan nutrisi kelinci rumah (Oryctolagus cuniculus)',
+    venue: 'Jurnal Ternak', doi: '10.1/a', tier: 'Jurnal/paper', citations: 12, year: 2020, source: 'Semantic Scholar' },
 ];
 
-// ---------- Assertion helper ----------
+// Assertion helper
 const failures = [];
 function ok(cond, label, detail) {
   if (cond) console.log('  OK   ' + label + (detail ? '  [' + detail + ']' : ''));
@@ -99,7 +105,8 @@ console.log('CASE A - Explainer: sumber keyword-only tidak boleh tampil');
   const sel = MATERIAL.selectMaterials(MATERIAL_CANDIDATES, profile, {});
   const titles = titlesOf(sel.materials);
   const bad = sel.materials.filter((m) => /BETAWI|Bromo/.test(m.title));
-  ok(bad.length === 0, 'tidak ada sumber tak relevan (BETAWI/Bromo)', 'ada: ' + titles.join(' | '));
+  ok(bad.length === 0, 'tidak ada sumber tak relevan (BETAWI/Bromo)',
+    'ada: ' + titles.join(' | '));
   const sistem = sel.materials.filter((m) => /Sistem Informasi/.test(m.title));
   ok(sistem.length === 0, 'judul "sistem informasi kelinci" ditolak (keyword-only)');
   ok(titles.some((t) => /Klasifikasi dan kebutuhan/.test(t)), 'sumber on-topic tetap tampil');
@@ -132,15 +139,18 @@ let sumResult = null;
   const picked = chosen.map((s) => gset[s]);
   const maxGeneric = Math.max.apply(null, picked.concat([0]));
   ok(maxGeneric < 0.5, 'semua kalimat terpilih punya generic < 0.5', 'maks = ' + maxGeneric);
-  ok(chosen.length >= 3, 'ringkasan minimal 3 kalimat (bukan 1-2 pembuka)', chosen.length + ' kalimat');
+  ok(chosen.length >= 3, 'ringkasan minimal 3 kalimat (bukan 1-2 pembuka)',
+    chosen.length + ' kalimat');
   // Verbatim + urutan asli.
   ok(S.verifyExtractive(RABBIT, chosen) === null, '100% ekstraktif (verbatim, tanpa duplikat)');
   const idx = chosen.map((s) => scored.findIndex((e) => e.sent === s));
   const sorted = idx.slice().sort((a, b) => a - b);
-  ok(JSON.stringify(idx) === JSON.stringify(sorted), 'urutan mengikuti posisi asli', idx.join(','));
+  ok(JSON.stringify(idx) === JSON.stringify(sorted), 'urutan mengikuti posisi asli',
+    idx.join(','));
   // Coverage: tidak semua dari satu paragraf/kalimat berdekatan.
   ok(idx[idx.length - 1] - idx[0] >= 3, 'pilihan tersebar (bukan berdekatan)', idx.join(','));
-  console.log('  info  ringkasan: ' + chosen.map((s, i) => (i + 1) + ') ' + s.slice(0, 58)).join('\n        '));
+  console.log('  info  ringkasan: ' + chosen.map((s, i) => (i + 1) + ') ' + s.slice(0,
+    58)).join('\n        '));
 }
 
 // ================= CASE C =================
@@ -151,15 +161,18 @@ console.log('CASE C - semua kandidat relevance < threshold -> materials kosong')
   // hanya cocok satu kata kunci (sistem informasi). "IbM kelinci pedaging" TIDAK
   // masuk daftar ini: ia menutup 2 topik nyata (kelinci + daging) dan diuji
   // di CASE E sebagai sumber yang BOLEH tampil dengan skor + alasan.
-  const weakOnly = MATERIAL_CANDIDATES.filter((c) => ['betawi', 'sistem', 'bromo'].indexOf(c.id) !== -1);
+  const weakOnly = MATERIAL_CANDIDATES.filter((c) => ['betawi', 'sistem',
+    'bromo'].indexOf(c.id) !== -1);
   const sel = MATERIAL.selectMaterials(weakOnly, profile, {});
-  ok(sel.materials.length === 0, 'hasil kosong (tidak dipaksa 10 sumber)', sel.materials.length + ' sumber');
+  ok(sel.materials.length === 0, 'hasil kosong (tidak dipaksa 10 sumber)',
+    sel.materials.length + ' sumber');
   ok(sel.threshold === MATERIAL.MIN_SOURCE_RELEVANCE, 'ambang tercatat', String(sel.threshold));
   ok(sel.rejectedLowRelevance + sel.rejectedGate + sel.rejectedNoReason === weakOnly.length,
     'semua kandidat tercatat ditolak', JSON.stringify(sel));
   // Kandidat yang lolos TIDAPermesta tanpa alasan relevansi (anti "ada kata X").
   const withAny = MATERIAL.selectMaterials(MATERIAL_CANDIDATES, profile, {});
-  ok(withAny.materials.every((m) => typeof m.relevance === 'number' && m.relevance >= sel.threshold && m.relevanceReason),
+  ok(withAny.materials.every((m) => typeof m.relevance === 'number'
+    && m.relevance >= sel.threshold && m.relevanceReason),
     'semua sumber yang tampil punya skor + alasan relevansi');
 }
 
@@ -170,7 +183,8 @@ console.log('CASE D - kalimat AI tidak verbatim -> TOLAK (fallback lokal)');
   const paraphrase = 'Kelinci punya sistem pencernaan khusus yang unik untuk literasinya.';
   ok(S.verifyExtractive(RABBIT, [paraphrase]) !== null, 'kalimat paraphrase ditolak');
   const angkaUbah = 'Klasifikasi yang paling umum adalah Oryctolagus domesticus, kelinci rumah.';
-  ok(S.verifyExtractive(RABBIT, [angkaUbah]) !== null, 'kalimat dengan angka/istilah diubah ditolak');
+  ok(S.verifyExtractive(RABBIT, [angkaUbah]) !== null,
+    'kalimat dengan angka/istilah diubah ditolak');
   const duplikat = ['Klasifikasi ras kelinci meliputi Rex, Angora, dan Dutch yang dibedakan panjang bulu dan ukuran tubuh.'];
   ok(S.verifyExtractive(RABBIT, duplikat.concat(duplikat)) !== null, 'duplikat ditolak');
   ok(S.verifyExtractive(RABBIT, duplikat) === null, 'kalimat verbatim asli diterima');
@@ -204,7 +218,8 @@ const LONG_SRC = [
     'Kemampuan berkembang biaknya tinggi, dan setelah didomestikasi menjadi berbagai ras dengan ukuran serta warna bulu berbeda.',
   ].join(' ');
   const r1 = V.validate(LONG_SRC, RINGKAS_BAGUS, {});
-  ok(r1.pass === true, 'ringkasan abstractive yang sehat LOLOS', r1.fails.map((f) => f.check).join(','));
+  ok(r1.pass === true, 'ringkasan abstractive yang sehat LOLOS',
+    r1.fails.map((f) => f.check).join(','));
 
   // Fallback ekstraktif: kalimat ASLI yang benar-benar ada di LONG_SRC.
   const FALLBACK_LAMA = [
@@ -218,11 +233,13 @@ const LONG_SRC = [
   // ANTI BOCOR: karangan harus tetap DITOLAK.
   const KARPAN = 'Kelinci termasuk ordo Lagomorpha. Kelinci dapat terbang 300 km dalam 15 menit dan dapat hidup 50 tahun. Predator utamanya adalah Harimau Jawa yang sering memangsa kelinci dewasa. Penelitian menunjukkan 87% kelinci memiliki struktur khusus pada rahangnya.';
   const r3 = V.validate(LONG_SRC, KARPAN, {});
-  ok(r3.fails.length > 0, 'karangan (angka/istilah rekaan) DITOLAK', r3.fails.map((f) => f.check).join(','));
+  ok(r3.fails.length > 0, 'karangan (angka/istilah rekaan) DITOLAK',
+    r3.fails.map((f) => f.check).join(','));
 
   // Angka/sitasi/istilah asli WAJIB utuh walau ringkasan boleh parafrase.
   const dgnAngka = 'Penelitian dilakukan di tiga sekolah tahun 2021 dengan 120 siswa. Data dianalisis dengan uji t. Hasil menunjukkan perbedaan signifikan antarkelompok, namun terbatas pada satu wilayah.';
-  const r4 = V.validate(dgnAngka, 'Penelitian dilakukan di tiga sekolah dengan kuesioner dan uji t, menunjukkan perbedaan signifikan antarkelompok.', {});
+  const r4 = V.validate(dgnAngka,
+    'Penelitian dilakukan di tiga sekolah dengan kuesioner dan uji t, menunjukkan perbedaan signifikan antarkelompok.', {});
   ok(r4.fails.some((f) => f.check === 'numbers'), 'angka/tahun hilang saat ringkasan DITOLAK',
     r4.fails.map((f) => f.check).join(','));
   // Negasi: boleh berkurang (kompresi) tapi TIDAK boleh dibalik.
@@ -233,9 +250,12 @@ const LONG_SRC = [
     + 'Kelinci tidak pernah berkumpul dengan predatornya di alam terbuka. '
     + 'Kelinci tidak memiliki kemampuan untuk berenang dalam waktu lama. '
     + 'Pola hidup soliter membuat kelinci tidak mudah beradaptasi pada kandang beramai-ramai.';
-  const r5 = V.validate(negAsli, 'Kelinci membutuhkan air, toleransi cahaya, dan suhu yang tidak terlalu tinggi agar bertahan hidup.', {});
-  ok(r5.pass === true, 'ringkasan yang membuang negasi (kompresi) LOLOS', r5.fails.map((f) => f.check).join(','));
-  const r6 = V.validate(negAsli, negAsli + ' Kelinci dapat hidup tanpa air dan tidak takut pada cahaya.', {});
+  const r5 = V.validate(negAsli,
+    'Kelinci membutuhkan air, toleransi cahaya, dan suhu yang tidak terlalu tinggi agar bertahan hidup.', {});
+  ok(r5.pass === true, 'ringkasan yang membuang negasi (kompresi) LOLOS',
+    r5.fails.map((f) => f.check).join(','));
+  const r6 = V.validate(negAsli,
+    negAsli + ' Kelinci dapat hidup tanpa air dan tidak takut pada cahaya.', {});
   ok(r6.fails.length > 0, 'pembalikan negasi DITOLAK', r6.fails.map((f) => f.check).join(','));
   // Rewrite panjang sebanding TIDAK boleh ikut ambang ringkasan.
   const par = dgnAngka.replace('Penelitian dilakukan', 'Penelitian ini dilaksanakan');
@@ -257,7 +277,8 @@ console.log('CASE G - Summarizer: hindari kalimat bergantung (yatim)');
   ok(orphan.length === 0, 'fallback tidak memilih kalimat bergantung', orphan.length + ' yatim');
   // Penalti orphan harus terpasang di skor (bukan hanya dihapus pasif).
   const orphanScored = scored.filter((e) => e.parts.orphan > 0);
-  ok(orphanScored.length > 0, 'penalti kalimat bergantung terdeteksi', orphanScored.length + ' kalimat');
+  ok(orphanScored.length > 0, 'penalti kalimat bergantung terdeteksi',
+    orphanScored.length + ' kalimat');
   // Sifat verbatim tidak boleh dikorbankan demi menghindari kalimat yatim.
   ok(S.verifyExtractive(LONG_SRC, chosen) === null, 'fallback tetap 100% verbatim');
 }
@@ -288,12 +309,13 @@ console.log('CASE E - sumber relevance lemah DITOLAK meski sitasi tinggi');
   // kelinci. Keyword-only != relevan; keyword-only TIDAK otomatis relevan.
   const ibm = MATERIAL_CANDIDATES.find((c) => c.id === 'ibm');
   const ibmSel = MATERIAL.selectMaterials([ibm], profile, {});
-  ok(ibmSel.materials.length === 1 && ibmSel.materials[0].relevance >= MATERIAL.MIN_SOURCE_RELEVANCE,
+  ok(ibmSel.materials.length === 1
+    && ibmSel.materials[0].relevance >= MATERIAL.MIN_SOURCE_RELEVANCE,
     'sumber 2-topik (kelinci+daging) tampil dengan skor, bukan dibuang diam-diam',
     ibmSel.materials.length ? String(ibmSel.materials[0].relevance) : 'tidak tampil');
 }
 
-// ---------- Ringkasan ----------
+// Ringkasan
 console.log('');
 // ================= CASE 1-6: SEMANTIC RELEVANCE =================
 // Sinyal utama = semantic similarity (embedding). Diuji OFFLINE dengan skor
@@ -317,7 +339,8 @@ const SEM_DOC_KELINCI = [
 // dokumen kelinci vs judul relevan 0.74-0.80, vs tidak relevan 0.51-0.57.
 function withSemantic(map) { return { mode: 'embedding', scores: map }; }
 function cand(title, id) {
-  return { title: title, venue: 'Jurnal Uji', doi: id, tier: 'Jurnal/paper', citations: 20, year: 2023 };
+  return { title: title, venue: 'Jurnal Uji', doi: id, tier: 'Jurnal/paper', citations: 20,
+    year: 2023 };
 }
 function semKey(c) { return MATERIAL.candKey(c); }
 
@@ -328,13 +351,15 @@ function semKey(c) { return MATERIAL.candKey(c); }
   const b = cand('GASTRONOMI MAKANAN BETAWI SEBAGAI IDENTITAS BUDAYA DAERAH', 'c1b');
   const sel = MATERIAL.selectMaterials([a, b], p,
     { semantic: withSemantic({ [semKey(a)]: 0.71, [semKey(b)]: 0.55 }) });
-  ok(sel.materials.length === 0, 'CASE 1 entitas-sampingan DITOLAK (walaupun semantic 0.71)', 'lolos: ' + sel.materials.length);
+  ok(sel.materials.length === 0, 'CASE 1 entitas-sampingan DITOLAK (walaupun semantic 0.71)',
+    'lolos: ' + sel.materials.length);
 }
 
 // CASE 2: paper relevan dengan terminologi berbeda.
 {
   const p = MATERIAL.buildProfile(SEM_DOC_PARU);
-  const target = cand('Diagnosis Kanker Paru-paru Berbasis Data Klinis: Evaluasi Performa Algoritma', 'c2a');
+  const target = cand('Diagnosis Kanker Paru-paru Berbasis Data Klinis: Evaluasi Performa Algoritma',
+    'c2a');
   const off = cand('Reformasi Transportasi Umum sebagai Solusi Kemacetan di Kota Besar', 'c2b');
   const sel = MATERIAL.selectMaterials([target, off], p,
     { semantic: withSemantic({ [semKey(target)]: 0.77, [semKey(off)]: 0.51 }) });
@@ -359,7 +384,8 @@ function semKey(c) { return MATERIAL.candKey(c); }
   const b = cand('Kajian Ekonomi PerDense', 'c4b');
   const sel = MATERIAL.selectMaterials([a, b], p,
     { semantic: withSemantic({ [semKey(a)]: 0.50, [semKey(b)]: 0.52 }) });
-  ok(sel.materials.length === 0, 'CASE 4 semua semantic rendah -> EMPTY RESULT', 'lolos: ' + sel.materials.length);
+  ok(sel.materials.length === 0, 'CASE 4 semua semantic rendah -> EMPTY RESULT',
+    'lolos: ' + sel.materials.length);
 }
 
 // CASE 5: semantic tinggi, lexical rendah -> tetap boleh lolos.
@@ -374,8 +400,10 @@ function semKey(c) { return MATERIAL.candKey(c); }
 // CASE 6: fallback leksikal harus dilaporkan, bukan diam-diam.
 {
   const p = MATERIAL.buildProfile(SEM_DOC_KELINCI);
-  const sel = MATERIAL.selectMaterials([cand('Klasifikasi dan kebutuhan nutrisi kelinci rumah', 'c6')], p, {});
-  ok(sel.semanticMode === 'fallback', 'fallback leksikal dilaporkan lewat semanticMode', sel.semanticMode);
+  const sel = MATERIAL.selectMaterials([cand('Klasifikasi dan kebutuhan nutrisi kelinci rumah',
+    'c6')], p, {});
+  ok(sel.semanticMode === 'fallback', 'fallback leksikal dilaporkan lewat semanticMode',
+    sel.semanticMode);
 }
 
 if (failures.length) {

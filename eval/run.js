@@ -76,7 +76,7 @@ function aucPOS(neg, pos) {
   return (rankSum - (n1 * (n1 + 1)) / 2) / (n1 * n0);
 }
 
-// ---- Metrik klasifikasi (STEP 1) ----------------------------------------
+// Metrik klasifikasi (STEP 1)
 // Positif = machine. Pembagi 0 -> null (dicetak "n/a"), BUKAN 0: precision
 // dengan 0 prediksi positif harus null, bukan 0%, agar tidak dibaca "buruk"
 // padahal memang tidak ada klaim yang dibuat. Recall == TPR (satu angka, bukan
@@ -119,10 +119,12 @@ function main() {
   }
 
   let rows;
-  const dsArg = (process.argv.slice(2).find((x) => x.indexOf("--dataset=") === 0) || "").split("=").slice(1).join("=");
+  const dsArg = (process.argv.slice(2).find((x) => x.indexOf("--dataset=") === 0)
+    || "").split("=").slice(1).join("=");
   const devPath = dsArg ? path.resolve(ROOT, dsArg) : path.join(ROOT, "eval", "dataset.jsonl");
   try {
-    rows = fs.readFileSync(devPath, "utf8").split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l));
+    rows = fs.readFileSync(devPath,
+      "utf8").split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l));
   } catch (e) {
     console.error("GAGAL baca " + devPath + ": " + e.message);
     process.exit(2);
@@ -130,7 +132,8 @@ function main() {
   console.log("dataset: " + path.relative(ROOT, devPath).replace(/\\/g, "/"));
   const dev = rows.filter((r) => r.split === "dev");
   if (!dev.length) { console.error("GAGAL: split dev kosong."); process.exit(2); }
-  if (dev.some((r) => r.split !== "dev") || rows.some((r) => dev.includes(r) && r.split === "test")) {
+  if (dev.some((r) => r.split !== "dev") || rows.some((r) => dev.includes(r)
+    && r.split === "test")) {
     console.error("GAGAL: kebocoran split terdeteksi.");
     process.exit(2);
   }
@@ -290,7 +293,8 @@ function main() {
     fpr_formal_abstract: { n: formalH.length, fpr: fprFormal }, tpr_machine: tpr,
     tpr_genre: tprGenre, tpr_lang: tprLang, tpr_bucket: tprBucket, fpr_bucket: fprBucket,
     med_human: med(humans.map((r) => r.score)), med_machine: med(machines.map((r) => r.score)),
-    rows: scored.map((r) => ({ id: r.id, label: r.label, genre: r.genre, words: r.words, score: r.score, confidence: r.confidence, predAI: r.predAI })),
+    rows: scored.map((r) => ({ id: r.id, label: r.label, genre: r.genre, words: r.words,
+      score: r.score, confidence: r.confidence, predAI: r.predAI })),
   };
   fs.writeFileSync(outPath, JSON.stringify(payload, null, 2));
   console.log("Disimpan: " + outPath);

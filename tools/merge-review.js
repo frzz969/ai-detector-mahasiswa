@@ -189,7 +189,8 @@ function main() {
   console.log('TABEL STATUS TIAP SAMPEL (SEPAKAT=sama semua, BEDA=perlu adjudikasi,');
   console.log('KURANG=diisi sebagian reviewer, BELUM=belum ada yang mengisi):');
   const wNo = 6, wId = 16, wIsi = 9;
-  console.log('  ' + pad('no', wNo) + pad('id', wId) + pad('isi', wIsi) + pad('verdict per reviewer', 44) + 'status');
+  console.log('  ' + pad('no', wNo) + pad('id', wId) + pad('isi',
+    wIsi) + pad('verdict per reviewer', 44) + 'status');
   rows.forEach((r) => {
     const isi = r.reviews.length + '/' + aktif;
     const det = r.reviews.map((x) => x.reviewer + ':' + x.verdict).join(' | ') || '-';

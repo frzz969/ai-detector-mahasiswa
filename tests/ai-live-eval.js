@@ -61,10 +61,12 @@ const documentStub = {
   getElementById: (id) => (elCache[id] || (elCache[id] = makeEl())),
   querySelectorAll: () => [], createElement: () => makeEl(), execCommand: () => false,
 };
-const files = ['js/core.js', 'js/referensi.js', 'js/detector.js', 'js/ai/combine.js', 'js/ai/validate.js'];
+const files = ['js/core.js', 'js/referensi.js', 'js/detector.js', 'js/ai/combine.js',
+  'js/ai/validate.js'];
 const code = files.map((f) => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n;\n');
 const mod = new Function('document', 'window', 'navigator', code +
-  '\n;return {heuristic, FarazCombine: globalThis.FarazCombine, FarazValidate: globalThis.FarazValidate};')(documentStub, {}, {});
+  '\n;return {heuristic, FarazCombine: globalThis.FarazCombine, FarazValidate: globalThis.FarazValidate};')(documentStub,
+    {}, {});
 
 const analyze = require(path.join(ROOT, 'api', 'analyze.js'));
 const sha = (s) => crypto.createHash('sha256').update(String(s), 'utf8').digest('hex');
@@ -169,7 +171,7 @@ Object.keys(strata).sort().forEach((k) => {
   });
 });
 
-// ---- Metrik klasifikasi: rumus SAMA dengan eval/run.js ------------------
+// Metrik klasifikasi: rumus SAMA dengan eval/run.js
 // Positif = machine. Pembagi 0 -> null ("n/a"), bukan 0.
 function div(n, d) { return d ? n / d : null; }
 function precisionOf(tp, fp) { return div(tp, tp + fp); }
@@ -256,7 +258,8 @@ function stats(list) {
     }
     const ai = g.body;
     const c = mod.FarazCombine.combine(heu, { score: ai.score, confidence: ai.confidence }, null);
-    const gate = mod.FarazValidate.checks.regression(r.text, r.text, { origScore: heu.score, revScore: c.final });
+    const gate = mod.FarazValidate.checks.regression(r.text, r.text, { origScore: heu.score,
+      revScore: c.final });
     const verdictAi = c.final >= 45;
     const okFinal = verdictAi === isMachine;
     bucket.h.push(heu.score);
@@ -270,7 +273,7 @@ function stats(list) {
     );
   }
 
-  // ---- Confusion matrix + metrik, untuk LOCAL vs AI berdampingan --------
+  // Confusion matrix + metrik, untuk LOCAL vs AI berdampingan
   // Prediksi positif = skor >= ambang yang SAMA untuk keduanya (THR_MID 50, cermin
   // core.js) supaya perbandingan adil. Ambang TIDAK diubah di file ini.
   const THR = 50;
@@ -323,7 +326,8 @@ function stats(list) {
     console.log('hanya news/gpt-3.5 (lihat eval/report.md). Bobot AI TIDAK diubah oleh file ini.');
   }
 
-  const line = (name, s) => s ? (name + ': n=' + s.n + ' min=' + s.min + ' median=' + s.med + ' max=' + s.max + ' rata=' + s.avg) : (name + ': (tidak ada data)');
+  const line = (name,
+    s) => s ? (name + ': n=' + s.n + ' min=' + s.min + ' median=' + s.med + ' max=' + s.max + ' rata=' + s.avg) : (name + ': (tidak ada data)');
   console.log('');
   console.log(line('heuristik-human ', stats(out.human.h)));
   console.log(line('AI skor -human  ', stats(out.human.a)));

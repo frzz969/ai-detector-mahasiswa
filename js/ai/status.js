@@ -1,6 +1,5 @@
 // FarazStatus — string status jujur untuk alur hybrid.
-// Aturan: validation-rules §2 (status = proses sebenarnya), §5 + detector-rules §6
-// (bahasa indikasi; tanpa klaim absolut). File vanilla JS global.
+// Aturan: validation-rules §2, §5 + detector-rules §6 (bahasa indikasi).
 (function (global) {
   "use strict";
 
@@ -32,24 +31,37 @@
   }
 
   function aiFailMessage(reason) {
-    if (AI_FAIL[reason]) return AI_FAIL[reason];
+    if (AI_FAIL[reason]) {
+      return AI_FAIL[reason];
+    }
+
     if (typeof reason === "string" && reason.indexOf("http-") === 0) {
       return "Pemeriksaan AI gagal (" + reason + ") — dipakai hasil lokal.";
     }
+
     return LABELS.unavailable || AI_FAIL.unavailable;
   }
 
   // Tracker kecil: create(onChange) → { set(step), get(), label() }.
   function create(onChange) {
     var current = "idle";
+
     function set(step) {
-      if (STEPS.indexOf(step) === -1 && step !== "idle") return current;
-      current = step;
-      if (typeof onChange === "function") {
-        try { onChange(current, label(current)); } catch (_) {}
+      if (STEPS.indexOf(step) === -1 && step !== "idle") {
+        return current;
       }
+
+      current = step;
+
+      if (typeof onChange === "function") {
+        try {
+          onChange(current, label(current));
+        } catch (_) {}
+      }
+
       return current;
     }
+
     return {
       set: set,
       get: function () { return current; },
@@ -60,9 +72,13 @@
   // Helper DOM opsional: tulis status ke elemen bila ada.
   function setText(el, step) {
     var msg = label(step);
+
     if (el && typeof el === "object" && ("textContent" in el)) {
-      try { el.textContent = msg; } catch (_) {}
+      try {
+        el.textContent = msg;
+      } catch (_) {}
     }
+
     return msg;
   }
 
@@ -73,4 +89,10 @@
     setText: setText,
     aiFailMessage: aiFailMessage
   };
-})(typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : this);
+})(
+  typeof globalThis !== "undefined"
+    ? globalThis
+    : typeof window !== "undefined"
+      ? window
+      : this
+);

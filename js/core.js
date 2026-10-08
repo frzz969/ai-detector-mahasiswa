@@ -1,20 +1,18 @@
-// core.js — Fondasi: DOM refs, state, konstanta, util kecil.
-// File 1 dari 4. Muat PERTAMA (defer = berurutan).
-// Cek error: ID tidak ketemu / konstanta salah → buka file ini.
+// core.js — fondasi: DOM refs, state, konstanta, util kecil.
+// dimuat pertama, berurutan dengan file lain.
 
-// DOM refs (semua ID ada di index.html).
 const $ = (id) => document.getElementById(id);
 
 const inputText = $("inputText");
-const statusEl  = $("status");
-const wcEl      = $("wordCount");
-const refInfo   = $("refInfo");
+const statusEl = $("status");
+const wcEl = $("wordCount");
+const refInfo = $("refInfo");
 const fileInput = $("fileInput");
-const fileChip  = $("fileChip");
-const fileName  = $("fileName");
-const fileMeta  = $("fileMeta");
+const fileChip = $("fileChip");
+const fileName = $("fileName");
+const fileMeta = $("fileMeta");
 
-// State bersama (dipakai detector + main).
+// State bersama, dipakai detector dan main.
 let localPipe = null;
 let localLoading = false;
 let lastResult = null;
@@ -25,34 +23,55 @@ let localParts = null;
 let aiPending = false;
 let aiResult = null;
 let aiError = null;
-// resultStale=true: teks berubah sesudah hasil → hasil lama dilarang di-export.
-// localParts = {n, of} potongan model; aiPending/aiResult/aiError digabung via FarazCombine.
+// resultStale true berarti teks berubah sesudah hasil keluar,
+// sehingga hasil lama tidak boleh dipakai untuk export.
+// localParts mencatat potongan model {n, of}.
+// aiPending, aiResult, aiError digabung lewat FarazCombine.
 
-// Frasa generik keluaran model. Detector-rules §3: frasa akademik normal
-// dipindah ke ACAD_NEUTRAL agar tidak menaikkan skor (anti false positive).
+// Frasa generik keluaran model. Lihat detector-rules §3:
+// frasa akademik normal dipindah ke ACAD_NEUTRAL agar tidak
+// menaikkan skor dan tidak menimbulkan false positive.
 const AI_ID = [
-  "sebagai model bahasa", "penting untuk dicatat", "secara keseluruhan",
-  "dalam konteks", "pada dasarnya", "kesimpulannya", "perlu diingat",
-  "dalam era digital", "memainkan peran penting", "tidak dapat dipungkiri",
+  "sebagai model bahasa",
+  "penting untuk dicatat",
+  "secara keseluruhan",
+  "dalam konteks",
+  "pada dasarnya",
+  "kesimpulannya",
+  "perlu diingat",
+  "dalam era digital",
+  "memainkan peran penting",
+  "tidak dapat dipungkiri",
 ];
 
 const AI_EN = [
-  "as an ai language model", "it is important to note", "overall,",
-  "in conclusion", "in today's fast-paced", "delve into",
-  "plays a crucial role", "it is worth noting",
+  "as an ai language model",
+  "it is important to note",
+  "overall,",
+  "in conclusion",
+  "in today's fast-paced",
+  "delve into",
+  "plays a crucial role",
+  "it is worth noting",
   "this article explores",
 ];
 
 const AI_PHRASES = [...AI_ID, ...AI_EN];
 
-// Frasa akademik standar (detector-rules §3): konteks akademik, TIDAK menaikkan skor.
+// Frasa akademik standar (detector-rules §3).
+// Ini konteks akademik, tidak menaikkan skor.
 const ACAD_NEUTRAL = [
-  "penelitian ini bertujuan", "artikel ini membahas", "dengan demikian",
-  "oleh karena itu", "selain itu",
-  "dapat disimpulkan", "berdasarkan hasil penelitian",
+  "penelitian ini bertujuan",
+  "artikel ini membahas",
+  "dengan demikian",
+  "oleh karena itu",
+  "selain itu",
+  "dapat disimpulkan",
+  "berdasarkan hasil penelitian",
 ];
 
-// Function word ID/EN untuk deteksi bahasa (bobot model lokal + sinyal kepadatan FW).
+// Function word ID/EN untuk deteksi bahasa.
+// Dipakai bobot model lokal dan sinyal kepadatan FW.
 const ID_FW = new Set([
   "yang", "dan", "di", "ke", "dari", "dengan", "untuk", "pada", "ini", "itu",
   "adalah", "akan", "juga", "dalam", "oleh", "sebagai", "tidak", "atau",
@@ -74,64 +93,76 @@ const EN_FW = new Set([
 ]);
 
 const REF_HEADS = [
-  "daftar pustaka", "references", "bibliography",
-  "referensi", "daftar referensi",
+  "daftar pustaka",
+  "references",
+  "bibliography",
+  "referensi",
+  "daftar referensi",
 ];
 
-// Batas global (ubah di sini saja).
-const MIN_WORDS     = 20;    // minimal kata untuk dicek
-const MAX_CHARS     = 30000; // potong teks upload sepanjang ini
-const MAX_PDF_PAGES = 30;    // halaman PDF yang dibaca
-const MAX_CHUNKS    = 6;     // potongan teks ke model lokal
-const MAX_FILE_MB   = 8;     // ukuran file maksimal
+// Batas global, ubah di sini saja.
+const MIN_WORDS = 20;
+const MAX_CHARS = 30000;
+const MAX_PDF_PAGES = 30;
+const MAX_CHUNKS = 6;
+const MAX_FILE_MB = 8;
 
 // Skoring heuristic (detector-rules §3-§4, validation-rules §4).
-// THR_*_DOC hanya CERMIN ambang render (main.js) — JANGAN ubah klasifikasi dari sini.
-const SCORE_FLOOR = 15;    // clamp bawah (anti-nol, bukan vonis manusia)
-const SCORE_CEIL  = 98;    // clamp atas (bukan vonis absolut)
-const SCORE_ANCHOR = 22;   // titik netral evidence-based (pengganti prior +22)
-const SHORT_W = 50;        // <50 kata → cap (bukan vonis manusia)
-const SHORT_SENTS = 3;     // <3 kalimat → cap
-const SHORT_TEXT_CAP = 45; // batas atas skor teks pendek
-const MIN_RELIABLE_W = 80; // <80 kata → uncertainty, statistik belum bermakna
-const LEX_MIN_W = 50;      // gerbang sinyal leksikal (TTR) — skop short-medium
-const MED_MIN_W = 60;      // gerbang sinyal repetisi/pola (n-gram, fluffy)
-const HEDGE_MIN_W = 40;    // gerbang sinyal frasa manfaat generik
-const IMPERS_MIN_W = 50;   // gerbang sinyal impersonal (dijaga hasTemplateEv)
-const SINGLE_SIGNAL_CAP = 60; // posSig<=1 → bukan indikasi kuat (detector-rules §3)
-const TEMPLATE_MAX = 36;   // family template: hits+hedge+fluffy+neutral scaffolding
-const RHYTHM_MAX = 20;     // family ritme: burst+ideal 12-28 (satu atap, anti double-count)
-const STRUCTURE_MAX = 18;  // struktur: opener berulang+enumerasi+repetisi ide+1-paragraf
-const LEXICAL_MAX = 20;    // leksikal: TTR-rendah+ngram+konektor+impersonal
-const HUMAN_LIKE_MAX = 14; // offset human-like: personal/data/variasi (bukan proof-human)
-const ACAD_DAMP_LOW = 2;   // selective damp akademik LOW (sinyal lemah saja)
-const ACAD_DAMP_MED = 6;   // selective damp akademik MEDIUM
-const ACAD_DAMP_HIGH = 10; // selective damp akademik HIGH
-const BLEND_SPREAD_LO = 8;     // agregasi kalimat: spread mulai berpengaruh
-const BLEND_SPREAD_RANGE = 24; // agregasi kalimat: rentang normalisasi spread
-const BLEND_MAX_W = 0.6;       // agregasi kalimat: bobot maks komponen kalimat
-const THR_STRONG_DOC = 75; // cermin ambang render: indikasi kuat
-const THR_MID_DOC = 50;    // cermin ambang render: batas biner
-const THR_HUMAN_DOC = 30;  // cermin ambang render: cenderung natural
+// THR_*_DOC hanya cermin ambang render di main.js.
+// Klasifikasi jangan diubah dari sini.
+const SCORE_FLOOR = 15;
+const SCORE_CEIL = 98;
+const SCORE_ANCHOR = 22;
+const SHORT_W = 50;
+const SHORT_SENTS = 3;
+const SHORT_TEXT_CAP = 45;
+const MIN_RELIABLE_W = 80;
+const LEX_MIN_W = 50;
+const MED_MIN_W = 60;
+const HEDGE_MIN_W = 40;
+const IMPERS_MIN_W = 50;
+const SINGLE_SIGNAL_CAP = 60;
+const TEMPLATE_MAX = 36;
+const RHYTHM_MAX = 20;
+const STRUCTURE_MAX = 18;
+const LEXICAL_MAX = 20;
+const HUMAN_LIKE_MAX = 14;
+const ACAD_DAMP_LOW = 2;
+const ACAD_DAMP_MED = 6;
+const ACAD_DAMP_HIGH = 10;
+const BLEND_SPREAD_LO = 8;
+const BLEND_SPREAD_RANGE = 24;
+const BLEND_MAX_W = 0.6;
+const THR_STRONG_DOC = 75;
+const THR_MID_DOC = 50;
+const THR_HUMAN_DOC = 30;
 
-// S1 ID-Scaffold Dispersion (detector-rules §2/§4; ref-1 §3-§5; ref-7).
-// Gerbang FIRE: totalW>=S1_MIN_W AND density(hits*100/totalW)>=S1_MIN_DENSITY
-// AND dispersi>=S1_MIN_DISPERSION AND distinct>=S1_MIN_DISTINCT. SKIP bila
-// strongAcad ATAU kalimat hit berangka/sitasi/metode konkret dalam +-1 kalimat.
-// Bonus masuk gTemplate (clamp TEMPLATE_MAX tetap); +1 posSig; per-kalimat
-// S1_SENT_PTS hanya bila union-hit DAN acaMarkers<3. SINGLE_SIGNAL_CAP=60 dan
-// SHORT_TEXT_CAP=45 TIDAK diubah.
-const S1_MIN_W = 50;         // gerbang panjang
-const S1_MIN_DENSITY = 3.0;  // hits*100/totalW minimal
-const S1_MIN_DISPERSION = 2; // kalimat/paragraf berbeda berisi hit
-const S1_MIN_DISTINCT = 2;   // frasa union berbeda
-const S1_TEMPLATE_PTS = 8;   // bonus gTemplate bila FIRE
-const S1_SENT_PTS = 14;      // bonus per kalimat union-hit (acaMarkers<3)
+// S1 ID-Scaffold Dispersion (detector-rules §2/§4, ref-1 §3-§5, ref-7).
+// Gerbang FIRE: totalW >= S1_MIN_W dan density >= S1_MIN_DENSITY
+// dan dispersi >= S1_MIN_DISPERSION dan distinct >= S1_MIN_DISTINCT.
+// Dilewati bila strongAcad, atau kalimat hit berangka/sitasi/metode
+// konkret dalam +-1 kalimat. Bonus masuk gTemplate dengan clamp
+// TEMPLATE_MAX tetap, tambah 1 posSig. Bonus per kalimat S1_SENT_PTS
+// hanya bila union-hit dan acaMarkers < 3. Cap tunggal 60 dan cap
+// teks pendek 45 tidak diubah.
+const S1_MIN_W = 50;
+const S1_MIN_DENSITY = 3.0;
+const S1_MIN_DISPERSION = 2;
+const S1_MIN_DISTINCT = 2;
+const S1_TEMPLATE_PTS = 8;
+const S1_SENT_PTS = 14;
 
 const escapeHtml = (s) =>
-  String(s).replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  }[c]));
+  String(s).replace(
+    /[&<>"']/g,
+    (c) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    }[c])
+  );
 
 const countWords = (t) =>
   (t.trim().match(/[\p{L}\p{N}']+/gu) || []).length;

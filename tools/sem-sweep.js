@@ -48,7 +48,7 @@ const GATE_MIN = 55, GATE_MAX = 70, HIGH_MIN = 68, HIGH_MAX = 78, STEP_DIV = 100
 // Jeda antar batch embed (ms). Konservatif agar tidak memicu 429.
 const DEFAULT_GAP_MS = 1200;
 
-// ---- Provider Jina (OpenAI-compatible, tanpa dependency baru) ----
+// Provider Jina (OpenAI-compatible, tanpa dependency baru)
 const JINA_URL = 'https://api.jina.ai/v1/embeddings';
 const JINA_MODEL = 'jina-embeddings-v3';
 const JINA_TASK_QUERY = 'retrieval.query';
@@ -133,7 +133,8 @@ function readDotEnvKey(name) {
     if (!m || m[1] !== name) continue;
     let v = m[2].trim();
     const q = v.charAt(0);
-    if ((q === '"' || q === "'") && v.length >= 2 && v.charAt(v.length - 1) === q) v = v.slice(1, -1);
+    if ((q === '"' || q === "'") && v.length >= 2 && v.charAt(v.length - 1) === q) v = v.slice(1,
+      -1);
     return v;
   }
   return '';
@@ -197,13 +198,15 @@ async function jinaEmbedTexts(texts, task, key) {
       lastErr = 'HTTP 429 dari Jina (batas laju)';
       if (attempt < JINA_MAX_TRY) {
         let wait = 0;
-        try { wait = retryAfterMs(r.headers && r.headers.get('retry-after')); } catch (_) { wait = 0; }
+        try { wait = retryAfterMs(r.headers
+          && r.headers.get('retry-after')); } catch (_) { wait = 0; }
         await sleep(wait > 0 ? wait : 2000 * attempt);
         continue;
       }
       return { error: lastErr };
     }
-    if (r.status === 401 || r.status === 403) return { error: 'HTTP ' + r.status + ' dari Jina (kunci ditolak)' };
+    if (r.status === 401
+      || r.status === 403) return { error: 'HTTP ' + r.status + ' dari Jina (kunci ditolak)' };
     if (!r.ok) return { error: 'HTTP ' + r.status + ' dari Jina' };
     let j;
     try { j = await r.json(); } catch (_) { return { error: 'respons embedding tidak lengkap (Jina)' }; }
@@ -335,7 +338,8 @@ async function main() {
     try {
       material = require('../api/material.js');
     } catch (e) {
-      console.log('FALLBACK: tidak dapat memuat api/material.js (' + String(e.message).slice(0, 80) + ')');
+      console.log('FALLBACK: tidak dapat memuat api/material.js (' + String(e.message).slice(0,
+        80) + ')');
       process.exitCode = 1;
       return;
     }
@@ -501,4 +505,5 @@ async function main() {
 }
 
 if (require.main === module) { main(); }
-module.exports = { cosine: cosine, rerank: rerank, evalRanked: evalRanked, isTemplateRow: isTemplateRow, getJinaKey: getJinaKey, jinaEmbedTexts: jinaEmbedTexts, readDotEnvKey: readDotEnvKey };
+module.exports = { cosine: cosine, rerank: rerank, evalRanked: evalRanked,
+  isTemplateRow: isTemplateRow, getJinaKey: getJinaKey, jinaEmbedTexts: jinaEmbedTexts, readDotEnvKey: readDotEnvKey };

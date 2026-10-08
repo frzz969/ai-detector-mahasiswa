@@ -14,8 +14,10 @@ const path = require('path');
 const readline = require('readline');
 
 const ROOT = path.resolve(__dirname, '..');
-const fileArg = (process.argv.slice(2).find((a) => a.indexOf('--file=') === 0) || '').slice('--file='.length);
-const BENCH = fileArg ? path.resolve(fileArg) : path.join(ROOT, 'eval', 'retrieval-benchmark.jsonl');
+const fileArg = (process.argv.slice(2).find((a) => a.indexOf('--file=') === 0)
+  || '').slice('--file='.length);
+const BENCH = fileArg ? path.resolve(fileArg) : path.join(ROOT, 'eval',
+  'retrieval-benchmark.jsonl');
 
 function isTemplate(o) {
   if (!o || typeof o !== 'object') return true;
@@ -44,7 +46,8 @@ function printList(rows) {
 
 function validate(cands) {
   const errs = [];
-  if (!Array.isArray(cands) || cands.length !== 10) errs.push('harus tepat 10 kandidat (sekarang ' + (cands ? cands.length : 0) + ').');
+  if (!Array.isArray(cands)
+    || cands.length !== 10) errs.push('harus tepat 10 kandidat (sekarang ' + (cands ? cands.length : 0) + ').');
   (cands || []).forEach((c, i) => {
     const n = i + 1;
     if (!c.source) errs.push('slot ' + n + ': source kosong.');
@@ -52,7 +55,8 @@ function validate(cands) {
     if (!/^https?:\/\//i.test(String(c.url || ''))) errs.push('slot ' + n + ': url harus diawali http(s).');
     if ([0, 1, 2].indexOf(Number(c.relevance)) === -1) errs.push('slot ' + n + ': relevance harus 0/1/2.');
   });
-  const hn0 = (cands || []).filter((c) => c.hard_negative === true && Number(c.relevance) === 0).length;
+  const hn0 = (cands || []).filter((c) => c.hard_negative === true
+    && Number(c.relevance) === 0).length;
   if (hn0 < 2) errs.push('hard_negative ber-relevance 0 kurang (ada ' + hn0 + ', wajib ≥2).');
   return errs;
 }
@@ -68,7 +72,8 @@ function replaceRow(benchPath, queryId, topic, text, cands) {
     try { o = JSON.parse(l); } catch (_) { return l; }
     if (String(o.query_id) !== String(queryId)) return l;
     found = true;
-    return JSON.stringify({ text: text, topic: topic, query_id: String(queryId), candidates: cands, note: 'label manual ' + new Date().toISOString().slice(0, 10) });
+    return JSON.stringify({ text: text, topic: topic, query_id: String(queryId), candidates: cands,
+      note: 'label manual ' + new Date().toISOString().slice(0, 10) });
   });
   if (!found) return 'query_id tidak ketemu di file.';
   const tmp = benchPath + '.tmp';
@@ -158,18 +163,22 @@ async function main() {
     let pending = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
     while (pending.length) {
       const i = pending[0];
-      console.log('  slot ' + (i + 1) + '/10' + (row.candidates && row.candidates[i] ? ' (template: ' + String(row.candidates[i].title).slice(0, 50) + ')' : ''));
+      console.log('  slot ' + (i + 1) + '/10' + (row.candidates
+        && row.candidates[i] ? ' (template: ' + String(row.candidates[i].title).slice(0,
+          50) + ')' : ''));
       const one = await enterSlot(i, askFn);
       if (one === 'quit') return 'quit';
       if (one === 'abort') return 'batal';
       if (one !== null) cands[i] = one;
       pending = cands.map((c, k) => (c ? -1 : k)).filter((k) => k !== -1);
-      if (pending.length && one === null) console.log('  slot ' + (i + 1) + ' dilewati, nanti dilengkapi.');
+      if (pending.length
+        && one === null) console.log('  slot ' + (i + 1) + ' dilewati, nanti dilengkapi.');
     }
     for (;;) {
       console.log('  ringkasan ' + row.query_id + ':');
       cands.forEach((c, i) => {
-        console.log('    ' + (i + 1) + '. [' + c.source + '] ' + String(c.title).slice(0, 45) + ' | rel=' + c.relevance + (c.hard_negative ? ' HN' : ''));
+        console.log('    ' + (i + 1) + '. [' + c.source + '] ' + String(c.title).slice(0,
+          45) + ' | rel=' + c.relevance + (c.hard_negative ? ' HN' : ''));
       });
       const cmd = String(await askFn('  simpan / ulang <1-10> / batal: ')).trim().toLowerCase();
       if (cmd === 'batal') return 'batal';
@@ -181,7 +190,8 @@ async function main() {
           continue;
         }
         saveRow(row.query_id, row.topic, text, cands);
-        console.log('  tersimpan: ' + row.query_id + ' (10 kandidat, HN0=' + cands.filter((c) => c.hard_negative && Number(c.relevance) === 0).length + ').');
+        console.log('  tersimpan: ' + row.query_id + ' (10 kandidat, HN0=' + cands.filter((c) => c.hard_negative
+          && Number(c.relevance) === 0).length + ').');
         return true;
       }
       const m = cmd.match(/^ulang\s+(\d{1,2})$/);

@@ -1,5 +1,4 @@
 'use strict';
-// ============================================================
 // api/material.js — Pencari materi akademik (Vercel, CommonJS)
 // Arsitektur (user): query → fan-out paralel (Wikipedia, Wikidata,
 //   OpenAlex, Crossref, Semantic Scholar, PubMed, arXiv)
@@ -13,7 +12,6 @@
 //   bukan gagal total); §5: bahasa indikasi, tanpa klaim absolut.
 // - Pola validasi {v,hash,canonicalText} + send + fetchWithTimeout
 //   mengikuti api/summarize.js.
-// ============================================================
 
 const crypto = require('crypto');
 const {
@@ -28,7 +26,7 @@ const MAILTO = 'faraz-detector@example.com';
 // (detector-rules —1 jangan karang; validation-rules —2 no silent failure).
 const MAX_RESULTS = 10;
 
-// ---- RELEVANCE GATE (regression case EXPLAINER) ----
+// RELEVANCE GATE (regression case EXPLAINER)
 // Root cause lama: keyword overlap dianggap bukti relevansi → judul yang hanya
 // menyebut entitas (mis. "kelinci" pada judul skripsi sistem informasi) atau
 // topik lain yang kebetulan sama ikut masuk sebagai "materi terkait".
@@ -66,7 +64,8 @@ const CONTEXT_N = 6;      // term konteks (ko-occurrence)
 const ENTITY_N = 6;
 
 function send(res, status, obj) {
-  if (res && typeof res.status === 'function' && typeof res.json === 'function') return res.status(status).json(obj);
+  if (res && typeof res.status === 'function'
+    && typeof res.json === 'function') return res.status(status).json(obj);
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json');
   res.end(JSON.stringify(obj));
@@ -79,7 +78,8 @@ function readBody(req) {
   return null;
 }
 
-function sha256Hex(s) { return crypto.createHash('sha256').update(String(s), 'utf8').digest('hex'); }
+function sha256Hex(s) { return crypto.createHash('sha256').update(String(s),
+  'utf8').digest('hex'); }
 
 async function fetchWithTimeout(url, options, timeoutMs) {
   const ctrl = new AbortController();
@@ -275,7 +275,7 @@ function numOrNull(x) {
   return Number.isFinite(n) ? n : null;
 }
 
-// ---- SEMANTIC SIMILARITY (sinyal UTAMA) ----
+// SEMANTIC SIMILARITY (sinyal UTAMA)
 // Gemini embeddings (gemini-embedding-001) via batchEmbedContents: 1 panggilan
 // untuk 1 dokumen + N kandidat. Kalau key/model tidak tersedia atau gagal,
 // kembalikan null -> pipeline jatuh ke mode leksikal dan melaporkannya lewat
@@ -366,14 +366,16 @@ async function embedBatch(texts) {
     for (const p of parts) {
       if (!p || p.error) return { error: p && p.error ? p.error : 'respons embedding kosong' };
       const embs = Array.isArray(p.embeddings) ? p.embeddings : [];
-      const rows = embs.map((e) => (e && (e.values || (e.embedding && e.embedding.values))) || null);
+      const rows = embs.map((e) => (e && (e.values || (e.embedding && e.embedding.values))) ||
+        null);
       if (rows.some((v) => !Array.isArray(v))) return { error: 'respons embedding tidak lengkap' };
       rows.forEach((v) => vectors.push(v));
     }
     if (vectors.length !== list.length) return { error: 'jumlah embedding tidak lengkap' };
     return { vectors: vectors };
   } catch (e) {
-    return { error: (e && e.code === 'TIMEOUT') ? 'timeout embedding' : ('gagal: ' + String((e && e.message) || e).slice(0, 80)) };
+    return { error: (e && e.code === 'TIMEOUT') ? 'timeout embedding'
+      : ('gagal: ' + String((e && e.message) || e).slice(0, 80)) };
   }
 }
 
@@ -390,9 +392,11 @@ async function semanticScores(canonicalText, profile, candidates) {
     seen[k] = 1;
     uniqIdx.push(i);
   });
-  const texts = [topicDigest(canonicalText, profile)].concat(uniqIdx.map((i) => sourceText(list[i])));
+  const texts = [topicDigest(canonicalText,
+    profile)].concat(uniqIdx.map((i) => sourceText(list[i])));
   const res = await embedBatch(texts);
-  if (!res.vectors) return { mode: 'fallback', reason: res.error || 'embedding tidak tersedia', scores: {} };
+  if (!res.vectors) return { mode: 'fallback', reason: res.error || 'embedding tidak tersedia',
+    scores: {} };
   const docVec = res.vectors[0];
   const scores = {};
   uniqIdx.forEach((srcIdx, k) => {
@@ -401,7 +405,7 @@ async function semanticScores(canonicalText, profile, candidates) {
   return { mode: 'embedding', model: EMBEDDING_MODEL, scores: scores };
 }
 
-// ---- Fan-out per sumber (fail-soft: lempar Error → ditampung jadi warnings) ----
+// Fan-out per sumber (fail-soft: lempar Error → ditampung jadi warnings)
 
 // Abstrak OpenAlex disimpan sebagai inverted index (kata -> posisi). Kita
 // susun balik supaya bisa dipakai semantic/lexical scoring (hanya judul
@@ -489,7 +493,8 @@ async function srcSemanticScholar(q) {
     const doi = cleanStr(ext.DOI, 200);
     return {
       title: cleanStr(p.title, 300),
-      authors: Array.isArray(p.authors) ? p.authors.map((a) => cleanStr(a.name, 120)).filter(Boolean).slice(0, 5) : [],
+      authors: Array.isArray(p.authors) ? p.authors.map((a) => cleanStr(a.name,
+        120)).filter(Boolean).slice(0, 5) : [],
       year: numOrNull(p.year),
       venue: cleanStr(p.venue, 200),
       doi, url: cleanStr(p.url || (doi ? 'https://doi.org/' + doi : ''), 300),
@@ -505,7 +510,8 @@ async function srcPubMed(q) {
   const r1 = await fetchWithTimeout(es, { headers: { 'User-Agent': UA } }, 4000);
   if (!r1.ok) throw new Error('PubMed esearch HTTP ' + r1.status);
   const j1 = await r1.json();
-  const ids = (j1.esearchresult && Array.isArray(j1.esearchresult.idlist)) ? j1.esearchresult.idlist : [];
+  const ids = (j1.esearchresult
+    && Array.isArray(j1.esearchresult.idlist)) ? j1.esearchresult.idlist : [];
   if (!ids.length) return [];
   const su = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=' +
     encodeURIComponent(ids.join(',')) + '&retmode=json';
@@ -517,7 +523,8 @@ async function srcPubMed(q) {
     const d = res[String(id)] || {};
     return {
       title: cleanStr(d.title, 300),
-      authors: Array.isArray(d.authors) ? d.authors.map((a) => cleanStr(a.name, 120)).filter(Boolean).slice(0, 5) : [],
+      authors: Array.isArray(d.authors) ? d.authors.map((a) => cleanStr(a.name,
+        120)).filter(Boolean).slice(0, 5) : [],
       year: numOrNull(String(d.pubdate || '').slice(0, 4)),
       venue: cleanStr(d.source, 200),
       doi: cleanStr((Array.isArray(d.elocationid) ? '' : '') || '', 200),
@@ -529,7 +536,8 @@ async function srcPubMed(q) {
 }
 
 function unescXml(s) {
-  return String(s).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  return String(s).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g,
+    '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
 }
 
 async function srcArxiv(q) {
@@ -563,7 +571,8 @@ async function srcWikipedia(q, lang) {
     title: cleanStr(h.title, 300),
     authors: [], year: null,
     venue: 'Wikipedia (' + lang + ')',
-    doi: '', url: 'https://' + lang + '.wikipedia.org/wiki/' + encodeURIComponent(String(h.title).replace(/ /g, '_')),
+    doi: '', url: 'https://' + lang + '.wikipedia.org/wiki/' + encodeURIComponent(String(h.title).replace(/ /g,
+      '_')),
     pageid: h.pageid,
     citations: null, tier: 'Wikipedia/Wikidata', source: 'Wikipedia-' + lang,
   }));
@@ -589,7 +598,8 @@ async function srcWikidata(q) {
 // RESULT FILTER + SOURCE VALIDATION: wajib title + (doi|url|pageid).
 function passesFilter(m) {
   if (!m || typeof m.title !== 'string' || !m.title.trim()) return false;
-  const id = (m.doi && String(m.doi).trim()) || (m.url && String(m.url).trim()) || (m.pageid != null ? String(m.pageid) : '');
+  const id = (m.doi && String(m.doi).trim()) || (m.url && String(m.url).trim())
+    || (m.pageid != null ? String(m.pageid) : '');
   return !!String(id).trim();
 }
 
@@ -703,8 +713,10 @@ function scoreCandidate(candidate, profile, sem) {
   // Alasan SPESIFIK (wajib menyebut term yang cocok; kalau tidak bisa -> tolak).
   const bits = [];
   if (semanticOn) bits.push('makna: ' + round2(semantic));
-  if (matchedTopics.length) bits.push('topik: ' + matchedTopics.slice(0, 3).map((t) => t.term).join(', '));
-  if (matchedContext.length) bits.push('konteks: ' + matchedContext.slice(0, 2).map((c) => c.term).join(', '));
+  if (matchedTopics.length) bits.push('topik: ' + matchedTopics.slice(0,
+    3).map((t) => t.term).join(', '));
+  if (matchedContext.length) bits.push('konteks: ' + matchedContext.slice(0,
+    2).map((c) => c.term).join(', '));
   if (matchedEntities.length) bits.push('entitas: ' + matchedEntities.slice(0, 2).join(', '));
   const reason = bits.join('; ');
 
@@ -852,19 +864,26 @@ function confidenceOf(sc) {
 }
 
 module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') return send(res, 405, { error: 'Gunakan POST.', code: 'METHOD_NOT_ALLOWED' });
+  if (req.method !== 'POST') return send(res, 405, { error: 'Gunakan POST.',
+    code: 'METHOD_NOT_ALLOWED' });
   const body = readBody(req);
-  if (!body || typeof body.v === 'undefined' || typeof body.hash !== 'string' || typeof body.canonicalText !== 'string') {
-    return send(res, 400, { error: 'Body harus JSON {v, hash, canonicalText}.', code: 'MALFORMED' });
+  if (!body || typeof body.v === 'undefined' || typeof body.hash !== 'string'
+    || typeof body.canonicalText !== 'string') {
+    return send(res, 400, { error: 'Body harus JSON {v, hash, canonicalText}.',
+      code: 'MALFORMED' });
   }
   const { v, hash, canonicalText } = body;
-  if (!SUPPORTED_V.includes(v)) return send(res, 400, { error: 'Versi tidak didukung.', code: 'UNSUPPORTED_VERSION' });
+  if (!SUPPORTED_V.includes(v)) return send(res, 400, { error: 'Versi tidak didukung.',
+    code: 'UNSUPPORTED_VERSION' });
   if (!canonicalText.trim() || canonicalText.length > MAX_CHARS) {
-    return send(res, 400, { error: 'canonicalText kosong atau melebihi ' + MAX_CHARS + ' karakter.', code: 'MALFORMED' });
+    return send(res, 400, { error: 'canonicalText kosong atau melebihi ' + MAX_CHARS + ' karakter.',
+      code: 'MALFORMED' });
   }
-  if (!/^[a-f0-9]{64}$/i.test(hash)) return send(res, 400, { error: 'hash harus SHA-256 hex dari canonicalText.', code: 'MALFORMED' });
+  if (!/^[a-f0-9]{64}$/i.test(hash)) return send(res, 400,
+    { error: 'hash harus SHA-256 hex dari canonicalText.', code: 'MALFORMED' });
   const actual = sha256Hex(canonicalText);
-  if (actual.toLowerCase() !== hash.toLowerCase()) return send(res, 400, { error: 'hash tidak cocok dengan canonicalText.', code: 'HASH_MISMATCH' });
+  if (actual.toLowerCase() !== hash.toLowerCase()) return send(res, 400,
+    { error: 'hash tidak cocok dengan canonicalText.', code: 'HASH_MISMATCH' });
 
   const profile = buildProfile(canonicalText);
   const queries = buildQueries(profile);
@@ -912,7 +931,8 @@ module.exports = async function handler(req, res) {
       const name = jobs[i][0];
       if (s && s.status === 'fulfilled' && Array.isArray(s.value)) merged = merged.concat(s.value);
       else {
-        const why = (s && s.reason && s.reason.message) ? String(s.reason.message).slice(0, 120) : 'tidak merespons';
+        const why = (s && s.reason && s.reason.message) ? String(s.reason.message).slice(0,
+          120) : 'tidak merespons';
         warnings.push('Sumber ' + name + ' tidak tersedia (' + why + ') — hasil dari sumber lain tetap ditampilkan.');
       }
     });

@@ -20,7 +20,7 @@ const THR_STRONG = 75; // >=75 indikasi kuat
 const THR_MID = 50;    // >=50 campuran/AI (batas biner harness)
 const THR_HUMAN = 30;  // <30 cenderung natural
 
-// ---------- Stub DOM (cukup agar main.js bisa load + runDemo + updateWC) ----------
+// Stub DOM (cukup agar main.js bisa load + runDemo + updateWC)
 function makeEl() {
   return {
     value: "", textContent: "", innerHTML: "", hidden: false, disabled: false,
@@ -42,7 +42,8 @@ const documentStub = {
 };
 
 function loadSources() {
-  const files = ["js/core.js", "js/referensi.js", "js/detector.js", "js/humanizer.js", "js/main.js"];
+  const files = ["js/core.js", "js/referensi.js", "js/detector.js", "js/humanizer.js",
+    "js/main.js"];
   const code = files.map((f) => fs.readFileSync(path.join(ROOT, f), "utf8")).join("\n;\n");
   const factory = new Function(
     "document", "window", "navigator",
@@ -52,7 +53,7 @@ function loadSources() {
   return factory(documentStub, {}, {});
 }
 
-// ---------- Klasifikasi biner harness (thr eksisting 50, bukan tuning) ----------
+// Klasifikasi biner harness (thr eksisting 50, bukan tuning)
 const predAI = (score) => score >= THR_MID;
 const cls3 = (score) => (score >= THR_STRONG ? "ai" : score < THR_HUMAN ? "human" : "mid");
 
@@ -83,7 +84,7 @@ const avg = (a) => (a.reduce((x, y) => x + y, 0) / Math.max(1, a.length));
 // Klaim terlarang pada output user-facing (detector-rules §6, validation-rules §5).
 const FORBIDDEN = /100% AI|pasti AI|pasti manusia|dijamin|bebas AI|khas AI/i;
 
-// ---------- Main ----------
+// Main
 const args = process.argv.slice(2);
 const splitArg = ((args.find((a) => a.startsWith("--split=")) || "--split=all").split("=")[1]);
 const outArg = (args.find((a) => a.startsWith("--out=")) || "").split("=").slice(1).join("=");
@@ -102,7 +103,8 @@ const bootOK =
 console.log(`boot main.js headless: ${bootOK ? "OK" : "GAGAL"} (wordCount="${elCache.wordCount && elCache.wordCount.textContent}", demoPct="${elCache.demoPct && elCache.demoPct.textContent}")`);
 
 let items = DATASET;
-if (["train", "validation", "test"].includes(splitArg)) items = DATASET.filter((t) => t.split === splitArg);
+if (["train", "validation",
+  "test"].includes(splitArg)) items = DATASET.filter((t) => t.split === splitArg);
 
 const rows = items.map((t) => {
   const heu = api.heuristic(t.text);
@@ -118,56 +120,58 @@ const rows = items.map((t) => {
   };
 });
 
-// ---- Humanize rescan (ukur regresi, bukan tuning): hanya label ai + kata cukup ----
+// Humanize rescan (ukur regresi, bukan tuning): hanya label ai + kata cukup
 const humRows = [];
 rows.filter((r) => r.label === "ai" && r.words >= 20).forEach((r) => {
   const src = items.find((t) => t.id === r.id);
   try {
     const heu = api.heuristic(src.text);
-    const h = api.humanizeText(src.text, heu.sentScores.length === heu.sents.length ? heu.sentScores : null);
+    const h = api.humanizeText(src.text,
+      heu.sentScores.length === heu.sents.length ? heu.sentScores : null);
     const post = api.heuristic(h.text);
-    humRows.push({ id: r.id, pre: r.score, post: post.score, delta: post.score - r.score, changed: h.changed, reverted: h.reverted });
+    humRows.push({ id: r.id, pre: r.score, post: post.score, delta: post.score - r.score,
+      changed: h.changed, reverted: h.reverted });
   } catch (e) { humRows.push({ id: r.id, error: String(e.message) }); }
 });
 
 let failures = [];
 
-// ---- Smoke S1: short-text cap (detector.js:386-389 → skor ≤45 bila <50 kata/<3 kalimat) ----
+// Smoke S1: short-text cap (detector.js:386-389 → skor ≤45 bila <50 kata/<3 kalimat)
 rows.filter((r) => r.edge.includes("short")).forEach((r) => {
   const ok = r.score <= 45;
   console.log(`S1 short-cap ${r.id}: words=${r.words} sents=${r.sentCount} score=${r.score} → ${ok ? "OK" : "GAGAL"}`);
   if (!ok) failures.push(`S1 ${r.id}`);
 });
 
-// ---- Smoke S2: akademik manusia tidak overflag kuat (detector-rules §4) ----
+// Smoke S2: akademik manusia tidak overflag kuat (detector-rules §4)
 rows.filter((r) => r.edge.includes("academic-human")).forEach((r) => {
   const ok = r.score < THR_STRONG;
   console.log(`S2 academic-human ${r.id}: score=${r.score} (<${THR_STRONG}) → ${ok ? "OK" : "GAGAL"}`);
   if (!ok) failures.push(`S2 ${r.id}`);
 });
 
-// ---- Smoke S3: single-signal tidak boleh vonis kuat (detector-rules §3) ----
+// Smoke S3: single-signal tidak boleh vonis kuat (detector-rules §3)
 rows.filter((r) => r.edge.includes("single-signal")).forEach((r) => {
   const ok = r.score < THR_STRONG;
   console.log(`S3 single-signal ${r.id}: score=${r.score} (<${THR_STRONG}) → ${ok ? "OK" : "GAGAL"}`);
   if (!ok) failures.push(`S3 ${r.id}`);
 });
 
-// ---- Smoke S4: humanize tidak crash + lapor regresi (humanizer-rules §1, validation-rules §4) ----
+// Smoke S4: humanize tidak crash + lapor regresi (humanizer-rules §1, validation-rules §4)
 humRows.forEach((h) => {
   if (h.error) { console.log(`S4 humanize ${h.id}: ERROR ${h.error}`); failures.push(`S4 ${h.id}`); }
   else console.log(`S4 humanize ${h.id}: ${h.pre} → ${h.post} (Δ${h.delta >= 0 ? "+" : ""}${h.delta}, chg=${h.changed}, rev=${h.reverted})`);
 });
 const regressed = humRows.filter((h) => !h.error && h.delta > 5);
 
-// ---- Smoke S5: klaim terlarang pada reasons user-facing ----
+// Smoke S5: klaim terlarang pada reasons user-facing
 let forbidHits = [];
 rows.forEach((r) => r.reasons.forEach((t) => { if (FORBIDDEN.test(t)) forbidHits.push(`${r.id}: ${t}`); }));
 console.log(`S5 forbidden-claims pada reasons: ${forbidHits.length === 0 ? "BERSIH" : "DITEMUKAN " + forbidHits.length}`);
 forbidHits.forEach((h) => console.log("   ! " + h));
 if (forbidHits.length) failures.push("S5 forbidden-claims");
 
-// ---- Smoke S6: matrix mixed-language (PRD §15.2/§15.3 + sebagian §15.9) ----
+// Smoke S6: matrix mixed-language (PRD §15.2/§15.3 + sebagian §15.9)
 // Threshold 50/75/30 TIDAK diubah. GAGAL bila ada assert tidak lolos.
 const MX_MIXED = "Penelitian ini bertujuan untuk menganalisis pengaruh media sosial terhadap prestasi belajar siswa di sekolah menengah atas. " +
   "Data yang dikumpulkan berasal dari kuesioner yang disebarkan kepada responden dengan metode yang sistematis dan terstruktur. " +
@@ -224,24 +228,28 @@ try {
 if (s6pre && s6cmb) {
   if (api.ID_FW && api.EN_FW) { globalThis.ID_FW = api.ID_FW; globalThis.EN_FW = api.EN_FW; }
   const pMix = s6pre.preprocess(MX_MIXED);
-  s6assert("preprocess-parity", pMix.language === mxHeu.detail.language && pMix.mixed === mxHeu.mixed,
+  s6assert("preprocess-parity", pMix.language === mxHeu.detail.language
+    && pMix.mixed === mxHeu.mixed,
     `pre=${pMix.language}/${pMix.mixed} heu=${mxHeu.detail.language}/${mxHeu.mixed}`);
   const pBase = s6pre.preprocess(MX_BASE);
-  s6assert("preprocess-id", pBase.language === "id" && pBase.mixed === false, `pre=${pBase.language}`);
+  s6assert("preprocess-id", pBase.language === "id" && pBase.mixed === false,
+    `pre=${pBase.language}`);
   const cMix = s6cmb.combine(
-    { score: mxHeu.score, confidence: "tinggi", lang: mxHeu.lang, mixed: mxHeu.mixed, detail: mxHeu.detail },
+    { score: mxHeu.score, confidence: "tinggi", lang: mxHeu.lang, mixed: mxHeu.mixed,
+      detail: mxHeu.detail },
     { score: 80, confidence: "tinggi", coverage: 1 }, null);
   s6assert("combine-mixed", cMix.confidence !== "tinggi" && /bahasa 0\.5/.test(cMix.method),
     `conf=${cMix.confidence}`);
   const cSolo = s6cmb.combine(
-    { score: 80, confidence: "tinggi", lang: "id", mixed: true, detail: { language: "mixed", mixed: true, totalW: 120 } },
+    { score: 80, confidence: "tinggi", lang: "id", mixed: true, detail: { language: "mixed",
+      mixed: true, totalW: 120 } },
     null, { reason: "offline" });
   s6assert("combine-solo-cap", cSolo.confidence !== "tinggi", `conf=${cSolo.confidence}`);
 }
 
 if (!bootOK) failures.push("boot main.js");
 
-// ---- Smoke S7: strip markdown + verdict bersih (detector-rules §1, validation-rules §5) ----
+// Smoke S7: strip markdown + verdict bersih (detector-rules §1, validation-rules §5)
 const s7assert = (name, cond, info) => {
   console.log(`S7 ${name}: ${cond ? "OK" : "GAGAL"}${info ? " (" + info + ")" : ""}`);
   if (!cond) failures.push(`S7 ${name}`);
@@ -260,7 +268,8 @@ const MD_PLAIN = "Berdasarkan hasil observasi di kelas, sebagian mahasiswa terli
   "Kami bertanya kepada siswa, apakah mereka senang belajar kelompok setiap harinya? " +
   "Ternyata sebagian besar menjawab dengan antusias dan penuh semangat.";
 const MD_NOISY = "# Catatan Lapangan\n\n**Hasil pengamatan** minggu ini:\n\n- " +
-  MD_PLAIN.split(". ").slice(0, 3).join(".\n- ") + ".\n\n> *Catatan*: hasil ini **menggembirakan**.\n\n" +
+  MD_PLAIN.split(". ").slice(0,
+    3).join(".\n- ") + ".\n\n> *Catatan*: hasil ini **menggembirakan**.\n\n" +
   "Rincian lanjutan [dokumen](https://example.com/paper):\n\n" +
   MD_PLAIN.split(". ").slice(3).join(". ") + ".";
 const mdBase = api.heuristic(MD_PLAIN);
@@ -302,7 +311,8 @@ CATS.forEach((c) => {
   if (sub[0].label === "human") extra = ` correct-human=${sub.filter((r) => !predAI(r.score)).length}/${sub.length}`;
   else if (sub[0].label === "ai") extra = ` correct-ai=${nPredAI}/${sub.length}`;
   else {
-    const d = { human: sub.filter((r) => r.cls === "human").length, mid: sub.filter((r) => r.cls === "mid").length, ai: sub.filter((r) => r.cls === "ai").length };
+    const d = { human: sub.filter((r) => r.cls === "human").length,
+      mid: sub.filter((r) => r.cls === "mid").length, ai: sub.filter((r) => r.cls === "ai").length };
     extra = ` distribusi(H/M/AI)=${d.human}/${d.mid}/${d.ai}`;
   }
   console.log(`- ${c}: n=${sub.length} avg=${avg(sc).toFixed(1)} range=[${Math.min(...sc)},${Math.max(...sc)}] predAI=${nPredAI}${extra}`);
@@ -315,7 +325,7 @@ rows.filter((r) => r.edge.length).forEach((r) => {
 
 console.log(`\nHumanize rescan (AI, n=${humRows.length}): avgΔ=${avg(humRows.filter((h) => !h.error).map((h) => h.delta)).toFixed(1)} regresi(Δ>+5)=${regressed.length}${regressed.length ? " [" + regressed.map((h) => h.id).join(",") + "]" : ""}`);
 
-// ---- Simpan JSON (area audit, bukan sumber skor) ----
+// Simpan JSON (area audit, bukan sumber skor)
 const outPath = outArg || path.join(ROOT, ".slim", "deepwork", `fase1-metrics-${splitArg}.json`);
 const payload = {
   note: "Fase 1 baseline — ukur saja. Threshold eksisting 50/75/30, tanpa tuning. Split test FROZEN.",

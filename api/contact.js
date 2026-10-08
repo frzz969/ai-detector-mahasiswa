@@ -1,10 +1,8 @@
 'use strict';
-// ============================================================
 // api/contact.js — Redirect Saran/Lapor ke WhatsApp (Vercel Function)
 // Nomor WA TIDAK disimpan di repo — hanya dari env server WA_NUMBER.
 // GET /api/contact?text=... -> 302 ke https://wa.me/<WA_NUMBER>?text=...
 // WA_NUMBER belum diisi -> 503 + pesan jelas (bukan redirect ngawur).
-// ============================================================
 
 module.exports = function contact(req, res) {
   const num = String(process.env.WA_NUMBER || '').replace(/\D/g, '');

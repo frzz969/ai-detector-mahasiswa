@@ -120,7 +120,8 @@ CORPUS.forEach((c) => {
   });
   (c.sparseOverlap || []).forEach((t) => {
     const hit = sel.materials.filter((m) => m.title === t)[0];
-    ok(!hit, 'on-topic tapi hanya 1 kata kunci -> ditolak (pagar): ' + t.slice(0, 40), hit ? 'rel=' + hit.relevance : 'ditolak');
+    ok(!hit, 'on-topic tapi hanya 1 kata kunci -> ditolak (pagar): ' + t.slice(0, 40),
+      hit ? 'rel=' + hit.relevance : 'ditolak');
   });
   c.offTopic.forEach((t) => {
     const hit = sel.materials.filter((m) => m.title === t)[0];

@@ -1,11 +1,9 @@
 'use strict';
-// ============================================================
 // api/config.js — Konstanta gateway Vercel (skeleton, TANPA deploy)
 // Referensi: docs/PRD.md F-13 (model lokal, ensemble, fallback),
 //   js/core.js (MAX_CHUNKS=6, MAX_CHARS=30000),
 //   js/detector.js localScore() (chunking kalimat, ~900 char/chunk).
 // Aturan: TIDAK ada secret di file ini — key hanya dari process.env.
-// ============================================================
 
 const SUPPORTED_V = [1];
 
